@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lgm"
+version = "0.1.0"
+description = "Laura Gao liability-driven investment model: Treasury ladder, scenario generator, strategy simulation and growth-sleeve construction"
+requires-python = ">=3.11"
+dependencies = [
+  "numpy>=2.0",
+  "pandas>=2.2",
+  "scipy>=1.13",
+  "pyyaml>=6.0",
+  "requests>=2.31",
+  "scikit-learn>=1.5",
+  "matplotlib>=3.8",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

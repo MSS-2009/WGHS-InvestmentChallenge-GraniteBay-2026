@@ -1,0 +1,20 @@
+# WInS / competition investment rules (apply to both contributions, the IPS and the Final Report).
+# Source: official competition reminder email (screenshot supplied by the client, Oct 2026).
+permitted:
+  - any stock available on WInS
+  - any exchange-traded fund (ETF) available on WInS
+  - any government / Treasury bond available on WInS
+not_permitted:
+  - margin trading
+  - short selling
+  - stock-secured debt
+  - crypto
+  - derivatives (options, futures, swaps)
+  - TIPS
+  - STRIPS
+  - anything other than the permitted list
+# Costs and limits below come from the former CS team's Plans v2 (not yet confirmed inside WInS).
+commission_per_etf_or_stock_trade: 25.0
+commission_per_bond_trade: 10.0
+max_trades: 200
+trading_freeze: 2026-11-06
