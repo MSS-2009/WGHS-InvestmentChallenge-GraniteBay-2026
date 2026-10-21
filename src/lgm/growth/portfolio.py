@@ -14,6 +14,7 @@ import pandas as pd
 from ..calibrate import calibrate_assets
 from ..data import yahoo
 from . import black_litterman as bl
+from .core import to_arithmetic
 from .qualitative import hrp_weights
 from .universe import CORE
 
@@ -65,7 +66,8 @@ def with_satellite(core: dict, sat_returns: pd.Series, view: dict, groups=CORE) 
     views.append(("Satellite alpha over its style benchmark", p_sat, float(p_sat @ pi) + view["alpha"], view["std"]))
     def post(vs):
         P = np.array([v[1] for v in vs])
-        Q = np.array([v[2] for v in vs]) + 0.5 * P @ var          # geometric -> arithmetic
+        Q = to_arithmetic(P, np.array([v[2] for v in vs]), cov)
+        Q[len(core["views"]):] = [v[2] for v in vs[len(core["views"]):]]   # the alpha view is already arithmetic
         return bl.posterior(cov, pi, P, Q, np.diag([v[3] ** 2 for v in vs]), core["cfg"]["tau"])[0]
 
     mu, mu_core_views = post(views), post(views[:-1])

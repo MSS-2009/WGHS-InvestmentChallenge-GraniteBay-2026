@@ -44,3 +44,15 @@ def optimise(mu, cov, delta, lb, ub, ineq: list[tuple[np.ndarray, float]] | None
     if not res.success:
         raise RuntimeError(res.message)
     return res.x
+
+
+def resampled_optimise(mu, mu_cov, cov, delta, lb, ub, ineq=None, n: int = 500, seed: int = 0, w0=None):
+    """Average of constrained optima over draws of expected returns from N(mu, mu_cov), the
+    Black-Litterman posterior (Michaud 1998 resampling). A single optimum sits on its limits and
+    swaps weight between near-identical funds when an input moves slightly; the average does not,
+    and it remains feasible because the constraints are linear. Returns (mean, std) of the weights."""
+    rng = np.random.default_rng(seed)
+    L = np.linalg.cholesky(mu_cov + 1e-12 * np.eye(len(mu)))
+    ws = np.array([optimise(mu + L @ rng.standard_normal(len(mu)), cov, delta, lb, ub, ineq, w0=w0) for _ in range(n)])
+    return ws.mean(0), ws.std(0)
+

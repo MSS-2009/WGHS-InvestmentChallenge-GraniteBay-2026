@@ -35,6 +35,7 @@ class EngineConfig:
     extra_tickets: int = 0        # more trades per invest event, e.g. 34 when a 35-stock basket is one asset
     extra_ticket_min: float = 10_000.0   # below this, a small top-up stays in the ETFs (no basket trades)
     annual_cost: float = 0.0      # recurring commissions per year (e.g. basket reconstitution)
+    fund_groups: tuple | None = None  # equity slots traded as one fund, e.g. VTI = (0, 1, 2); None = each slot
 
 
 def pay_tau(m: float) -> np.ndarray:
@@ -67,6 +68,12 @@ def growth_value(s: State, sc: Scenarios, m: int) -> np.ndarray:
     return s.eq.sum(1) + s.vgit + s.ibtm_face * _ibtm_df(sc, m) + s.cash
 
 
+def _funds(w: np.ndarray, cfg: EngineConfig) -> list[np.ndarray]:
+    """Index sets of the equity funds actually held (one ticket and one drift check each)."""
+    groups = cfg.fund_groups or [(i,) for i in range(len(w))]
+    return [np.array(g) for g in groups if w[list(g)].sum() > 0]
+
+
 def _invest(s: State, sc: Scenarios, m: int, st: Strategy, amount: np.ndarray, cfg: EngineConfig):
     """Invest `amount` at the strategy's target mix."""
     w = np.array(st.region_weights)
@@ -77,7 +84,8 @@ def _invest(s: State, sc: Scenarios, m: int, st: Strategy, amount: np.ndarray, c
     else:
         s.ibtm_face += bonds / _ibtm_df(sc, m)
     if cfg.commissions:
-        s.costs += np.where(amount > 0, COMMISSION_ETF * (len(w) + (st.equity_share < 1)), 0.0)
+        tickets = len(_funds(w, cfg)) * (st.equity_share > 0) + (st.equity_share < 1)
+        s.costs += np.where(amount > 0, COMMISSION_ETF * tickets, 0.0)
         s.costs += np.where(amount >= cfg.extra_ticket_min, COMMISSION_ETF * cfg.extra_tickets, 0.0)
 
 
@@ -88,7 +96,9 @@ def _rebalance(s: State, sc: Scenarios, m: int, st: Strategy, cfg: EngineConfig,
     eq_share = np.divide(s.eq.sum(1), total, out=np.zeros_like(total), where=total > 0)
     region = np.divide(s.eq, s.eq.sum(1, keepdims=True), out=np.zeros_like(s.eq), where=s.eq.sum(1, keepdims=True) > 0)
     drift = np.abs(eq_share - st.equity_share) > st.band
-    drift |= (np.abs(region - np.array(st.region_weights)) > 0.05).any(1) & (s.eq.sum(1) > 0)
+    target = np.array(st.region_weights)
+    for f in _funds(target, cfg):
+        drift |= (np.abs(region[:, f].sum(1) - target[f].sum()) > 0.05) & (s.eq.sum(1) > 0)
     do = drift | force
     if not do.any():
         return
@@ -140,11 +150,11 @@ def _step(s: State, sc: Scenarios, m: int, cfg: "EngineConfig"):
     y0 = np.expm1(sc.zero_cc(m, [VGIT_TAU])[:, 0])
     y1 = np.expm1(sc.zero_cc(m + 1, [VGIT_TAU])[:, 0])
     dy = y1 - y0
-    s.vgit *= 1 + y0 / 12 - VGIT_DUR * dy + 0.5 * VGIT_CONV * dy ** 2 - ER["VGIT"] / 12
+    s.vgit *= (1 + y0) ** (1 / 12) - VGIT_DUR * dy + 0.5 * VGIT_CONV * dy ** 2 - ER["VGIT"] / 12
     s.ibtm_face *= 1 - ER["IBTM"] / 12
     s.floor_face *= 1 - ER["IBTM"] / 12
     short = np.expm1(sc.zero_cc(m, [0.25])[:, 0])
-    s.cash *= 1 + short / 12
+    s.cash *= (1 + short) ** (1 / 12)
 
 
 def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: State | None = None,
@@ -186,6 +196,8 @@ def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: Sta
                 _rebalance(s, sc, m, st, cfg, force=True)
                 if cfg.commissions:
                     s.costs += COMMISSION_ETF * 4
+            else:
+                _rebalance(s, sc, m, st, cfg)        # the January 2031 check every strategy gets
             out["floor_2033"] = s.floor_face * (1 - ER["IBTM"] / 12) ** (M_2033 - m)  # value reaching Dec 2032
             out["locked_2031"] = s.locked.mean(1)
             if snapshot_2031:

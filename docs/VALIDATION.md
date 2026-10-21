@@ -34,11 +34,14 @@ inputs (stocks 6.06%/yr net, 16.5% volatility, rates unchanged on average), fat 
 
 | Plan | Funded: theirs / ours | 5th pct | Median | 95th pct | 2031 floor | 2031 80% range |
 | --- | --- | --- | --- | --- | --- | --- |
-| S1 all equity | 86.8% / 86.8% | 0 / 0 | 212.8 / 221.0 | 759.3 / 780.8 | — | — |
-| S2 static 60/40 | 96.4% / 97.0% | 16.2 / 20.3 | 208.0 / 216.6 | 508.3 / 528.7 | 0 / 0 | 120.7-332.4 / 82.7-313.9 |
-| S8 hybrid | 100% / 100% | 94.2 / 97.6 | 194.9 / 199.8 | 355.3 / 368.2 | 124.3 / 119.7 | 191.9-230.2 / 183.3-222.6 |
-| S6 lock, stock surplus | 100% / 100% | 106.2 / 107.9 | 197.7 / 200.0 | 365.5 / 370.5 | 0 / 0 | 150.2-261.7 / 148.3-270.2 |
-| S9 lock, 60/40, floor | 100% / 100% | 137.9 / 142.7 | 193.5 / 196.5 | 273.2 / 275.3 | 114.6 / 114.8 | 181.4-208.6 / 179.8-208.4 |
+| S1 all equity | 86.8% / 86.8% | 0 / 0 | 212.8 / 221.0 | 759.3 / 780.3 | — | — |
+| S2 static 60/40 | 96.4% / 96.8% | 16.2 / 18.6 | 208.0 / 215.4 | 508.3 / 523.7 | 0 / 0 | 120.7-332.4 / 121.8-350.9 |
+| S8 hybrid | 100% / 100% | 94.2 / 97.3 | 194.9 / 199.5 | 355.3 / 368.2 | 124.3 / 116.0 | 191.9-230.2 / 178.5-217.7 |
+| S6 lock, stock surplus | 100% / 100% | 106.2 / 107.9 | 197.7 / 200.0 | 365.5 / 371.0 | 0 / 0 | 150.2-261.7 / 148.2-269.9 |
+| S9 lock, 60/40, floor | 100% / 100% | 137.9 / 142.0 | 193.5 / 196.1 | 273.2 / 275.5 | 114.6 / 111.2 | 181.4-208.6 / 175.2-203.8 |
+
+Figures are after the October 2026 code-review fixes (section 6). S8's 2031 floor and range are
+now 7% below the former team's; our VGIT now compounds its yield correctly, which theirs may not.
 
 Other model claims:
 
@@ -47,7 +50,7 @@ Other model claims:
 | Zero-coupon cost of the ladder, Oct 16 (guide 4C) | $295,584 | $295,559 |
 | Real-instrument ladder, Oct 16 (guide 4C) | $300,769 | $300,396 (LP, 3% reinvestment) |
 | Real-instrument ladder, Oct 20 (Plans v2) | $300.1k | $299,717 |
-| Rates 0.75 pts lower at the lock: lock-and-balance median | $192k -> $159k (-17%) | $196.5k -> $160.5k (-18%) |
+| Rates 0.75 pts lower at the lock: lock-and-balance median | $192k -> $159k (-17%) | $196.1k -> $162.2k (-17%) |
 | Fat tails change results by | < $5k | < $5k (Gaussian vs t5) |
 | Facility buys less in Taiwan terms | ~25% | 21% at 4%/yr building costs; 25% needs ~5%/yr |
 | Plans v2 nine-instrument ladder funds ten payments | yes | yes: coupons 2027-32 pay the 2033 payment; $4k-$16k surplus each year |
@@ -88,9 +91,52 @@ The WInS bond list is saved in `data/wins/treasury_bonds.csv` and the ladder opt
 The cheapest WInS-feasible ladder for a Jan 2027 purchase on the Oct 20 curve costs $299,717
 (`ladder.solve`), identical to the optimum with the unlisted bond, because the optimiser never needed it.
 
-## Reproduce
+## 6. Independent code review (October 21, 2026)
+
+A separate reviewer read the code for correctness and tested each suspicion with scratch scripts.
+Six issues were confirmed and fixed, each with a regression test (`tests/test_review_fixes.py`):
+
+| Issue | Effect before the fix | Fix |
+| --- | --- | --- |
+| Black-Litterman views converted from geometric to arithmetic with single-fund variances | EM view 0.83% instead of 0.63%; small-cap 1.57% instead of 1.79% | Each leg gains half its own basket variance |
+| Optimiser used the posterior covariance with the prior risk aversion | With no views it held 32% VTV against a 30% market weight; uncertainty counted twice once resampled | Optimise with the prior covariance; uncertainty enters through resampling |
+| Commissions charged per weight slot, not per fund | The 3-fund VTI/VEA/VWO baseline paid for 9 funds (about $465 of median) | Count funds held; `fund_groups` for funds spread over several slots |
+| VGIT and cash compounded an annual yield monthly as y/12 | S2 median $1.55k too high, S9 $0.37k | Monthly factor (1 + y)^(1/12) |
+| No January 2031 rebalancing check for plans without a floor | S2 median $0.8k lower | Check the band in January 2031 |
+| Satellite alpha view converted to arithmetic twice | 0.875% instead of 1.0%; about $30 | No conversion for that view |
+
+The reviewer also suggested deriving risk aversion from the regions' arithmetic returns (each region's
+geometric forecast plus half its own basket variance). It is now 1.80, up from 1.74.
+
+Checked and found correct: the nested 2031 simulation (matches the outer run to $0.01 with zero
+volatility), deterministic engine growth, generator moments, curve bootstrapping, the ladder LP
+($299,717), HRP (identical to the reference implementation), whole-share rounding and the shock order.
+
+## 7. How good is the model
+
+Run `python scripts/validate_model.py` (reports `validation_esg.csv`, `validation_convergence.csv`,
+`backtest.csv`, `bl_sensitivity.csv`).
+
+- **Generator reproduces its inputs:** each fund's volatility and median return to three decimals,
+  and the VTV-VGK correlation exactly (0.792).
+- **Tails are fatter than history:** monthly excess kurtosis 3.9-6.0 against 0.1-3.4 in 2005-2026,
+  so crash risk is, if anything, overstated.
+- **Rates:** the 10-year yield's change to January 2033 spans -2.1 to +2.2 points (5th-95th
+  percentile), against -2.7 to +2.4 points over every 74-month window since 1994.
+- **Convergence:** across 8 seeds of 20,000 scenarios the median facility is $197,731 with a standard
+  error of $34; the 5th percentile's is $85.
+- **Historical replay:** 184 real six-year paths (starts April 2005 to July 2020) applied to today's
+  curve. With returns re-centred on our expectations, the IPS median is $196.7k against $197.7k
+  simulated; its 5th percentile is $155.6k against $147.3k simulated, so the simulation is the more
+  cautious. All-stock funds every payment in 90.2% of real paths against 86.8% simulated.
+- **Black-Litterman stability:** over tau 0.025-0.10 and value-view uncertainty 1.5-5 points, the
+  resampled weights hold BBJP at 6.6-6.9% and BBCA at 3.7-3.9%; a single optimum swings them from 2.6%
+  to 8.4% and 1.5% to 6.1%.
+
+## 8. Reproduce
 
 ```
-python -m pytest                      # 32 tests, includes every guide figure
+python -m pytest                      # 46 tests, includes every guide figure
 python scripts/validate_plans_v2.py   # section 3 table -> reports/plans_v2_validation.csv
+python scripts/validate_model.py      # section 7 -> reports/validation_*.csv, backtest.csv, bl_sensitivity.csv
 ```

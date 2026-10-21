@@ -118,6 +118,8 @@ def main(n: int = 20_000, rescreen: bool = False):
         t_share = float(w[:K] @ mw["tech"] + w[K] * (w_sat @ tech))
         ct = float(w[:K] @ mw["china_taiwan"])
         print(f"  satellite {s:.0%}: look-through tech/comm {t_share:.3f} (market {mkt_tech:.3f}), China+Taiwan {ct:.4f}")
+        if t_share > mkt_tech or ct > float(core["w_mkt"] @ mw["china_taiwan"]) + 1e-9:
+            raise SystemExit(f"satellite at {s:.0%} breaks the look-through limits")
 
     # 6. Monte Carlo
     sat_kw = {"extra_tickets": len(tickers) - 1, "annual_cost": 2 * imp["annual_replacements"] * engine.COMMISSION_ETF}
@@ -158,7 +160,7 @@ def main(n: int = 20_000, rescreen: bool = False):
 
     # 7. WInS whole-share orders
     sat_cov = long_cov(tickers)
-    budgets = {"WInS mirror (20% of $36k equity)": 7_200.0, "Plan, Jan 2028 (20% of ~$90k equity)": 18_000.0}
+    budgets = {"WInS mirror (20% of $60k equity)": 12_000.0, "Plan, Jan 2028 (20% of ~$90k equity)": 18_000.0}
     print(wins_orders(w_sat, sel, budgets, sat_cov).to_string(index=False))
 
 

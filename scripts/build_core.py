@@ -14,6 +14,7 @@ from lgm.growth.scoring import esg_params, score
 from lgm.growth.universe import CORE
 
 OUT = Path(__file__).resolve().parents[1] / "reports"
+BASELINE_FUNDS = ((0, 1, 2), (3, 4, 5, 6), (7, 8))   # VTI, VEA, VWO over the nine CORE groups
 
 
 def main(n: int = 20_000):
@@ -38,9 +39,11 @@ def main(n: int = 20_000):
     ers = {"Baseline VTI/VEA/VWO 60/30/10": base_er, "Market-cap ETF core": core_er, "Black-Litterman ETF core": core_er}
     beliefs = {"Black-Litterman posterior": t["bl_geo_total"].values,
                "Equilibrium (no views)": t["pi_excess"].values + rf - 0.5 * var}
+    # The baseline is three funds (VTI, VEA, VWO) spread over the nine groups: 3 tickets, 3 drift checks
+    kw = {"Baseline VTI/VEA/VWO 60/30/10": {"fund_groups": BASELINE_FUNDS}}
     rows = []
     for bname, geo in beliefs.items():
-        for k, v in score(weights, ers, esg_params(r["cal"], geo), n=n).items():
+        for k, v in score(weights, ers, esg_params(r["cal"], geo), n=n, engine_kw=kw).items():
             rows.append({"beliefs": bname, "sleeve": k, **v})
     df = pd.DataFrame(rows)
     df.round(2).to_csv(OUT / "core_scoring.csv", index=False)

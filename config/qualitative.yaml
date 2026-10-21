@@ -17,12 +17,11 @@ strength:
 gates:
   values_reject_if:
     - core business in tobacco, gambling, controversial weapons or adult entertainment
-    - highest controversy level >= 4 (Sustainalytics 0-5) without credible remediation
     - average values score below 3.0 (the company is not at least neutral on Laura's values)
     - any values dimension scored 1
   strength_reject_if:
     - financial_quality <= 2
-    - risk_flags <= 1
+    - risk_flags <= 1   # severe controversy without credible remediation (judged; refreshed by the news check)
 weights: {values: 0.35, strength: 0.65}   # final qualitative score, 1-5
 selection:
   target_names: 35          # within the requested 30-50

@@ -7,7 +7,7 @@ Quantitative screen (documented choices, in order):
 3. Return-quality filter (replaces raw past return, which is mostly noise): drop the bottom 25% by
    a composite of 12-1 month momentum and 3-year risk-adjusted return (z-scores, equal weight).
 4. Concentration: the satellite may not add look-through tech/communication or China/Taiwan
-   exposure beyond the market (enforced at the final selection).
+   exposure beyond the market (checked in scripts/build_satellite.py, which stops if it does).
 """
 from __future__ import annotations
 

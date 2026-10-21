@@ -22,3 +22,15 @@ def test_confident_view_moves_posterior_toward_view():
     P, Q = np.array([[1.0, -1.0]]), np.array([0.04])
     mu, _ = bl.posterior(cov, pi, P, Q, np.array([[1e-8]]), 0.05)
     assert abs((mu[0] - mu[1]) - 0.04) < 1e-4
+
+
+def test_resampled_optimum_is_feasible_and_near_market_without_views():
+    cov = np.array([[0.04, 0.03, 0.01], [0.03, 0.04, 0.01], [0.01, 0.01, 0.09]])
+    w = np.array([0.4, 0.4, 0.2])
+    pi = bl.implied_returns(cov, w, 2.5)
+    lb, ub = 0.5 * w, 2 * w
+    a = np.array([1.0, 0.0, 0.0])
+    mean, sd = bl.resampled_optimise(pi, 0.05 * cov * 0.01, cov, 2.5, lb, ub, [(a, 0.4)], n=200, w0=w)
+    assert abs(mean.sum() - 1) < 1e-9
+    assert (mean >= lb - 1e-9).all() and (mean <= ub + 1e-9).all() and mean @ a <= 0.4 + 1e-9
+    assert np.allclose(mean, w, atol=0.03)
