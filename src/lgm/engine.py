@@ -31,6 +31,7 @@ class EngineConfig:
     kappa0: float = 0.018         # real-instrument ladder cost over zero-coupon value, Jan 2027 ladder
     deposits: tuple = ((M_2027, 300_000.0), (M_2028, 150_000.0))
     commissions: bool = True
+    eq_er: tuple = (0.0003, 0.0003, 0.0006)   # expense ratio per equity asset, same order as the ESG
 
 
 def pay_tau(m: float) -> np.ndarray:
@@ -73,7 +74,7 @@ def _invest(s: State, sc: Scenarios, m: int, st: Strategy, amount: np.ndarray, c
     else:
         s.ibtm_face += bonds / _ibtm_df(sc, m)
     if cfg.commissions:
-        s.costs += np.where(amount > 0, COMMISSION_ETF * (3 + (st.equity_share < 1)), 0.0)
+        s.costs += np.where(amount > 0, COMMISSION_ETF * (len(w) + (st.equity_share < 1)), 0.0)
 
 
 def _rebalance(s: State, sc: Scenarios, m: int, st: Strategy, cfg: EngineConfig, force: bool = False):
@@ -127,9 +128,9 @@ def _liquidate(s: State, sc: Scenarios, m: int, amount: np.ndarray):
     return np.minimum(amount, total)
 
 
-def _step(s: State, sc: Scenarios, m: int):
+def _step(s: State, sc: Scenarios, m: int, cfg: "EngineConfig"):
     """Advance one month: markets move, fees accrue."""
-    s.eq *= np.exp(sc.eq_log[:, m - sc.m0, :]) * (1 - ER["eq"] / 12)
+    s.eq *= np.exp(sc.eq_log[:, m - sc.m0, :]) * (1 - np.asarray(cfg.eq_er) / 12)
     y0 = np.expm1(sc.zero_cc(m, [VGIT_TAU])[:, 0])
     y1 = np.expm1(sc.zero_cc(m + 1, [VGIT_TAU])[:, 0])
     dy = y1 - y0
@@ -146,7 +147,8 @@ def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: Sta
     (used to continue a scenario from its January 2031 position)."""
     cfg = cfg or EngineConfig()
     n = sc.n
-    s = state or State(np.zeros((n, 3)), np.zeros(n), np.zeros(n), np.zeros(n), np.zeros(n), np.zeros((n, N_PAY)), np.zeros(n))
+    K = sc.eq_log.shape[2]
+    s = state or State(np.zeros((n, K)), np.zeros(n), np.zeros(n), np.zeros(n), np.zeros(n), np.zeros((n, N_PAY)), np.zeros(n))
     out: dict = {}
     deposits = dict(cfg.deposits)
     for m in range(sc.m0, M_2033 + 1):
@@ -184,7 +186,7 @@ def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: Sta
                 out["state_2031"] = State(*(a.copy() for a in (s.eq, s.vgit, s.ibtm_face, s.floor_face, s.cash, s.locked, s.costs)))
         if m == M_2033:
             break
-        _step(s, sc, m)
+        _step(s, sc, m, cfg)
     # January 2033 settlement
     assets = s.eq.sum(1) + s.vgit + s.ibtm_face + s.floor_face + s.cash - s.costs
     open_cost = ((1 - s.locked) * PMT * sc.df(M_2033, pay_tau(M_2033)) * (1 + kappa(M_2033, cfg))).sum(1)

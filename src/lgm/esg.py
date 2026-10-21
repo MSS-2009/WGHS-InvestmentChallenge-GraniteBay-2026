@@ -28,8 +28,9 @@ class ESGParams:
     resid: np.ndarray                # today's curve minus NS fit on TAU_GRID (cc, decimals)
     beta_mu: np.ndarray              # long-run NS factors
     phi: np.ndarray                  # monthly AR(1) per factor
-    cov: np.ndarray                  # (8, 8) monthly joint shock covariance
-    eq_geo: np.ndarray               # (3,) annual median (geometric) equity returns, gross of fees
+    cov: np.ndarray                  # (K+5, K+5) monthly joint shock covariance: K equities, 3 rate
+                                     # factors, inflation, USD/TWD (in that order)
+    eq_geo: np.ndarray               # (K,) annual median (geometric) equity returns, gross of fees
     eq_vol_scale: float = 1.0
     infl0: float = 0.0374
     infl_mu: float = 0.03
@@ -44,7 +45,7 @@ class ESGParams:
 @dataclass
 class Scenarios:
     beta: np.ndarray       # (N, M+1, 3)
-    eq_log: np.ndarray     # (N, M, 3)
+    eq_log: np.ndarray     # (N, M, K)
     infl: np.ndarray       # (N, M+1)
     fx_log: np.ndarray     # (N, M+1), 0 at start
     tw_cost_log: np.ndarray  # (N, M+1), 0 at start
@@ -93,12 +94,11 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
     if antithetic:
         z = np.concatenate([z, -z], axis=0)[:n]
     chol = np.linalg.cholesky(p.cov)
-    shocks = z @ chol.T                                       # (n, M, 8)
-    shocks[..., :3] *= p.eq_vol_scale
-    eq_var = np.diag(p.cov)[:3] * p.eq_vol_scale ** 2
+    shocks = z @ chol.T                                       # (n, M, K+5)
+    K = len(p.eq_geo)
+    shocks[..., :K] *= p.eq_vol_scale
     eq_mu = np.log1p(p.eq_geo) / 12.0                         # median growth preserved
-    eq_log = eq_mu[None, None, :] + shocks[..., :3]
-    del eq_var
+    eq_log = eq_mu[None, None, :] + shocks[..., :K]
 
     beta = np.empty((n, M + 1, 3))
     infl = np.empty((n, M + 1))
@@ -109,10 +109,10 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
         if beta_shift is not None:
             beta[:, 0] = beta[:, 0] + beta_shift
     for m in range(M):
-        beta[:, m + 1] = p.beta_mu + p.phi * (beta[:, m] - p.beta_mu) + shocks[:, m, 3:6]
-        infl[:, m + 1] = p.infl_mu + p.infl_phi * (infl[:, m] - p.infl_mu) + shocks[:, m, 6]
+        beta[:, m + 1] = p.beta_mu + p.phi * (beta[:, m] - p.beta_mu) + shocks[:, m, K:K + 3]
+        infl[:, m + 1] = p.infl_mu + p.infl_phi * (infl[:, m] - p.infl_mu) + shocks[:, m, K + 3]
     fx0 = 0.0 if start is None else start["fx_log"][:, None]
-    fx_log = np.concatenate([np.zeros((n, 1)), np.cumsum(p.fx_drift / 12 + shocks[..., 7], axis=1)], axis=1) + fx0
+    fx_log = np.concatenate([np.zeros((n, 1)), np.cumsum(p.fx_drift / 12 + shocks[..., K + 4], axis=1)], axis=1) + fx0
     tw = np.log1p(p.tw_cost_growth) / 12 + p.tw_cost_vol / np.sqrt(12) * rng.standard_normal((n, M))
     tw0 = 0.0 if start is None else start["tw_cost_log"][:, None]
     tw_cost_log = np.concatenate([np.zeros((n, 1)), np.cumsum(tw, axis=1)], axis=1) + tw0
