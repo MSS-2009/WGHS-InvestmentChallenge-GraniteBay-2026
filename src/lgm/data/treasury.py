@@ -55,3 +55,32 @@ def history(start_year: int = 1990, end_year: int = 2026) -> "pd.DataFrame":
     df = pd.concat(frames).sort_index()
     df.index = pd.to_datetime(df.index)
     return df[sorted(df.columns)]
+
+
+REAL_URL = URL.replace("type=daily_treasury_yield_curve", "type=daily_treasury_real_yield_curve")
+
+
+def real_year(year: int, refresh: bool = False) -> pd.DataFrame:
+    """Daily par real (TIPS) yield curve for one year; columns are tenors in years, values in percent."""
+    path = RAW / f"treasury_real_{year}.csv"
+    if refresh or not path.exists():
+        r = requests.get(REAL_URL.format(year=year), timeout=60, headers={"User-Agent": "lgm-research"})
+        r.raise_for_status()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(r.text)
+    df = pd.read_csv(path)
+    df["Date"] = pd.to_datetime(df["Date"], format="%m/%d/%Y")
+    df = df.set_index("Date").sort_index()
+    cols = {c: float(c.split()[0]) for c in df.columns if c.endswith("YR")}
+    return df[list(cols)].rename(columns=cols).astype(float)
+
+
+def breakevens(start: int = 2003, end: int = 2026) -> pd.DataFrame:
+    """Daily breakeven inflation (nominal par minus real par yield, decimals) at 5, 7, 10, 20 and 30 years,
+    plus the 5-year rate 5 years ahead. TIPS are used only as a market inflation gauge, never held."""
+    nominal = pd.concat([load_year(y) for y in range(start, end + 1)])
+    nominal.index = pd.to_datetime(nominal.index)
+    real = pd.concat([real_year(y) for y in range(start, end + 1)])
+    be = (nominal[[5.0, 7.0, 10.0, 20.0, 30.0]] - real[[5.0, 7.0, 10.0, 20.0, 30.0]]).dropna(how="all") / 100
+    be["5y5y"] = ((1 + be[10.0]) ** 10 / (1 + be[5.0]) ** 5) ** (1 / 5) - 1
+    return be

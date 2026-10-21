@@ -18,15 +18,25 @@ from ..esg import ESGParams, initial_state, simulate
 from ..strategies import IPS
 
 
+def market_inflation(curve_date: str, tenor: float = 7.0) -> float:
+    """Breakeven inflation (nominal minus TIPS par yield) at the tenor nearest Laura's horizon."""
+    from ..data.treasury import breakevens
+
+    year = int(curve_date[:4])
+    return float(breakevens(start=year - 1, end=year)[tenor].loc[:curve_date].dropna().iloc[-1])
+
+
 def esg_params(cal: dict, eq_geo: np.ndarray, curve_date: str = "2026-10-20", infl_phi: float = 0.966,
-               phi: np.ndarray | None = None) -> ESGParams:
+               phi: np.ndarray | None = None, infl_mu: float | None = None) -> ESGParams:
+    """Inflation reverts from September's 3.7% toward market breakeven inflation unless `infl_mu` is given."""
     from ..profiles import _cal
 
     zc = bootstrap(par_curve(curve_date))
     beta0, resid = initial_state(zc)
     phi = _cal().phi if phi is None else phi
     return ESGParams(months=engine.M_2033, beta0=beta0, resid=resid, beta_mu=beta0.copy(), phi=phi,
-                     cov=cal["cov"], eq_geo=np.asarray(eq_geo), infl0=0.0374, infl_mu=0.03,
+                     cov=cal["cov"], eq_geo=np.asarray(eq_geo), infl0=0.0374,
+                     infl_mu=market_inflation(curve_date) if infl_mu is None else infl_mu,
                      infl_phi=_cal().infl_phi, t_dof=5.0)
 
 

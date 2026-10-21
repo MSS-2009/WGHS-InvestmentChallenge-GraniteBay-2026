@@ -1,32 +1,32 @@
 check,target,model,history_2005_2026
 VUG volatility,0.1672,0.1671,0.1906
-VUG median annual return,0.047,0.047,0.1767
+VUG median annual return,0.0496,0.0496,0.1767
 VUG monthly excess kurtosis,,4.9097,0.1282
 VTV volatility,0.1483,0.148,0.1529
-VTV median annual return,0.0686,0.0686,0.1178
-VTV monthly excess kurtosis,,3.8964,1.6121
+VTV median annual return,0.0677,0.0677,0.1178
+VTV monthly excess kurtosis,,3.8967,1.6121
 VB volatility,0.1927,0.1928,0.2023
-VB median annual return,0.0683,0.0683,0.099
-VB monthly excess kurtosis,,4.6846,2.5774
+VB median annual return,0.0693,0.0693,0.099
+VB monthly excess kurtosis,,4.6826,2.5774
 VGK volatility,0.1868,0.1866,0.1737
-VGK median annual return,0.0673,0.0673,0.0818
-VGK monthly excess kurtosis,,5.0854,1.3897
+VGK median annual return,0.0678,0.0678,0.0818
+VGK monthly excess kurtosis,,5.0824,1.3897
 BBJP volatility,0.1525,0.1523,0.1427
-BBJP median annual return,0.06,0.06,0.0861
-BBJP monthly excess kurtosis,,4.8369,0.2775
+BBJP median annual return,0.0607,0.0607,0.0861
+BBJP monthly excess kurtosis,,4.8377,0.2775
 EPP volatility,0.2046,0.2043,0.1751
-EPP median annual return,0.0674,0.0674,0.0589
-EPP monthly excess kurtosis,,4.7313,2.8435
+EPP median annual return,0.0679,0.0679,0.0589
+EPP monthly excess kurtosis,,4.7314,2.8435
 BBCA volatility,0.1989,0.1984,0.1808
-BBCA median annual return,0.0679,0.0679,0.1064
-BBCA monthly excess kurtosis,,4.6519,3.3816
+BBCA median annual return,0.0683,0.0683,0.1064
+BBCA monthly excess kurtosis,,4.651,3.3816
 EMXC volatility,0.1933,0.1933,0.1933
-EMXC median annual return,0.0707,0.0707,0.1012
-EMXC monthly excess kurtosis,,6.0361,2.591
+EMXC median annual return,0.0713,0.0713,0.1012
+EMXC monthly excess kurtosis,,6.0327,2.591
 MCHI volatility,0.2313,0.2316,0.2444
-MCHI median annual return,0.041,0.041,0.0044
-MCHI monthly excess kurtosis,,4.9412,1.8132
-Correlation VTV-VGK,0.7921,0.7922,0.8647
+MCHI median annual return,0.0417,0.0417,0.0044
+MCHI monthly excess kurtosis,,4.941,1.8132
+Correlation VTV-VGK,0.7928,0.7929,0.8647
 "10-year yield change to Jan 2033, p5",,-0.0214,-0.0269
 "10-year yield change to Jan 2033, p50",,0.0,-0.0107
 "10-year yield change to Jan 2033, p95",,0.0219,0.0237

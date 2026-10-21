@@ -16,10 +16,17 @@ from .universe import CORE
 CFG = Path(__file__).resolve().parents[3] / "config" / "cma.yaml"
 
 
-def _view_stats(diffs: list[float], cfg: dict) -> tuple[float, float]:
+def _view_stats(diffs: list[float], cfg: dict, forecasters: int | None = None) -> tuple[float, float]:
+    """Size = median of all sources; uncertainty = their spread, unless only one source is a forecast
+    (long-run averages do not count), in which case the single-source uncertainty applies."""
     q = float(np.median(diffs))
-    s = cfg["single_source_std"] if len(diffs) == 1 else max(float(np.std(diffs, ddof=1)), cfg["view_std_floor"])
+    n = len(diffs) if forecasters is None else forecasters
+    s = cfg["single_source_std"] if n <= 1 else max(float(np.std(diffs, ddof=1)), cfg["view_std_floor"])
     return q, s
+
+
+def _sources(block: dict) -> tuple[list[float], int]:
+    return list(block.values()), sum(1 for k in block if not str(k).startswith("History"))
 
 
 def to_arithmetic(P: np.ndarray, Q_geo: np.ndarray, cov: np.ndarray) -> np.ndarray:
@@ -51,12 +58,12 @@ def build_views(groups, w_mkt, cfg: dict):
     views.append(("International developed minus US", dev - us, q, s, len(firms)))
     q, s = _view_stats([f["em"] - f["intl_dev"] for f in firms.values()], cfg)
     views.append(("Emerging minus international developed", em - dev, q, s, len(firms)))
-    vals = list(cfg["us_value_minus_growth"].values())
-    q, s = _view_stats(vals, cfg)
+    vals, n_fc = _sources(cfg["us_value_minus_growth"])
+    q, s = _view_stats(vals, cfg, n_fc)
     e = np.zeros(n); e[idx["us_value"]], e[idx["us_growth"]] = 1, -1
     views.append(("US value minus US growth", e, q, s, len(vals)))
-    vals = list(cfg["us_small_minus_large"].values())
-    q, s = _view_stats(vals, cfg)
+    vals, n_fc = _sources(cfg["us_small_minus_large"])
+    q, s = _view_stats(vals, cfg, n_fc)
     e = np.zeros(n); e[idx["us_small"]] = 1
     views.append(("US small minus US large", e - us_large, q, s, len(vals)))
     return views

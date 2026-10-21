@@ -34,14 +34,16 @@ inputs (stocks 6.06%/yr net, 16.5% volatility, rates unchanged on average), fat 
 
 | Plan | Funded: theirs / ours | 5th pct | Median | 95th pct | 2031 floor | 2031 80% range |
 | --- | --- | --- | --- | --- | --- | --- |
-| S1 all equity | 86.8% / 86.8% | 0 / 0 | 212.8 / 221.0 | 759.3 / 780.3 | — | — |
-| S2 static 60/40 | 96.4% / 96.8% | 16.2 / 18.6 | 208.0 / 215.4 | 508.3 / 523.7 | 0 / 0 | 120.7-332.4 / 121.8-350.9 |
-| S8 hybrid | 100% / 100% | 94.2 / 97.3 | 194.9 / 199.5 | 355.3 / 368.2 | 124.3 / 116.0 | 191.9-230.2 / 178.5-217.7 |
-| S6 lock, stock surplus | 100% / 100% | 106.2 / 107.9 | 197.7 / 200.0 | 365.5 / 371.0 | 0 / 0 | 150.2-261.7 / 148.2-269.9 |
-| S9 lock, 60/40, floor | 100% / 100% | 137.9 / 142.0 | 193.5 / 196.1 | 273.2 / 275.5 | 114.6 / 111.2 | 181.4-208.6 / 175.2-203.8 |
+| S1 all equity | 86.8% / 86.7% | 0 / 0 | 212.8 / 220.9 | 759.3 / 780.9 | — | — |
+| S2 static 60/40 | 96.4% / 96.8% | 16.2 / 18.7 | 208.0 / 215.4 | 508.3 / 523.5 | 0 / 0 | 120.7-332.4 / 146.5-380.9 |
+| S8 hybrid | 100% / 100% | 94.2 / 97.3 | 194.9 / 199.5 | 355.3 / 368.4 | 124.3 / 118.9 | 191.9-230.2 / 182.0-221.3 |
+| S6 lock, stock surplus | 100% / 100% | 106.2 / 107.9 | 197.7 / 200.0 | 365.5 / 370.9 | 0 / 0 | 150.2-261.7 / 148.3-269.9 |
+| S9 lock, 60/40, floor | 100% / 100% | 137.9 / 142.0 | 193.5 / 196.1 | 273.2 / 275.4 | 114.6 / 111.2 | 181.4-208.6 / 175.2-203.8 |
 
-Figures are after the October 2026 code-review fixes (section 6). S8's 2031 floor and range are
-now 7% below the former team's; our VGIT now compounds its yield correctly, which theirs may not.
+Figures are after the October 2026 code-review fixes (section 6) and the switch to the Fed's H.10
+USD/TWD series. S8's 2031 floor and range are up to 5% below the former team's; our VGIT now compounds
+its yield correctly, which theirs may not. S2's 2031 range comes from one median world and moves a lot
+with small calibration changes, because S2 holds no floor.
 
 Other model claims:
 
@@ -124,20 +126,26 @@ Run `python scripts/validate_model.py` (reports `validation_esg.csv`, `validatio
   so crash risk is, if anything, overstated.
 - **Rates:** the 10-year yield's change to January 2033 spans -2.1 to +2.2 points (5th-95th
   percentile), against -2.7 to +2.4 points over every 74-month window since 1994.
-- **Convergence:** across 8 seeds of 20,000 scenarios the median facility is $197,731 with a standard
-  error of $34; the 5th percentile's is $85.
+- **Convergence:** across 8 seeds of 20,000 scenarios the median facility is $197,906 with a standard
+  error of $31; the 5th percentile's is $84.
 - **Historical replay:** 184 real six-year paths (starts April 2005 to July 2020) applied to today's
-  curve. With returns re-centred on our expectations, the IPS median is $196.7k against $197.7k
-  simulated; its 5th percentile is $155.6k against $147.3k simulated, so the simulation is the more
-  cautious. All-stock funds every payment in 90.2% of real paths against 86.8% simulated.
+  curve. With returns re-centred on our expectations, the IPS median is $196.7k against $197.9k
+  simulated; its 5th percentile is $155.7k against $147.4k simulated, so the simulation is the more
+  cautious. All-stock funds every payment in 90.2% of real paths against 86.7% simulated.
+- **Expected rate path:** forecasting the curve 74 months ahead from 320 month-ends (1994-2020), the
+  error in the cost of ten payments is 7.7% for "unchanged", 7.5% for forwards minus the Kim-Wright term
+  premium and 10.0% for pure forwards. "Unchanged" stays: it ties on accuracy and has the least bias.
+- **2031 range calibration:** on the same 184 paths, the 80% range quoted from each path's own January
+  2031 position contained the January 2033 result 98.4% of the time (re-centred) and 97.8% (as it
+  happened). The range is conservative.
 - **Black-Litterman stability:** over tau 0.025-0.10 and value-view uncertainty 1.5-5 points, the
-  resampled weights hold BBJP at 6.6-6.9% and BBCA at 3.7-3.9%; a single optimum swings them from 2.6%
-  to 8.4% and 1.5% to 6.1%.
+  resampled weights hold BBJP at 6.7-7.0% and BBCA at 3.8-3.9%; a single optimum swings them from 2.6%
+  to 9.5% and 1.5% to 5.5%.
 
 ## 8. Reproduce
 
 ```
-python -m pytest                      # 47 tests, includes every guide figure
+python -m pytest                      # 52 tests, includes every guide figure
 python scripts/validate_plans_v2.py   # section 3 table -> reports/plans_v2_validation.csv
 python scripts/validate_model.py      # section 7 -> reports/validation_*.csv, backtest.csv, bl_sensitivity.csv
 ```

@@ -1,0 +1,40 @@
+{
+  "expected_2033_curve": {
+    "0.5y": {
+      "today": 0.0429,
+      "kim_wright": 0.0458
+    },
+    "1y": {
+      "today": 0.0439,
+      "kim_wright": 0.0455
+    },
+    "2y": {
+      "today": 0.0458,
+      "kim_wright": 0.0466
+    },
+    "3y": {
+      "today": 0.0474,
+      "kim_wright": 0.0469
+    },
+    "5y": {
+      "today": 0.0495,
+      "kim_wright": 0.0467
+    },
+    "7y": {
+      "today": 0.0508,
+      "kim_wright": 0.0472
+    },
+    "10y": {
+      "today": 0.0519,
+      "kim_wright": 0.0488
+    }
+  },
+  "unchanged": {
+    "median": 197910,
+    "p5": 147374
+  },
+  "kim_wright": {
+    "median": 197182,
+    "p5": 146802
+  }
+}

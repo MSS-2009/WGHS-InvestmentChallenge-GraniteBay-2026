@@ -22,22 +22,26 @@ firms:
   # Vanguard VCMM, run of Jun 30, 2026 (midpoints of published ranges; vanguard.com "Setting realistic expectations")
   Vanguard:            {us: 0.052, intl_dev: 0.055, em: 0.030}
 # Style and size views (fewer sources publish these)
+# Sources whose name starts with "History" are long-run averages (scripts/factor_evidence.py). They
+# count toward a view's size (the median) but not its spread: a view with one forecaster keeps the
+# single-source uncertainty, because a long-run average says little about the next ten years.
 us_value_minus_growth:
   Vanguard (Dec 2025 run, via Morningstar): 0.035      # value 5.8-7.8% vs growth 2.3-4.3%
+  History, Kenneth French large value minus large growth, 1927-2026: 0.0224   # 1990-2026: -0.2%; 2007-2026: -3.2%
 us_small_minus_large:
   J.P. Morgan 2027 LTCMA: 0.002                        # small 7.7% vs large 7.5% (Oct 19, 2026)
   Vanguard (Dec 2025 run, via Morningstar): 0.017      # small 5.1-7.1% vs large 3.4-5.4%
+  History, Kenneth French small minus large, 1927-2026: 0.0100               # 1990-2026: -0.3%; 2007-2026: -1.4%
 view_std_floor: 0.015        # minimum uncertainty for any view
 single_source_std: 0.025     # uncertainty when only one firm publishes the view
 tau: 0.05
 
 # Stock-selection view for the satellite, stated as alpha over its CAPM-implied (equilibrium) return
-# relative to the US large-cap ETFs that fund it. Evidence for a long-only, annually reviewed basket
-# of low-risk, high-momentum/high-Sharpe, quality names: low-risk and quality premia (Frazzini and
-# Pedersen 2014; Asness, Frazzini and Pedersen 2019) and 12-1 momentum (Jegadeesh and Titman 1993)
-# are a few percent a year in long-short form, roughly a third to a half of that long-only, and
-# 26% is lost out of sample and 58% after publication (McLean and Pontiff 2016). The values gates and analyst
-# judgments are given no alpha. Net: +1.0% a year, held with low confidence (single-source std).
+# relative to its style benchmark. Evidence (scripts/factor_evidence.py, Kenneth French data to Aug
+# 2026): long-only CAPM alphas among large stocks, 1963-2026, are +1.4% for high profitability (quality),
+# +2.5% for 12-2 month winners (momentum) and +2.1% for the lowest-variance quintile (low risk); their
+# average, 1.96%, is cut by the 58% decay after publication that McLean and Pontiff (2016) measure.
+# The values gates and analyst judgments are given no alpha. Net: +0.82% a year, low confidence.
 satellite_view:
-  alpha: 0.010
+  alpha: 0.0082
   std: 0.025

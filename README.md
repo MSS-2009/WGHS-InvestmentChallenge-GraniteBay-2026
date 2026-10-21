@@ -29,9 +29,10 @@ Liability-driven investment model for the 2026-27 Laura Gao case: fund ten fixed
 See `docs/MODEL.md` for the design and results.
 
 ## Data (no API keys)
-Treasury par curves (home.treasury.gov), Treasury securities (TreasuryDirect), CPI (FRED CSV),
-prices and FX (Yahoo Finance chart API), ETF holdings (iShares), company financials and analyst
-ratings (Nasdaq). Raw downloads are cached in `data/raw/`. The October 2026 news check on the selected
+Treasury nominal and real par curves (home.treasury.gov), Treasury securities (TreasuryDirect), CPI
+(FRED CSV), the Kim-Wright term structure model and H.10 USD/TWD rates (Federal Reserve Board), factor
+and portfolio returns (Kenneth French Data Library), prices (Yahoo Finance chart API), ETF holdings
+(iShares), company financials and analyst ratings (Nasdaq). Raw downloads are cached in `data/raw/`. The October 2026 news check on the selected
 stocks used Bigdata.com (https://bigdata.com); its effect is recorded in `config/qualitative_judgments.csv`.
 
 ## Quick start
@@ -43,6 +44,9 @@ python scripts/build_core.py
 python scripts/build_satellite.py
 python scripts/validate_model.py    # how good is the model: generator checks, convergence, replay, BL sensitivity
 python scripts/report_numbers.py    # headline numbers for the IPS and Final Report
+python scripts/factor_evidence.py   # long-run evidence for the views (Kenneth French data)
+python scripts/rate_path_study.py   # which expected rate path; Kim-Wright scenario
+python scripts/policy_study.py      # 2031 floor frontier, range calibration, reverse stress test
 ```
 
 See `docs/VALIDATION.md` for the check of the former team's numbers.

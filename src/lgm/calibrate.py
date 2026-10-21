@@ -19,7 +19,7 @@ from sklearn.covariance import LedoitWolf
 
 from . import nelson_siegel as ns
 from .curve import ParCurve, bootstrap
-from .data import fred, treasury, yahoo
+from .data import fed, fred, treasury, yahoo
 
 TAU_FIT = np.array([0.25, 0.5, 1, 2, 3, 5, 7, 10, 15, 20, 25, 30], dtype=float)
 FACTOR_NAMES = ["level", "slope", "curvature"]
@@ -37,10 +37,8 @@ class Calibration:
 
 
 def usd_twd_monthly() -> pd.Series:
-    """Month-end USD/TWD from daily data, dropping bad prints (e.g. 3.67 on one day in Dec 2014)."""
-    fx = yahoo.history("TWD=X", start="2003-01-01", interval="1d")["close"]
-    fx = fx[(fx > 20) & (fx < 45)]
-    return fx.resample("ME").last().ffill()
+    """Month-end USD/TWD from the Federal Reserve's H.10 noon buying rates (official), from 2000."""
+    return fed.usd_twd().resample("ME").last().ffill()
 
 
 def zero_curve_from_row(date, row: pd.Series):
