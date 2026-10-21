@@ -1,20 +1,23 @@
-# WInS / competition investment rules (apply to both contributions, the IPS and the Final Report).
-# Source: official competition reminder email (screenshot supplied by the client, Oct 2026).
-permitted:
-  - any stock available on WInS
-  - any exchange-traded fund (ETF) available on WInS
-  - any government / Treasury bond available on WInS
-not_permitted:
-  - margin trading
-  - short selling
-  - stock-secured debt
-  - crypto
-  - derivatives (options, futures, swaps)
-  - TIPS
-  - STRIPS
-  - anything other than the permitted list
-# Costs and limits below come from the former CS team's Plans v2 (not yet confirmed inside WInS).
-commission_per_etf_or_stock_trade: 25.0
-commission_per_bond_trade: 10.0
+# WInS session rules, read from the simulator's "Session Rules" tab on Oct 21, 2026,
+# plus the competition's permitted-investment reminder (both contributions, IPS and Final Report).
+trading_start: 2026-09-28T09:30
+trading_end: 2026-11-06T16:00
+initial_cash: 300000
 max_trades: 200
-trading_freeze: 2026-11-06
+day_trading_allowed: false
+margin_allowed: false
+short_selling_allowed: false
+interest_on_cash: 0.0          # idle cash earns nothing in WInS
+currency: USD
+equities:
+  types: [stocks, ETFs]
+  exchanges: [US, T, SA, MX, AR, CL, AE, XATH, BT, XBUD, CO, FF, HI, IR, LB, LN, FR, XPRA, ST, SM, VI, SPA,
+              NOR, MOS, HK, KL, NZ, KS, SS, SZ, BO, PK, XIDX, XBKK, AX, TW, XTAE, HSTC, XBOT, XGHA, XNAI, V]
+  fractional_shares: false
+  commission: 25.0
+  minimum_buy_price: 3.0
+bonds:
+  types: [US Treasury bonds]   # the bond screen also lists UK/DE/FR/NL/IT, but session rules allow US only
+  commission: 10.0
+  universe_file: data/wins/treasury_bonds.csv   # 42 T-bonds listed in WInS (no T-notes)
+not_permitted: [margin trading, short selling, stock-secured debt, crypto, derivatives, TIPS, STRIPS]

@@ -63,8 +63,9 @@ def build_matrix(instruments, payments, curve: ZeroCurve, reinvest: float):
 
 
 def solve(instruments, payments, curve: ZeroCurve, reinvest: float = 0.03,
-          fixed: dict[str, float] | None = None) -> LadderResult:
-    """Cheapest cash-flow-matched portfolio. `fixed` pins dollar amounts by label."""
+          fixed: dict[str, float] | None = None, minimum: dict[str, float] | None = None) -> LadderResult:
+    """Cheapest cash-flow-matched portfolio. `fixed` pins dollar amounts by label; `minimum`
+    sets dollar floors (e.g. to force one rung per payment for a simpler ladder)."""
     A, p, labels, _ = build_matrix(instruments, payments, curve, reinvest)
     K, J = A.shape
     L = np.array([a for _, a in payments])
@@ -84,12 +85,16 @@ def solve(instruments, payments, curve: ZeroCurve, reinvest: float = 0.03,
             if lab in fixed:
                 units = fixed[lab] / p[j]
                 bounds[j] = (units, units)
+    if minimum:
+        for j, lab in enumerate(labels):
+            if lab in minimum:
+                bounds[j] = (minimum[lab] / p[j], None)
     res = linprog(c, A_eq=Aeq, b_eq=L, bounds=bounds, method="highs")
     if not res.success:
         return LadderResult(float("nan"), {}, {}, [], res.message)
     x = res.x[:J]
     hold = {lab: float(xj * pj) for lab, xj, pj in zip(labels, x, p) if xj * pj > 0.5}
-    units = {lab: float(xj) for lab, xj in zip(labels, x) if xj > 1e-9}
+    units = {lab: float(xj) for lab, xj in zip(labels, x) if xj > 1e-9}   # bonds: face $; funds: $
     return LadderResult(float(res.fun), hold, units, list(res.x[J:]), "optimal")
 
 

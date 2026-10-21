@@ -5,8 +5,8 @@ Every figure in the two documents the CS team left behind — the model rebuild 
 or reproduced independently with this codebase. Checked Oct 21, 2026.
 
 **Verdict:** the guide's arithmetic is exact, and the team's simulation results reproduce within 0–5%.
-Eight discrepancies were found; none changes a strategy conclusion. A few items can only be confirmed
-inside WInS.
+Eight discrepancies in the documents and three errors about WInS itself were found; none changes a
+strategy conclusion.
 
 ## 1. Primary-source data
 
@@ -68,10 +68,25 @@ Other model claims:
    cost becomes $297,228 (was $297,325); the rate fall that breaches $300,000 is 0.097 pts. Corrected.
 8. **Background check recommends TIPS** for the reserve; TIPS are not permitted. Ignored.
 
-## 5. Not verifiable outside WInS
+## 5. Checked inside WInS (Session Rules tab, quote pages and bond list, Oct 21, 2026)
 
-Commissions ($25 per ETF/stock trade, $10 per bond trade), the 200-trade cap, and whether each chosen
-instrument is listed in WInS. These need a check inside the simulator.
+| Item | Plans v2 | WInS | Result |
+| --- | --- | --- | --- |
+| Starting cash | $300,000 | $300,000 | Confirmed |
+| Trade cap | 200 | 200 | Confirmed |
+| Commissions | $25 per ETF, $10 per bond | $25 per stock/ETF, $10 per bond | Confirmed |
+| Trading window | to Nov 6 | Sep 28 09:30 - Nov 6 16:00 ET | Confirmed |
+| Minimum stock price | $5 | **$3.00** | Wrong in Plans v2 |
+| Government bonds | US, UK, DE, FR, IT, NL | **US Treasury bonds only** (the screen lists other markets, but session rules allow US only) | Wrong in Plans v2 |
+| Bond types | notes and bonds | **42 original-issue T-bonds only** (no T-notes); nothing maturing Mar 2031 - Jan 2036 | New constraint |
+| UST 5.000% May-2037 (912810PU6) | used for the Jan 2038 payment | **Not listed in WInS**; nearest is 4.750% Feb-2037 (912810PT9) | Replace |
+| Other four Plans v2 bonds | used | Listed | Confirmed |
+| ETFs: VTI, VEA, VWO, VGIT, IBTL-IBTR, TLT, TLH, SGOV, VT, ACWI | used | Listed; Oct 20 prices match | Confirmed |
+| Not stated in Plans v2 | — | No fractional shares; no day trading; 0% interest on cash; ~40 exchanges incl. Taiwan (TW) and Hong Kong | New constraints |
+
+The WInS bond list is saved in `data/wins/treasury_bonds.csv` and the ladder optimiser only uses it.
+The cheapest WInS-feasible ladder for a Jan 2027 purchase on the Oct 20 curve costs $299,717
+(`ladder.solve`), identical to the optimum with the unlisted bond, because the optimiser never needed it.
 
 ## Reproduce
 

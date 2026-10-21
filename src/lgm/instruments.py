@@ -92,10 +92,26 @@ def ibonds_fund(ticker: str, expense_ratio: float = 0.0007, ytm: float | None = 
     return TermFund(ticker, dt.date(IBONDS_TREASURY[ticker], 12, 15), expense_ratio, ytm)
 
 
-PLANS_V2_BONDS = [  # verified on TreasuryDirect, Oct 21, 2026
+PLANS_V2_BONDS = [  # verified on TreasuryDirect, Oct 21, 2026. NB: 912810PU6 is NOT listed in WInS.
     TreasuryBond("912810PU6", 0.05000, dt.date(2037, 5, 15), "UST 5.000% May-2037"),
     TreasuryBond("912810PX0", 0.04500, dt.date(2038, 5, 15), "UST 4.500% May-2038"),
     TreasuryBond("912810QD3", 0.04375, dt.date(2039, 11, 15), "UST 4.375% Nov-2039"),
     TreasuryBond("912810QL5", 0.04250, dt.date(2040, 11, 15), "UST 4.250% Nov-2040"),
     TreasuryBond("912810QT8", 0.03125, dt.date(2041, 11, 15), "UST 3.125% Nov-2041"),
 ]
+
+
+def wins_treasury_bonds(min_year: int = 2032, max_year: int = 2042) -> list[TreasuryBond]:
+    """US Treasury bonds listed in WInS (data/wins/treasury_bonds.csv, read Oct 21, 2026)."""
+    import csv
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[2] / "data" / "wins" / "treasury_bonds.csv"
+    out = []
+    with open(path) as f:
+        for r in csv.DictReader(f):
+            mat = dt.date.fromisoformat(r["maturity"])
+            if min_year <= mat.year <= max_year:
+                c = float(r["coupon_pct"])
+                out.append(TreasuryBond(r["wins_symbol"], c / 100, mat, f"T-BOND {c:.3f}% {mat:%b-%Y}"))
+    return out
