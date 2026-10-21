@@ -46,7 +46,8 @@ sleeve are IBTM.
 | EMXC | 8.6% | 7.8% |
 | MCHI | 1.9% | 1.9% |
 
-The core keeps 61% US, 29% developed and 10% emerging stocks. It expects 6.7% a year after fees
+The core holds 61% US, 30% developed and 10% emerging stocks, against the market's 65/24/10: the
+developed-beats-US view moves about 5 points out of the US. It expects 6.7% a year after fees
 (market 6.4%), with 14.9% volatility, a 0.10% average fee and a 1.36% tracking error. Look-through
 tech/communication is 29.5% (market 36.0%); China+Taiwan is 4.9% (market 5.2%).
 
@@ -188,4 +189,6 @@ python scripts/build_core.py           # ETF core: reports/core_bl.csv, core_sco
 python scripts/build_satellite.py      # satellite: reports/satellite_*.csv (add --rescreen to refetch)
 python scripts/validate_model.py       # how good is it: generator checks, convergence, replay, BL sensitivity
 python scripts/report_numbers.py       # headline numbers for the IPS and Final Report
+python scripts/wins_rebalance.py       # orders that bring WInS in line with the IPS
+python scripts/wins_ladder_check.py    # matching test for the ladder held in WInS
 ```

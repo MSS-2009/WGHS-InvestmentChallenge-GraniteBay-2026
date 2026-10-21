@@ -94,7 +94,8 @@ The cheapest WInS-feasible ladder for a Jan 2027 purchase on the Oct 20 curve co
 ## 6. Independent code review (October 21, 2026)
 
 A separate reviewer read the code for correctness and tested each suspicion with scratch scripts.
-Six issues were confirmed and fixed, each with a regression test (`tests/test_review_fixes.py`):
+Six issues were confirmed and fixed. Four of the fixes (views, commissions, VGIT, the 2031 check) have
+regression tests in `tests/test_review_fixes.py`:
 
 | Issue | Effect before the fix | Fix |
 | --- | --- | --- |
@@ -117,8 +118,8 @@ volatility), deterministic engine growth, generator moments, curve bootstrapping
 Run `python scripts/validate_model.py` (reports `validation_esg.csv`, `validation_convergence.csv`,
 `backtest.csv`, `bl_sensitivity.csv`).
 
-- **Generator reproduces its inputs:** each fund's volatility and median return to three decimals,
-  and the VTV-VGK correlation exactly (0.792).
+- **Generator reproduces its inputs:** each fund's median return exactly, its volatility within 0.05
+  points, and the one correlation checked (VTV-VGK, 0.792).
 - **Tails are fatter than history:** monthly excess kurtosis 3.9-6.0 against 0.1-3.4 in 2005-2026,
   so crash risk is, if anything, overstated.
 - **Rates:** the 10-year yield's change to January 2033 spans -2.1 to +2.2 points (5th-95th
@@ -136,7 +137,7 @@ Run `python scripts/validate_model.py` (reports `validation_esg.csv`, `validatio
 ## 8. Reproduce
 
 ```
-python -m pytest                      # 46 tests, includes every guide figure
+python -m pytest                      # 47 tests, includes every guide figure
 python scripts/validate_plans_v2.py   # section 3 table -> reports/plans_v2_validation.csv
 python scripts/validate_model.py      # section 7 -> reports/validation_*.csv, backtest.csv, bl_sensitivity.csv
 ```

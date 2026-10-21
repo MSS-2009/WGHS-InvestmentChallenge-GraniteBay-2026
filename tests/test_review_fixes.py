@@ -53,3 +53,13 @@ def test_view_conversion_uses_basket_variances():
     basket = np.array([0.5, 0.5, 0.0])
     assert np.isclose(q[0], 0.5 * (basket @ cov @ basket - 0.0225))
     assert np.isclose(q[1], 0.5 * (0.04 - 0.0225))
+
+
+def test_plans_without_a_floor_rebalance_in_january_2031():
+    sc = _flat(0.05)
+    sc.eq_log[:] = 0.03                      # stocks rise 3% a month, so the mix drifts out of its band
+    st = dc.replace(S2, region_weights=(0.6, 0.3, 0.1))
+    r = engine.run(st, sc, engine.EngineConfig(commissions=False), snapshot_2031=True)
+    s = r["state_2031"]
+    share = s.eq.sum(1) / (s.eq.sum(1) + s.vgit + s.cash)
+    assert np.allclose(share, 0.6)
