@@ -200,8 +200,8 @@ names get zero shares. Hence the IPS keeps the satellite out of WInS.
 | 80% | $196.7k | $148.1k | $265.6k | $134.3k | $162.5k-$174.0k |
 | 100% | $195.5k | $147.5k | $262.8k | $167.9k | $167.1k |
 
-Certainty equivalents (CRRA) favour 0%, 40% and 80% for risk aversion 2, 4 and 8, but differ by under
-$1.1k; wealth alone does not settle it. What changes sharply is what Laura can promise: for $1.2k of
+Certainty equivalents (CRRA) favour 0%, 40% and 80% for risk aversion 2, 4 and 8. The IPS's 60% is
+within $1.9k of the best for each, and 60% and 80% differ by under $1.1k; wealth alone does not settle it. What changes sharply is what Laura can promise: for $1.2k of
 median, an 80% floor secures $34k more and halves the range.
 
 **Contribution share.** 75%, 85% and 95% give typical contributions of $148k, $168k and $188k and leave
