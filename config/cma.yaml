@@ -30,3 +30,14 @@ us_small_minus_large:
 view_std_floor: 0.015        # minimum uncertainty for any view
 single_source_std: 0.025     # uncertainty when only one firm publishes the view
 tau: 0.05
+
+# Stock-selection view for the satellite, stated as alpha over its CAPM-implied (equilibrium) return
+# relative to the US large-cap ETFs that fund it. Evidence for a long-only, annually reviewed basket
+# of low-risk, high-momentum/high-Sharpe, quality names: low-risk and quality premia (Frazzini and
+# Pedersen 2014; Asness, Frazzini and Pedersen 2019) and 12-1 momentum (Jegadeesh and Titman 1993)
+# are a few percent a year in long-short form, roughly a third to a half of that long-only, and
+# 26% is lost out of sample and 58% after publication (McLean and Pontiff 2016). The values gates and analyst
+# judgments are given no alpha. Net: +1.0% a year, held with low confidence (single-source std).
+satellite_view:
+  alpha: 0.010
+  std: 0.025

@@ -1,0 +1,57 @@
+ticker,innovation_creativity,societal_utility,people_inclusion,trust_integrity,access_education_creators,management_capital_allocation,moat_position,risk_flags,excluded_activity,rationale
+GOOGL,5,4,3,2,5,4,5,2,,AI/Waymo research leader; free tools and YouTube support creators and education; privacy fines and US antitrust remedies weigh on trust and risk; Oct 2026 news check: EUR 890M EU DMA fine and a Gemini disclosure class action; kept at 2 because the score already reflects regulatory and antitrust risk
+VZ,2,4,3,3,3,3,4,3,,Essential connectivity; low innovation; high leverage
+ROST,2,3,3,4,4,4,3,4,,Affordable apparel for lower-income households; disciplined operator
+HLT,3,3,4,4,3,4,4,4,,Repeated top Great Place to Work rankings; global cross-cultural hospitality; asset-light model
+GM,4,3,3,2,3,3,2,2,,EV and software investment; FTC 2025 order over selling driver data hurts trust; tariff and cycle risk
+EBAY,3,4,3,3,5,3,3,3,,Marketplace for small sellers and circular commerce; 2019 cyberstalking case settled with DOJ in 2024
+PM,2,1,3,2,2,4,5,3,tobacco,Core business is tobacco: rejected by the values gate despite smoke-free transition
+KO,2,2,3,3,3,4,5,4,,Iconic brand and pricing power; sugary drinks score low on societal utility
+CASY,2,3,3,3,3,4,3,4,,Serves rural communities; steady operator
+MO,1,1,3,2,1,3,4,3,tobacco,Core business is tobacco: rejected by the values gate
+VLO,2,3,3,3,2,4,3,3,,Refiner with renewable diesel joint venture; environmental impact is material
+TRGP,2,3,3,3,2,3,4,3,,Midstream gas; high leverage
+MPC,2,3,3,3,2,4,3,3,,Refiner; strong capital returns; environmental impact is material
+PSX,2,3,3,3,2,3,3,3,,Refiner/midstream; activist pressure on strategy
+BNY,3,4,4,4,3,5,4,4,,Core financial plumbing; platform and AI modernisation under current CEO
+STT,3,4,3,3,3,3,4,4,,Custody infrastructure; past overcharging settlements; Oct 2026 news check: DOJ reported to be weighing joining the Texas ESG antitrust suit; watch
+C,3,4,3,2,4,3,3,2,,Global reach; repeated regulatory consent orders and 2024 fines for risk-control failures
+GS,3,3,3,3,2,4,4,3,,Strong franchise; legacy 1MDB and 2024 Apple Card CFPB penalty
+TRV,3,4,4,4,3,4,4,4,,Insurance protection; disciplined underwriting; catastrophe exposure
+JPM,4,4,4,3,4,5,5,4,,Best-in-class management and technology spend; community and small-business lending; Oct 2026 news check: SEBI probe of an offshore unit still open; watch
+CFG,2,4,3,3,3,3,2,3,,Regional bank; 2022 CFPB penalty; higher beta
+BAC,4,4,4,2,4,4,4,2,,Digital banking leadership; small-business lending; CFPB penalties in 2023; Oct 2026 news check: $1.21B FinCEN/OCC/OFAC AML and sanctions penalties (record OCC fine; deficiencies persisted after a 2024 cease-and-desist order)
+AIZ,3,3,3,3,3,4,3,4,,Specialty insurance; past force-placed insurance controversies
+CAH,2,4,3,2,3,3,4,3,,Drug distribution; large opioid settlements weigh on trust
+VTRS,2,4,3,3,4,2,2,2,,Affordable generics; impairments and FDA warning letter on a key plant
+GILD,5,5,4,3,4,4,4,3,,HIV prevention breakthrough with access pricing in low-income countries; drug-pricing criticism
+JNJ,4,5,4,2,4,4,5,3,,Broad healthcare innovation; talc and opioid litigation weigh on trust
+INCY,5,4,4,4,3,3,3,3,,R&D-heavy biotech; Jakafi patent cliff ahead
+MRK,5,5,4,4,4,4,4,2,,Oncology and vaccines; long-running access programmes; Keytruda patent cliff from 2028; Oct 2026 news check: Dutch court blocked Keytruda SC in 8 European countries and a German injunction followed; the SC version is central to the patent-cliff plan
+DGX,3,5,3,3,4,4,4,4,,Diagnostics access at scale; 2019 data breach
+WAB,4,4,3,4,3,4,4,4,,Rail efficiency and battery locomotives
+HWM,4,3,3,4,2,5,4,4,,Aerospace engine components; excellent execution
+RTX,4,2,3,2,2,4,4,3,,Defense and aerospace; 2024 settlements (~$950m) for bribery and export-control violations
+JCI,4,4,3,3,3,4,3,4,,Building efficiency and decarbonisation; 2023 cyberattack
+GE,5,4,3,4,3,5,5,4,,Jet engine technology leader; strong execution since the spin-offs
+PH,4,4,4,4,2,5,4,4,,Motion-control engineering; strong capital allocation; Oct 2026 news check: unconfirmed ransomware claim; watch
+EME,3,4,4,4,3,4,3,4,,Skilled-trades employer building critical infrastructure
+CMI,4,4,4,2,3,4,4,3,,Engines and Accelera clean-power unit; record 2024 Clean Air Act penalty (defeat devices)
+GWW,3,4,4,4,4,4,4,4,,Supplies for small and mid-sized businesses; strong culture
+APH,4,3,3,4,2,5,4,4,,Connectors for AI data centres and electrification; disciplined acquirer
+KEYS,5,4,4,4,3,4,4,4,,Test and measurement innovator
+CSCO,4,4,5,4,5,4,4,4,,Networking Academy has trained millions of students worldwide; top workplace rankings
+FFIV,4,3,4,3,2,4,3,3,,App security; disclosed nation-state breach of its systems in Oct 2025
+FCX,2,4,3,3,2,3,4,2,,Copper for electrification; fatal Grasberg mud rush in Sept 2025 and Indonesia concentration
+CF,3,4,3,3,3,4,4,3,,Fertiliser underpins food supply; low-carbon ammonia projects
+ECL,4,5,4,4,3,4,5,4,,"Water, hygiene and food-safety solutions"
+WELL,3,4,3,4,3,5,3,4,,Senior housing and care
+VTR,3,4,3,4,3,4,3,4,,Senior housing and life-science property
+SPG,2,3,3,4,3,4,4,3,,Premier malls; high leverage
+HST,2,3,3,4,3,4,3,3,,Hotel owner; cyclical
+ETR,3,5,3,3,4,4,4,3,,Essential power in a lower-income region; hurricane exposure
+EVRG,2,5,3,4,3,3,4,4,,Regulated utility
+AEP,3,5,3,3,3,4,4,3,,Largest US transmission network; heavy capex
+NI,2,5,3,3,3,4,4,3,,Gas utility; 2018 Merrimack Valley explosions and guilty plea now remediated; Oct 2026 news check: Indiana governor sought an investigation of NIPSCO's Aug 2026 storm response; outage class action; spring 2026 union lockout
+D,3,5,3,3,3,3,4,3,,Offshore wind build-out with cost and permitting risk
+ATO,2,5,4,3,3,4,4,4,,Gas distribution; 2018 Dallas explosion fines

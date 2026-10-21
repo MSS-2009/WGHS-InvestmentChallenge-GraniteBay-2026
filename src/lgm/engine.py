@@ -32,6 +32,9 @@ class EngineConfig:
     deposits: tuple = ((M_2027, 300_000.0), (M_2028, 150_000.0))
     commissions: bool = True
     eq_er: tuple = (0.0003, 0.0003, 0.0006)   # expense ratio per equity asset, same order as the ESG
+    extra_tickets: int = 0        # more trades per invest event, e.g. 34 when a 35-stock basket is one asset
+    extra_ticket_min: float = 10_000.0   # below this, a small top-up stays in the ETFs (no basket trades)
+    annual_cost: float = 0.0      # recurring commissions per year (e.g. basket reconstitution)
 
 
 def pay_tau(m: float) -> np.ndarray:
@@ -75,6 +78,7 @@ def _invest(s: State, sc: Scenarios, m: int, st: Strategy, amount: np.ndarray, c
         s.ibtm_face += bonds / _ibtm_df(sc, m)
     if cfg.commissions:
         s.costs += np.where(amount > 0, COMMISSION_ETF * (len(w) + (st.equity_share < 1)), 0.0)
+        s.costs += np.where(amount >= cfg.extra_ticket_min, COMMISSION_ETF * cfg.extra_tickets, 0.0)
 
 
 def _rebalance(s: State, sc: Scenarios, m: int, st: Strategy, cfg: EngineConfig, force: bool = False):
@@ -131,6 +135,8 @@ def _liquidate(s: State, sc: Scenarios, m: int, amount: np.ndarray):
 def _step(s: State, sc: Scenarios, m: int, cfg: "EngineConfig"):
     """Advance one month: markets move, fees accrue."""
     s.eq *= np.exp(sc.eq_log[:, m - sc.m0, :]) * (1 - np.asarray(cfg.eq_er) / 12)
+    if cfg.commissions and cfg.annual_cost and m >= M_2027:
+        s.costs += cfg.annual_cost / 12
     y0 = np.expm1(sc.zero_cc(m, [VGIT_TAU])[:, 0])
     y1 = np.expm1(sc.zero_cc(m + 1, [VGIT_TAU])[:, 0])
     dy = y1 - y0

@@ -1,0 +1,71 @@
+budget,ticker,sector,price,target_weight,shares,dollars,weight
+WInS mirror (20% of $36k equity),BNY,Financials,144.25,0.0208,1,144.25,0.0216
+WInS mirror (20% of $36k equity),APH,Information Technology,79.32,0.0229,2,158.64,0.0238
+WInS mirror (20% of $36k equity),WAB,Industrials,283.43,0.0147,0,0.0,0.0
+WInS mirror (20% of $36k equity),HWM,Industrials,211.63,0.0139,0,0.0,0.0
+WInS mirror (20% of $36k equity),GE,Industrials,299.87,0.0133,0,0.0,0.0
+WInS mirror (20% of $36k equity),WELL,Real Estate,238.08,0.03,1,238.08,0.0357
+WInS mirror (20% of $36k equity),JPM,Financials,335.26,0.0177,0,0.0,0.0
+WInS mirror (20% of $36k equity),CSCO,Information Technology,106.71,0.0422,3,320.13,0.048
+WInS mirror (20% of $36k equity),STT,Financials,166.58,0.0136,1,166.58,0.025
+WInS mirror (20% of $36k equity),KEYS,Information Technology,334.16,0.0136,0,0.0,0.0
+WInS mirror (20% of $36k equity),JNJ,Health Care,259.36,0.0819,2,518.72,0.0778
+WInS mirror (20% of $36k equity),GOOGL,Communication,340.28,0.0301,1,340.28,0.0511
+WInS mirror (20% of $36k equity),TRV,Financials,395.73,0.0283,1,395.73,0.0594
+WInS mirror (20% of $36k equity),PH,Industrials,944.61,0.0104,0,0.0,0.0
+WInS mirror (20% of $36k equity),GILD,Health Care,156.51,0.0656,3,469.53,0.0705
+WInS mirror (20% of $36k equity),HLT,Consumer Discretionary,359.29,0.0213,0,0.0,0.0
+WInS mirror (20% of $36k equity),EME,Industrials,702.48,0.0232,0,0.0,0.0
+WInS mirror (20% of $36k equity),MRK,Health Care,148.3,0.0465,2,296.6,0.0445
+WInS mirror (20% of $36k equity),INCY,Health Care,116.62,0.0369,2,233.24,0.035
+WInS mirror (20% of $36k equity),ROST,Consumer Discretionary,237.24,0.0309,1,237.24,0.0356
+WInS mirror (20% of $36k equity),GWW,Industrials,1335.96,0.0226,0,0.0,0.0
+WInS mirror (20% of $36k equity),VTR,Real Estate,86.49,0.0234,2,172.98,0.026
+WInS mirror (20% of $36k equity),JCI,Industrials,147.94,0.0088,0,0.0,0.0
+WInS mirror (20% of $36k equity),DGX,Health Care,237.12,0.0298,1,237.12,0.0356
+WInS mirror (20% of $36k equity),FFIV,Information Technology,456.71,0.0363,1,456.71,0.0685
+WInS mirror (20% of $36k equity),BAC,Financials,50.64,0.0137,2,101.28,0.0152
+WInS mirror (20% of $36k equity),ECL,Materials,288.16,0.0269,1,288.16,0.0432
+WInS mirror (20% of $36k equity),C,Financials,122.51,0.0151,1,122.51,0.0184
+WInS mirror (20% of $36k equity),ETR,Utilities,105.16,0.0346,2,210.32,0.0316
+WInS mirror (20% of $36k equity),EBAY,Consumer Discretionary,121.19,0.0137,1,121.19,0.0182
+WInS mirror (20% of $36k equity),AIZ,Financials,283.61,0.083,2,567.22,0.0851
+WInS mirror (20% of $36k equity),EVRG,Utilities,82.86,0.047,4,331.44,0.0497
+WInS mirror (20% of $36k equity),SPG,Real Estate,206.99,0.0163,1,206.99,0.0311
+WInS mirror (20% of $36k equity),HST,Real Estate,24.8,0.0105,3,74.4,0.0112
+WInS mirror (20% of $36k equity),AEP,Utilities,127.22,0.0404,2,254.44,0.0382
+"Plan, Jan 2028 (20% of ~$90k equity)",BNY,Financials,144.25,0.0208,3,432.75,0.0246
+"Plan, Jan 2028 (20% of ~$90k equity)",APH,Information Technology,79.32,0.0229,5,396.6,0.0226
+"Plan, Jan 2028 (20% of ~$90k equity)",WAB,Industrials,283.43,0.0147,1,283.43,0.0161
+"Plan, Jan 2028 (20% of ~$90k equity)",HWM,Industrials,211.63,0.0139,1,211.63,0.012
+"Plan, Jan 2028 (20% of ~$90k equity)",GE,Industrials,299.87,0.0133,1,299.87,0.0171
+"Plan, Jan 2028 (20% of ~$90k equity)",WELL,Real Estate,238.08,0.03,2,476.16,0.0271
+"Plan, Jan 2028 (20% of ~$90k equity)",JPM,Financials,335.26,0.0177,1,335.26,0.0191
+"Plan, Jan 2028 (20% of ~$90k equity)",CSCO,Information Technology,106.71,0.0422,7,746.97,0.0425
+"Plan, Jan 2028 (20% of ~$90k equity)",STT,Financials,166.58,0.0136,1,166.58,0.0095
+"Plan, Jan 2028 (20% of ~$90k equity)",KEYS,Information Technology,334.16,0.0136,1,334.16,0.019
+"Plan, Jan 2028 (20% of ~$90k equity)",JNJ,Health Care,259.36,0.0819,6,1556.16,0.0886
+"Plan, Jan 2028 (20% of ~$90k equity)",GOOGL,Communication,340.28,0.0301,2,680.56,0.0387
+"Plan, Jan 2028 (20% of ~$90k equity)",TRV,Financials,395.73,0.0283,1,395.73,0.0225
+"Plan, Jan 2028 (20% of ~$90k equity)",PH,Industrials,944.61,0.0104,0,0.0,0.0
+"Plan, Jan 2028 (20% of ~$90k equity)",GILD,Health Care,156.51,0.0656,8,1252.08,0.0713
+"Plan, Jan 2028 (20% of ~$90k equity)",HLT,Consumer Discretionary,359.29,0.0213,1,359.29,0.0205
+"Plan, Jan 2028 (20% of ~$90k equity)",EME,Industrials,702.48,0.0232,1,702.48,0.04
+"Plan, Jan 2028 (20% of ~$90k equity)",MRK,Health Care,148.3,0.0465,6,889.8,0.0506
+"Plan, Jan 2028 (20% of ~$90k equity)",INCY,Health Care,116.62,0.0369,6,699.72,0.0398
+"Plan, Jan 2028 (20% of ~$90k equity)",ROST,Consumer Discretionary,237.24,0.0309,2,474.48,0.027
+"Plan, Jan 2028 (20% of ~$90k equity)",GWW,Industrials,1335.96,0.0226,0,0.0,0.0
+"Plan, Jan 2028 (20% of ~$90k equity)",VTR,Real Estate,86.49,0.0234,5,432.45,0.0246
+"Plan, Jan 2028 (20% of ~$90k equity)",JCI,Industrials,147.94,0.0088,1,147.94,0.0084
+"Plan, Jan 2028 (20% of ~$90k equity)",DGX,Health Care,237.12,0.0298,2,474.24,0.027
+"Plan, Jan 2028 (20% of ~$90k equity)",FFIV,Information Technology,456.71,0.0363,1,456.71,0.026
+"Plan, Jan 2028 (20% of ~$90k equity)",BAC,Financials,50.64,0.0137,5,253.2,0.0144
+"Plan, Jan 2028 (20% of ~$90k equity)",ECL,Materials,288.16,0.0269,2,576.32,0.0328
+"Plan, Jan 2028 (20% of ~$90k equity)",C,Financials,122.51,0.0151,2,245.02,0.0139
+"Plan, Jan 2028 (20% of ~$90k equity)",ETR,Utilities,105.16,0.0346,6,630.96,0.0359
+"Plan, Jan 2028 (20% of ~$90k equity)",EBAY,Consumer Discretionary,121.19,0.0137,2,242.38,0.0138
+"Plan, Jan 2028 (20% of ~$90k equity)",AIZ,Financials,283.61,0.083,5,1418.05,0.0807
+"Plan, Jan 2028 (20% of ~$90k equity)",EVRG,Utilities,82.86,0.047,10,828.6,0.0472
+"Plan, Jan 2028 (20% of ~$90k equity)",SPG,Real Estate,206.99,0.0163,1,206.99,0.0118
+"Plan, Jan 2028 (20% of ~$90k equity)",HST,Real Estate,24.8,0.0105,8,198.4,0.0113
+"Plan, Jan 2028 (20% of ~$90k equity)",AEP,Utilities,127.22,0.0404,6,763.32,0.0434

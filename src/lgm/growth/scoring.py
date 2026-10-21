@@ -31,12 +31,14 @@ def esg_params(cal: dict, eq_geo: np.ndarray, curve_date: str = "2026-10-20", in
 
 
 def score(weights: dict[str, np.ndarray], ers: dict[str, np.ndarray], params: ESGParams, n: int = 20_000,
-          seed: int = 11, strategy=IPS, with_2031: bool = True) -> dict[str, dict]:
+          seed: int = 11, strategy=IPS, with_2031: bool = True,
+          engine_kw: dict[str, dict] | None = None) -> dict[str, dict]:
+    """`engine_kw` sets per-candidate EngineConfig fields (e.g. the satellite's extra trades)."""
     sc = simulate(params, n=n, seed=seed)
     out = {}
     for name, w in weights.items():
         st = dc.replace(strategy, region_weights=tuple(np.asarray(w) / np.sum(w)))
-        cfg = engine.EngineConfig(eq_er=tuple(ers[name]))
+        cfg = engine.EngineConfig(eq_er=tuple(ers[name]), **(engine_kw or {}).get(name, {}))
         r = engine.run(st, sc, cfg, snapshot_2031=with_2031)
         s = engine.summarize(r)
         if with_2031:
