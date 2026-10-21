@@ -13,12 +13,13 @@ Liability-driven investment model for the 2026-27 Laura Gao case: fund ten fixed
 - `strategies.py`, `engine.py` — strategy rules (lock schedule, mix, rebalancing band, 2031 floor,
   contribution rule) simulated month by month; Monte Carlo scoring against Laura's goals; nested
   2031 simulation for the co-sponsor range.
+- `backtest.py` — historical replay: 184 real six-year paths (2005-2026) applied to today's curve.
 - `simple.py` — exact re-implementation of the former team's guide (Steps 1-7).
 
 **Part 2 — growth sleeve (built)**
 - `growth/core.py`, `black_litterman.py`, `lookthrough.py` — nine-ETF core: market-cap prior, views from
   13 firms' published capital-market assumptions, constrained optimiser (no tech/communication or
-  China+Taiwan overweight).
+  China+Taiwan overweight), resampled over 500 posterior draws for stable weights.
 - `growth/satellite.py`, `qualitative.py` — 35-stock satellite: S&P 500 risk and return-quality screens,
   then the values (Laura fit) and company-strength model with yes/no gates; HRP weights.
 - `growth/portfolio.py`, `scoring.py` — the satellite as one more Black-Litterman asset (alpha view over
@@ -40,6 +41,8 @@ python -m pytest
 python scripts/validate_plans_v2.py
 python scripts/build_core.py
 python scripts/build_satellite.py
+python scripts/validate_model.py    # how good is the model: generator checks, convergence, replay, BL sensitivity
+python scripts/report_numbers.py    # headline numbers for the IPS and Final Report
 ```
 
 See `docs/VALIDATION.md` for the check of the former team's numbers.
