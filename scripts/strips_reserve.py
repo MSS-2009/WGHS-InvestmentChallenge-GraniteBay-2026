@@ -57,8 +57,10 @@ def main(n: int = 20_000):
 
     universes = [
         ("STRIPS (market quotes)", strips_universe(use_market_quotes=True)),
+        ("STRIPS (ask quotes)", strips_universe(use_market_quotes=True, side="ask")),
         ("STRIPS (curve implied)", strips_universe(use_market_quotes=False)),
         ("STRIPS + Dec Note (market quotes)", strips_plus_december_universe(use_market_quotes=True)),
+        ("STRIPS + Dec Note (ask quotes)", strips_plus_december_universe(use_market_quotes=True, side="ask")),
         ("STRIPS + Dec Note (curve implied)", strips_plus_december_universe(use_market_quotes=False)),
         ("WInS universe", ladder.wins_reserve_universe()),
     ]

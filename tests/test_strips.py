@@ -112,3 +112,11 @@ def test_december_note_loader():
     assert n.maturity == dt.date(2032, 12, 31)
     assert n.coupon == pytest.approx(0.03875, abs=1e-5)
     assert n.clean_quote == pytest.approx(93.980, abs=1e-3)
+
+
+def test_ask_quotes_are_what_a_buyer_pays():
+    mid = {s.cusip: s.price for s in strips_universe(use_market_quotes=True)}
+    ask = {s.cusip: s.price for s in strips_universe(use_market_quotes=True, side="ask")}
+    assert mid.keys() == ask.keys() and all(ask[c] > mid[c] for c in mid)
+    # Public.com's retail half-spread on these STRIPS is about 1.5% of price
+    assert all(0.005 < ask[c] / mid[c] - 1 < 0.03 for c in mid)

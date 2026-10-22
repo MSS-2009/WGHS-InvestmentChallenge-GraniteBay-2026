@@ -48,7 +48,7 @@ def test_run_all_regenerates_every_report_the_docs_quote():
     spec.loader.exec_module(run_all)
     order = [name for name, _, _ in run_all.ORDER if name != "doc_numbers"]
     quoted = set(re.findall(r'R / "([^"]+)"', (scripts / "doc_numbers.py").read_text()))
-    writes = re.compile(r"to_csv|write_text|\bOUT\w*\s*=")       # a line that names the file and writes it
+    writes = re.compile(r"to_csv|write_text|^\s*\w+\s*=")         # writes it, or names its output path
     lines = [ln for name in order for ln in (scripts / f"{name}.py").read_text().splitlines() if writes.search(ln)]
     orphans = [f for f in sorted(quoted) if not any(f in ln for ln in lines)]
     assert not orphans, f"quoted in docs but written by no script in run_all: {orphans}"

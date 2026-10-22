@@ -41,7 +41,7 @@ The model leaves these open. Each row gives what the evidence says and where it 
 | Hedge USD/TWD | On the random walk every hedge lowers the real 5th percentile and median; if the forward were unbiased, at most +$4.2k on the 5th percentile | Evidence says do not hedge | USD/TWD |
 | Taiwan building-cost drift | The long-run average forecast six-year cost growth better in real time (RMSE 0.167 vs 0.222); the ten-year drift would mean -$8.7k of real median | Evidence supports the long-run average | Taiwan building costs |
 | Stock satellite | -$4.3k median at 20% with WInS commissions, +$0.4k without | A values choice, not a return one | Part 2b |
-| Reserve outside WInS | STRIPS need no reinvestment assumption and, at the retail ask, cost about what the WInS ladder costs assuming 3% (+1.54% vs +1.82% over zero-coupon value): about $6k cheaper than making the WInS ladder certain | Only if WInS rules do not bind | `docs/loop/r3_strips_findings.md` (as corrected in the log) |
+| Reserve outside WInS | STRIPS need no reinvestment assumption and, at the retail ask, cost about what the WInS ladder costs assuming 3% (+1.54% vs +1.82% over zero-coupon value): $6.3k cheaper than making the WInS ladder certain, +$8.9k of median | Only if WInS rules do not bind | `scripts/strips_reserve.py` |
 
 ## Part 1 — funding model
 Treasury par curve → zero curve → cheapest WInS-permitted cash-flow-matched ladder (linear program),

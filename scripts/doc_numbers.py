@@ -59,13 +59,15 @@ def decision_rows() -> list[str]:
     sat = pd.read_csv(R / "satellite_scoring.csv").set_index(["beliefs", "commissions", "candidate"])
     s20 = sat.loc[("Black-Litterman posterior", "$25 (WInS)", "Core + 20% satellite"), "median_vs_core"]
     s20f = sat.loc[("Black-Litterman posterior", "none", "Core + 20% satellite"), "median_vs_core"]
+    sr = pd.read_csv(R / "strips_reserve.csv").set_index(["universe", "reinvestment_rate"])
+    sx, w3, w0 = sr.loc[("STRIPS (ask quotes)", 0.0)], sr.loc[("WInS universe", 0.03)], sr.loc[("WInS universe", 0.0)]
     return [
         f"| Growth mix and 2031 floor | {alt.equity_share:.0%} equity with a {alt.floor_share:.0%} floor instead of the IPS's "
         f"{ips.equity_share:.0%} and {ips.floor_share:.0%}: median {d(alt['median'] - ips['median'])}, 5th percentile "
         f"{d(alt.p5 - ips.p5)}, a 2031 floor worth {k(alt.secured_2031_median - ips.secured_2031_median)} more at maturity; certainty "
         f"equivalents within {k(abs(alt.ce_gamma4 - ips.ce_gamma4))} at risk aversion 4 | How much the co-sponsors need "
         f"promised in 2031 | Policy study |",
-        f"| Contribution share | 75%, 85% and 95% give typical contributions of "
+        "| Contribution share | 75%, 85% and 95% give typical contributions of "
         + ", ".join(f"${c['contribution_median'] / 1000:.0f}k" for c in cs) + "; Laura keeps "
         + ", ".join(f"${c['kept_median'] / 1000:.0f}k" for c in cs) + " | Preference | Policy study |",
         f"| Hedge USD/TWD | On the random walk every hedge lowers the real 5th percentile and median; if the forward "
@@ -77,9 +79,11 @@ def decision_rows() -> list[str]:
         f"Evidence supports the long-run average | Taiwan building costs |",
         f"| Stock satellite | {d(s20)} median at 20% with WInS commissions, {d(s20f)} without | A values choice, "
         f"not a return one | Part 2b |",
-        "| Reserve outside WInS | STRIPS need no reinvestment assumption and, at the retail ask, cost about what the "
-        "WInS ladder costs assuming 3% (+1.54% vs +1.82% over zero-coupon value): about $6k cheaper than making the WInS "
-        "ladder certain | Only if WInS rules do not bind | `docs/loop/r3_strips_findings.md` (as corrected in the log) |",
+        f"| Reserve outside WInS | STRIPS need no reinvestment assumption and, at the retail ask, cost about what the "
+        f"WInS ladder costs assuming 3% ({sx.cost_over_zero / sx.zero_coupon_value:+.2%} vs "
+        f"{w3.cost_over_zero / w3.zero_coupon_value:+.2%} over zero-coupon value): {k(w0.cost - sx.cost)} cheaper than "
+        f"making the WInS ladder certain, {d(sx.median_facility - w0.median_facility)} of median | Only if WInS rules do "
+        f"not bind | `scripts/strips_reserve.py` |",
     ]
 
 
