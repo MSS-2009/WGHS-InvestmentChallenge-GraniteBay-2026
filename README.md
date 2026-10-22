@@ -69,6 +69,7 @@ python scripts/validate_model.py    # how good is the model: generator checks, c
 python scripts/report_numbers.py    # headline numbers for the IPS and Final Report
 python scripts/factor_evidence.py   # long-run evidence for the views (Kenneth French data)
 python scripts/rate_path_study.py   # which expected rate path; Kim-Wright scenario
+python scripts/doc_numbers.py       # do the figures in docs/ match the reports? (also a test)
 python scripts/policy_study.py      # 2031 floor frontier, range calibration, reverse stress test
 python scripts/wins_rebalance.py    # orders that bring WInS in line with the IPS
 python scripts/wins_ladder_check.py # does the WInS ladder meet every payment at 0% interest on cash?

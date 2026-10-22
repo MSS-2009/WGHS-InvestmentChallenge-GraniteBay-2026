@@ -27,7 +27,7 @@ Market inputs (all keyless):
   needed bad prints filtered out). No drift: on TWD's own history the random walk forecasts better
   than the forward at 12, 36 and 72 months, and the actual central-bank forward is biased (Fama slope
   -0.09; `docs/loop/r4_fx_findings.md`). Hedging at today's forward (-2.28% a year) would fix the
-  Taiwan-dollar value at a real median of $145.9k instead of $167.4k.
+  Taiwan-dollar value at a real median of $145.7k instead of $167.1k.
 - **Taiwan building costs:** the official DGBAS construction cost index, 1991-2026
   (`data/raw/taiwan/`). Monthly log changes follow a fitted AR(2) (0.655, -0.094) that reproduces the
   index's autocorrelation and the spread of its 1- to 72-month changes, started from the Aug and Sep
@@ -47,7 +47,7 @@ ladder as held is $189 short for the 2034 payment, fixed by 6 more IBTO shares
 
 **Rate stress.** Rates 0.75 points lower before the January 2027 lock, and expected to stay there (the
 long-run level moves with today's, matching the "unchanged" expectation): the IPS median falls from
-$197.8k to $161.9k, and still funds every payment. 0.75 points higher: $233.4k.
+$197.6k to $161.6k, and still funds every payment. 0.75 points higher: $233.0k.
 
 ## Part 2a — ETF core (Black-Litterman)
 Nine equity groups, one ETF each (VUG, VTV, VB, VGK, BBJP, EPP, BBCA, EMXC, MCHI). Bonds in the growth
@@ -94,8 +94,8 @@ Monte Carlo, median facility (IPS rules, 20,000 scenarios, `reports/report_numbe
 
 | Sleeve | Views right, $25 trades | Views right, no commissions | Views wrong (equilibrium), $25 trades |
 |---|---:|---:|---:|
-| VTI/VEA/VWO 60/30/10 (3 funds) | $197.9k | $198.6k | $197.4k |
-| Black-Litterman core (9 funds) | $197.8k | $199.0k | $196.6k |
+| VTI/VEA/VWO 60/30/10 (3 funds) | $197.8k | $198.6k | $197.2k |
+| Black-Litterman core (9 funds) | $197.6k | $199.0k | $196.3k |
 
 The core's views are worth about $0.4k before commissions. Its six extra funds cost the same in
 WInS commissions. So the core is a risk-control choice, not a return engine: it holds technology and
@@ -188,16 +188,20 @@ funded from VUG/VTV pro rata, so the core's region and style decisions stand.
 ### Monte Carlo verdict (median facility vs the BL core alone, IPS rules)
 | Beliefs | Commissions | +10% | +20% | +30% |
 |---|---|---:|---:|---:|
-| Equilibrium (no alpha) | $25 per trade (WInS) | −$3.2k | −$3.3k | −$3.3k |
-| BL posterior (+0.22%) | $25 per trade (WInS) | −$2.9k | −$2.8k | −$2.5k |
-| BL posterior (+0.22%) | none | +$0.1k | +$0.4k | +$0.7k |
-| Alpha as hoped (+0.82%) | $25 per trade (WInS) | −$2.7k | −$2.3k | −$1.7k |
+| Equilibrium (no alpha) | $25 per trade (WInS) | −$3.7k | −$3.8k | −$4.0k |
+| BL posterior (+0.22%) | $25 per trade (WInS) | −$3.5k | −$3.4k | −$3.2k |
+| BL posterior (+0.22%) | none | +$0.2k | +$0.5k | +$0.6k |
+| Alpha as hoped (+0.82%) | $25 per trade (WInS) | −$3.3k | −$2.9k | −$2.5k |
 
-The base BL core median in this run is $197.6k. It is $0.4k below the core's own run because the satellite
+Commissions are charged as if paid from the portfolio when incurred (they lose the returns the
+portfolio would have earned), which raises the satellite's cost by about $0.5k against charging them
+in 2033 at face value.
+
+The base BL core median in this run is $197.3k. It is $0.3k below the core's own run because the satellite
 view, being relative, lowers the core funds' posterior returns by a few basis points; comparisons
 within the run are unaffected. Funding stays 100% in every case: the satellite cannot touch the
-payments. At a 20% share, each extra 1pp of alpha moves the median by about $880. With $25 commissions
-the satellite needs about 3.2pp a year of alpha beyond the posterior to break even, which is not
+payments. At a 20% share, each extra 1pp of alpha moves the median by about $820. With $25 commissions
+the satellite needs about 4.1pp a year of alpha beyond the posterior to break even, which is not
 credible. The cost is fixed per trade rather than proportional, so at WInS commission levels a
 smaller satellite is no cheaper. Without commissions it is roughly neutral.
 
@@ -208,7 +212,7 @@ replaces three names (six trades, $150).
 **Conclusion.** The satellite is a values-alignment and engagement tool, not a return engine. At a
 commission-free broker it is outcome-neutral and adds no tech or China concentration: look-through
 tech/communication is 24.7% at a 20% satellite, against 36.0% for the market. Under WInS's $25
-commission it costs about 1.4% of the median facility.
+commission it costs about 1.7% of the median facility.
 
 ### WInS implementation (whole shares, Oct 20, 2026 closes) — `reports/satellite_wins_orders.csv`
 | Budget | Names buyable | Commissions | Max weight error |
@@ -225,11 +229,11 @@ names get zero shares. Hence the IPS keeps the satellite out of WInS.
 
 | Floor | Median | 5th pct | 95th pct | Secured in 2031 (typical) | 10th-90th pct range (typical) |
 |---|---:|---:|---:|---:|---|
-| 0% | $201.1k | $141.7k | $291.1k | $0 | $145.2k-$202.0k |
-| 40% | $199.1k | $146.0k | $275.7k | $66.5k | $152.8k-$187.3k |
-| 60% (IPS) | $197.8k | $147.4k | $270.2k | $99.8k | $156.9k-$179.7k |
-| 80% | $196.6k | $147.7k | $265.9k | $133.0k | $161.2k-$172.5k |
-| 100% | $195.5k | $147.3k | $263.0k | $166.3k | $165.6k |
+| 0% | $200.8k | $141.8k | $290.3k | $0 | $145.1k-$201.7k |
+| 40% | $198.8k | $145.9k | $275.0k | $66.5k | $152.7k-$186.9k |
+| 60% (IPS) | $197.6k | $147.3k | $269.5k | $99.8k | $156.7k-$179.4k |
+| 80% | $196.3k | $147.6k | $265.3k | $133.0k | $161.0k-$172.3k |
+| 100% | $195.2k | $147.2k | $262.5k | $166.3k | $165.4k |
 
 "Typical" is the median, across 21 scenarios between the 45th and 55th percentile of January 2031
 wealth, of each scenario's own quote (`engine.conditional_2031_band`). A single scenario is noisy:
@@ -251,8 +255,8 @@ that matches its label. In the typical world, 85% of the facility gives:
 
 | Quote for co-sponsors (typical 2031 world) | Contribution range |
 |---|---|
-| Model 10th-90th percentile (historically ~98% of outcomes) | $156.9k-$179.7k |
-| 20th-80th percentile (historically ~80% of outcomes) | $159.9k-$175.1k |
+| Model 10th-90th percentile (historically ~98% of outcomes) | $156.7k-$179.4k |
+| 20th-80th percentile (historically ~80% of outcomes) | $159.7k-$174.8k |
 
 Quote the second as the 80% range, and the first as the cautious range. The paths overlap (about four
 independent six-year windows), so the calibration is thin evidence; both quotes sit above the $99.8k
@@ -266,7 +270,7 @@ $100k is 0.03%, below $120k 0.4%, below $140k 2.7%.
 ## Changes from the improvement loop (October 2026)
 `docs/loop/IMPROVEMENT_LOG.md` records every round, what was checked and what was rejected. Adopted
 into the headline numbers: Gaussian rate shocks; the DGBAS-based AR(2) Taiwan building-cost process
-(real median $156.8k -> $167.4k); real Taiwan cost paths in the replay; the 2031 quote from a band of
+(real median $156.8k -> $167.1k); real Taiwan cost paths in the replay; the 2031 quote from a band of
 scenarios. Built but left off, with the evidence for each: expected-return uncertainty (no material
 effect), GARCH volatility clustering (worse calibrated on history), a USD/TWD drift (the forward is
 a biased forecast for TWD). Studies whose decisions belong to the client, not the model: the policy
@@ -280,8 +284,6 @@ search and robustness study (`docs/loop/r1_policy_findings.md`, `r2_policy_findi
   the October 2026 news check. They are judgments, and the rationale column says why.
 - The basket's history before 2014-2016 (HLT, KEYS, HWM) is renormalised over the names that existed.
   It is used for volatility and correlation only, never for expected return.
-- The engine charges commissions at the end and does not compound them, which slightly understates
-  their cost.
 - The satellite's risk is probably understated: names were picked for low past volatility and
   drawdown, and the correlation window overlaps the screening window, so its beta (0.89) and
   volatility (15.1%) are likely biased low.

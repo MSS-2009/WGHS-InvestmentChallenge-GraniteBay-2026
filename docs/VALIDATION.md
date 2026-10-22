@@ -34,11 +34,11 @@ inputs (stocks 6.06%/yr net, 16.5% volatility, rates unchanged on average), fat 
 
 | Plan | Funded: theirs / ours | 5th pct | Median | 95th pct | 2031 floor | 2031 10th-90th pct range |
 | --- | --- | --- | --- | --- | --- | --- |
-| S1 all equity | 86.8% / 86.7% | 0 / 0 | 212.8 / 220.9 | 759.3 / 780.9 | — | — |
-| S2 static 60/40 | 96.4% / 96.8% | 16.2 / 18.7 | 208.0 / 215.4 | 508.3 / 523.5 | 0 / 0 | 120.7-332.4 / 146.5-380.9 |
-| S8 hybrid | 100% / 100% | 94.2 / 97.3 | 194.9 / 199.5 | 355.3 / 368.4 | 124.3 / 118.9 | 191.9-230.2 / 182.0-221.3 |
-| S6 lock, stock surplus | 100% / 100% | 106.2 / 107.9 | 197.7 / 200.0 | 365.5 / 370.9 | 0 / 0 | 150.2-261.7 / 148.3-269.9 |
-| S9 lock, 60/40, floor | 100% / 100% | 137.9 / 142.0 | 193.5 / 196.1 | 273.2 / 275.4 | 114.6 / 111.2 | 181.4-208.6 / 175.2-203.8 |
+| S1 all equity | 86.8% / 86.8% | 0 / 0 | 212.8 / 220.8 | 759.3 / 780.6 | — | — |
+| S2 static 60/40 | 96.4% / 96.8% | 16.2 / 18.7 | 208.0 / 215.3 | 508.3 / 523.2 | 0 / 0 | 120.7-332.4 / 146.4-380.8 |
+| S8 hybrid | 100% / 100% | 94.2 / 97.3 | 194.9 / 199.2 | 355.3 / 367.7 | 124.3 / 118.9 | 191.9-230.2 / 181.9-220.9 |
+| S6 lock, stock surplus | 100% / 100% | 106.2 / 108.0 | 197.7 / 199.8 | 365.5 / 370.5 | 0 / 0 | 150.2-261.7 / 148.2-269.5 |
+| S9 lock, 60/40, floor | 100% / 100% | 137.9 / 141.9 | 193.5 / 195.9 | 273.2 / 274.9 | 114.6 / 111.2 | 181.4-208.6 / 175.0-203.5 |
 
 Figures are after the October 2026 code-review fixes (section 6) and the switch to the Fed's H.10
 USD/TWD series. S8's 2031 floor and range are up to 5% below the former team's; our VGIT now compounds
@@ -52,7 +52,7 @@ Other model claims:
 | Zero-coupon cost of the ladder, Oct 16 (guide 4C) | $295,584 | $295,559 |
 | Real-instrument ladder, Oct 16 (guide 4C) | $300,769 | $300,396 (LP, 3% reinvestment) |
 | Real-instrument ladder, Oct 20 (Plans v2) | $300.1k | $299,717 |
-| Rates 0.75 pts lower at the lock, and staying lower: lock-and-balance median | $192k -> $159k (-17%) | $196.1k -> $160.4k (-18%) (`reports/plans_v2_rate_stress.json`) |
+| Rates 0.75 pts lower at the lock, and staying lower: lock-and-balance median | $192k -> $159k (-17%) | $195.9k -> $160.2k (-18%) (`reports/plans_v2_rate_stress.json`) |
 | Fat tails change results by | < $5k | < $5k (Gaussian vs t5) |
 | Facility buys less in Taiwan terms | ~25% | 21% at 4%/yr building costs; 25% needs ~5%/yr |
 | Plans v2 nine-instrument ladder funds ten payments | yes | yes: coupons 2027-32 pay the 2033 payment; $4k-$16k surplus each year |
@@ -126,12 +126,12 @@ Run `python scripts/validate_model.py` (reports `validation_esg.csv`, `validatio
   so crash risk is, if anything, overstated.
 - **Rates:** the 10-year yield's change to January 2033 spans -2.1 to +2.2 points (5th-95th
   percentile), against -2.7 to +2.4 points over every 74-month window since 1994.
-- **Convergence:** across 8 seeds of 20,000 scenarios the median facility is $197,891 with a standard
-  error of $25; the 5th percentile's is $119.
+- **Convergence:** across 8 seeds of 20,000 scenarios the median facility is $197,587 with a standard
+  error of $28; the 5th percentile's is $125.
 - **Historical replay:** 184 real six-year paths (starts April 2005 to July 2020) applied to today's
-  curve. With returns re-centred on our expectations, the IPS median is $196.6k against $197.8k
-  simulated; its 5th percentile is $155.6k against $147.4k simulated, so the simulation is the more
-  cautious. All-stock funds every payment in 90.2% of real paths against 86.7% simulated.
+  curve. With returns re-centred on our expectations, the IPS median is $196.3k against $197.6k
+  simulated; its 5th percentile is $155.4k against $147.3k simulated, so the simulation is the more
+  cautious. All-stock funds every payment in 90.2% of real paths against 86.8% simulated.
 - **Expected rate path:** forecasting the curve 74 months ahead from 320 month-ends (1994-2020), the
   error in the cost of ten payments is 7.7% for "unchanged", 7.5% for forwards minus the Kim-Wright term
   premium and 10.0% for pure forwards. "Unchanged" stays: it ties on accuracy and has the least bias.
