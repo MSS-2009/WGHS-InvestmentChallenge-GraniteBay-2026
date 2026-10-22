@@ -191,3 +191,28 @@ At the user's instruction the planner continued without Gemini or subagents. One
   10-year 5th-95th change -2.8/+2.8 (history -2.7/+2.4). IPS median unchanged.
 Headline now: median $197,593, p5 $147,153, CVaR5 $136,262, real median $167,008, typical secured 2031
 contribution $99.8k, 80% contribution range $160.3k-$175.5k. 109 tests pass; docs checked by script.
+
+### Round 6, continued (same day, planner alone)
+- **Stock-rate correlation** (`scripts/stock_rate_corr.py`): the calibration window's -0.16 averages
+  +0.41 (2017-2021) and -0.47 (2022-2026); over 1994-2026 the sign follows inflation. Rescaling the
+  equity x rate block to each regime moves the IPS median under $0.2k and its 5th percentile by at
+  most $1.6k; the open-liability 60/40 swings by $20k. Default kept.
+- **Crash co-movement** (`scripts/crash_comovement.py`): r4's 0.39 crash correlation rests on 12
+  months (p = 0.11); crash months show no average flight to quality. Gap closed, no copula needed.
+- **USD/TWD and equity mean reversion** (`scripts/fx_horizon.py`, `scripts/equity_horizon.py`,
+  `calibrate.variance_ratio_test`): neither is significant against a resampled i.i.d. null of the
+  same length (USD/TWD 2000-2026 74-month p = 0.14, and trending from 1983; US stocks since 1926
+  p >= 0.26). Random walk and i.i.d. equity shocks kept.
+- **Ladder premium vs rates** (`scripts/ladder_premium.py`): the LP premium rises 0.57 points per
+  point of rate under the fixed 3% reinvestment assumption. Opt-in `kappa_rate_slope`; IPS effect
+  +$27 median, +$0.5k p5. Constant 1.8% kept (slightly cautious).
+- **J.P. Morgan 2027 LTCMA** (Oct 19, 2026; US 7.5%, EAFE 7.7%, EM 7.1%, read from the report's USD
+  table) replaces the 2026 edition: median -$123. Vanguard's latest run (Jun 30, 2026) is current.
+- **Sale tickets at settlement** (`EngineConfig.sell_at_settlement`): the contribution is paid in
+  cash, so each fund still held is sold once in Jan 2033. IPS -$225; satellite -$875 more (break-even
+  alpha 4.1 -> 5.3 points).
+- **ESG refactor**: tail-mixing branches folded into helpers, output bit-for-bit identical.
+- **Pipeline and docs**: `run_all.py` now regenerates the nine studies the docs quote and ends with
+  `doc_numbers.py` (72 s, byte-identical reports). The checker grew from 27 to 70 figures; on the
+  way it caught 13 stale figures or sentences, including "the six extra funds cost the same in
+  commissions" (no longer true) and the 2031 band calibration (80.4% -> 81.5%).
