@@ -44,7 +44,8 @@ def taiwan_cost_params(drift_key: str = "full_sample_35y") -> dict:
 
     tw = yaml.safe_load((CFG.parent / "taiwan.yaml").read_text())["fitted_monthly"]
     return {"tw_cost_growth": tw["drifts"][drift_key], "tw_cost_phi": tuple(tw["tw_cost_phi"]),
-            "tw_cost_sig_eps": tw["tw_cost_sig_eps"], "tw_cost_state0": tuple(tw["tw_cost_state0_today"])}
+            "tw_cost_sig_eps": tw["tw_cost_sig_eps"], "tw_cost_state0": tuple(tw["tw_cost_state0_today"]),
+            "tw_cost_fx_corr": tw["usd_twd_innovation_corr"]}
 
 
 def esg_params(cal: dict, eq_geo: np.ndarray, curve_date: str = CURVE_DATE, infl_phi: float = 0.966,

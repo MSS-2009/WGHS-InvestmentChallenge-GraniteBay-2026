@@ -72,7 +72,7 @@
       "p90": 250334.6,
       "p95": 269398.3,
       "cvar5": 137224.5,
-      "real_median": 167343.0
+      "real_median": 167262.0
     },
     "bl|wins_commissions|Black-Litterman core": {
       "funded": 1.0,
@@ -82,7 +82,7 @@
       "p90": 250930.7,
       "p95": 269481.4,
       "cvar5": 136583.1,
-      "real_median": 167097.5
+      "real_median": 167049.2
     },
     "bl|no_commissions|VTI/VEA/VWO 60/30/10": {
       "funded": 1.0,
@@ -92,7 +92,7 @@
       "p90": 251356.3,
       "p95": 270370.5,
       "cvar5": 137990.5,
-      "real_median": 168080.0
+      "real_median": 168004.2
     },
     "bl|no_commissions|Black-Litterman core": {
       "funded": 1.0,
@@ -102,7 +102,7 @@
       "p90": 252684.7,
       "p95": 271461.5,
       "cvar5": 137847.2,
-      "real_median": 168317.4
+      "real_median": 168310.1
     },
     "equilibrium|wins_commissions|VTI/VEA/VWO 60/30/10": {
       "funded": 1.0,
@@ -112,7 +112,7 @@
       "p90": 249579.3,
       "p95": 268561.4,
       "cvar5": 136853.6,
-      "real_median": 166838.1
+      "real_median": 166777.2
     },
     "equilibrium|wins_commissions|Black-Litterman core": {
       "funded": 1.0,
@@ -122,7 +122,7 @@
       "p90": 249337.3,
       "p95": 267789.5,
       "cvar5": 135837.7,
-      "real_median": 166105.5
+      "real_median": 166070.3
     },
     "equilibrium|no_commissions|VTI/VEA/VWO 60/30/10": {
       "funded": 1.0,
@@ -132,7 +132,7 @@
       "p90": 250605.1,
       "p95": 269640.2,
       "cvar5": 137619.0,
-      "real_median": 167547.2
+      "real_median": 167537.9
     },
     "equilibrium|no_commissions|Black-Litterman core": {
       "funded": 1.0,
@@ -142,7 +142,7 @@
       "p90": 251050.7,
       "p95": 269703.6,
       "cvar5": 137099.8,
-      "real_median": 167337.2
+      "real_median": 167311.2
     }
   },
   "plan": {
@@ -153,7 +153,7 @@
     "p90": 250930.7,
     "p95": 269481.4,
     "cvar5": 136583.1,
-    "real_median": 167097.5,
+    "real_median": 167049.2,
     "contribution_median": 167935.3,
     "contribution_p5": 125214.6,
     "kept_by_laura_median": 29635.6,

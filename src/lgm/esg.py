@@ -45,6 +45,7 @@ class ESGParams:
     tw_cost_phi: float | tuple[float, ...] | None = None  # monthly AR(1) scalar or AR(2) tuple; None = legacy i.i.d.
     tw_cost_infl0: float | tuple[float, ...] | None = None  # initial monthly log changes (Aug, Sep 2026); None = stationary
     tw_cost_corr: float | None = None  # correlation of tw_cost innovations with US CPI shock
+    tw_cost_fx_corr: float | None = None  # correlation of tw_cost innovations with the USD/TWD shock
     tw_cost_sig_eps: float | None = None  # monthly innovation standard deviation; None = derived from tw_cost_vol
     tw_cost_state0: float | tuple[float, ...] | None = None  # alias for tw_cost_infl0
     rate_dof: float | None | str = None  # Student-t dof for rate block; None = legacy (shares t_dof); 'gaussian' or inf = Gaussian
@@ -303,6 +304,11 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
             cpi_std = np.sqrt(p.cov[K + 3, K + 3])
             z_cpi = shocks[..., K + 3] / (cpi_std if cpi_std > 0 else 1.0)
             z_tw = rho * z_cpi + np.sqrt(max(1.0 - rho**2, 0.0)) * z_tw
+
+        if p.tw_cost_fx_corr:
+            rho = float(p.tw_cost_fx_corr)
+            z_fx = shocks[..., K + 4] / np.sqrt(p.cov[K + 4, K + 4])
+            z_tw = rho * z_fx + np.sqrt(1.0 - rho ** 2) * z_tw
 
         y = np.empty((n, M))
         for m in range(M):

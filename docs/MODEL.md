@@ -27,14 +27,18 @@ Market inputs (all keyless):
   needed bad prints filtered out). No drift: on TWD's own history the random walk forecasts better
   than the forward at 12, 36 and 72 months, and the actual central-bank forward is biased (Fama slope
   -0.09; `docs/loop/r4_fx_findings.md`). Hedging at today's forward (-2.28% a year) would fix the
-  Taiwan-dollar value at a real median of $145.7k instead of $167.1k.
+  Taiwan-dollar value at a real median of $145.7k instead of $167.0k.
 - **Taiwan building costs:** the official DGBAS construction cost index, 1991-2026
   (`data/raw/taiwan/`). Monthly log changes follow a fitted AR(2) (0.655, -0.094) that reproduces the
   index's autocorrelation and the spread of its 1- to 72-month changes, started from the Aug and Sep
   2026 readings, with the 1991-2026 average drift of 2.85% a year. Today's +7.3% annual reading
   barely matters (persistence lasts months); the drift does: 3.78% (the last ten years) would lower
-  the real median by about $9k (`docs/loop/r3_taiwan_findings.md`). The historical replay uses the
-  index's real paths.
+  the real median by about $9k (`docs/loop/r3_taiwan_findings.md`). Cost growth is correlated -0.25
+  with USD/TWD: in history a weaker Taiwan dollar has come with slower building-cost growth (12- to
+  72-month changes, 2000-2026: -0.18 to -0.33, `scripts/taiwan_fx_corr.py`), so the two risks add up
+  rather than offset. This widens the real 5th-95th percentile range from $113.5k-$247.3k to
+  $111.3k-$251.6k and leaves the real median unchanged. The historical replay uses the index's real
+  paths.
 
 **How certain is "certain"?** A locked payment is treated as certain. That rests on one assumption:
 coupons and fund proceeds that arrive before a payment are reinvested at 3% until it is due (the ladder
@@ -270,8 +274,9 @@ $100k is 0.03%, below $120k 0.4%, below $140k 2.7%.
 
 ## Changes from the improvement loop (October 2026)
 `docs/loop/IMPROVEMENT_LOG.md` records every round, what was checked and what was rejected. Adopted
-into the headline numbers: Gaussian rate shocks; the DGBAS-based AR(2) Taiwan building-cost process
-(real median $156.8k -> $167.1k); real Taiwan cost paths in the replay; the 2031 quote from a band of
+into the headline numbers: Gaussian rate shocks; the DGBAS-based AR(2) Taiwan building-cost process,
+correlated with USD/TWD as history shows (real median $156.8k -> $167.0k); commissions compounded as
+if paid when incurred (median -$0.3k); real Taiwan cost paths in the replay; the 2031 quote from a band of
 scenarios. Built but left off, with the evidence for each: expected-return uncertainty (no material
 effect), GARCH volatility clustering (worse calibrated on history), a USD/TWD drift (the forward is
 a biased forecast for TWD). Studies whose decisions belong to the client, not the model: the policy

@@ -21,7 +21,7 @@ def base_params() -> ESGParams:
     # The legacy i.i.d. process (4% drift, 1.5% vol): the headline defaults now use the fitted AR(2),
     # so the tests that set their own process start from the legacy settings explicitly.
     return dc.replace(esg_params(r["cal"], geo), tw_cost_growth=0.04, tw_cost_phi=None,
-                      tw_cost_sig_eps=None, tw_cost_state0=None)
+                      tw_cost_sig_eps=None, tw_cost_state0=None, tw_cost_fx_corr=None)
 
 
 def test_default_reproduces_old_scenarios_bit_for_bit(base_params):
@@ -216,3 +216,15 @@ def test_headline_defaults_use_fitted_taiwan_process_and_gaussian_rates():
     assert p.rate_dof == "gaussian" and p.t_dof == 5.0
     assert p.tw_cost_phi == (0.6546, -0.0939) and p.tw_cost_growth == 0.0285
     assert p.tw_cost_state0 == (0.00284974, 0.00650706)
+    assert p.tw_cost_fx_corr == -0.25
+
+
+def test_cost_fx_correlation_carries_to_long_horizons():
+    r = build_core()
+    p = esg_params(r["cal"], r["table"]["bl_geo_total"].values)
+    sc = simulate(p, n=20_000, seed=3)
+    for k in (12, 72):
+        c = np.corrcoef(sc.tw_cost_log[:, k] - sc.tw_cost_log[:, 0], sc.fx_log[:, k] - sc.fx_log[:, 0])[0, 1]
+        assert abs(c - (-0.25)) < 0.03
+    off = simulate(dc.replace(p, tw_cost_fx_corr=None), n=20_000, seed=3)
+    assert np.array_equal(off.fx_log, sc.fx_log)          # only the cost path changes
