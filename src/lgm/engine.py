@@ -286,7 +286,8 @@ def state_for(snap: State, i: int, n: int) -> State:
 
 
 def conditional_2031(st: Strategy, sc: Scenarios, res: dict, params, i: int | None = None,
-                     n_inner: int = 4000, seed: int = 99, cfg: EngineConfig | None = None) -> dict:
+                     n_inner: int = 4000, seed: int = 99, cfg: EngineConfig | None = None,
+                     keep_drift: bool = True) -> dict:
     """What Laura could tell co-sponsors in January 2031: re-simulate 2031-2033 from one
     scenario's 2031 position. Default: the scenario with the median 2031 growth value."""
     from dataclasses import replace as dc_replace
@@ -299,6 +300,10 @@ def conditional_2031(st: Strategy, sc: Scenarios, res: dict, params, i: int | No
     start = {"beta": sc.beta[i, M_2031 - sc.m0], "infl": sc.infl[i, M_2031 - sc.m0],
              "fx_log": np.full(n_inner, sc.fx_log[i, M_2031 - sc.m0]),
              "tw_cost_log": np.full(n_inner, sc.tw_cost_log[i, M_2031 - sc.m0])}
+    if keep_drift and getattr(sc, "eq_drift_err", None) is not None:
+        start["eq_drift_err"] = sc.eq_drift_err[i]
+    if getattr(sc, "garch_h", None) is not None:
+        start["garch_h"] = sc.garch_h[i, M_2031 - sc.m0]
     p = dc_replace(params, months=M_2033 - M_2031)
     inner = simulate(p, n_inner, seed=seed, start=start, m0=M_2031)
     r = run(st, inner, cfg, state=state_for(res["state_2031"], i, n_inner))
