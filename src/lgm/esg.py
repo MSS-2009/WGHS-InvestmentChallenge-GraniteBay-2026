@@ -38,7 +38,7 @@ class ESGParams:
     fx_drift: float = 0.0            # annual log drift of USD/TWD
     tw_cost_growth: float = 0.04     # Taiwan building-cost inflation, annual
     tw_cost_vol: float = 0.015
-    t_dof: float | None = 5.0        # Student-t degrees of freedom; None = Gaussian
+    t_dof: float | None = 5.0        # Student-t degrees of freedom (>2); None or inf = Gaussian
     rate_floor: float = -0.005
     eq_mu_cov: np.ndarray | None = None  # (K, K) annual covariance of expected equity returns
     eq_garch: tuple[float, float] | dict | None = None  # optional (alpha, beta) or dict for GARCH(1,1) vol clustering
@@ -49,7 +49,7 @@ class ESGParams:
     tw_cost_sig_eps: float | None = None  # monthly innovation standard deviation; None = derived from tw_cost_vol
     tw_cost_state0: float | tuple[float, ...] | None = None  # alias for tw_cost_infl0
     rate_dof: float | None | str = None  # Student-t dof for rate block; None = legacy (shares t_dof); 'gaussian' or inf = Gaussian
-    rate_shared: float = 0.0             # fraction of equity mixing variable shared with rate block (0 = independent, 1 = fully shared)
+    rate_shared: float = 0.0             # share of equity mixing variance used by rates, in [0, 1]
     infl_dof: float | None | str = None  # Student-t dof for inflation; None = legacy (shares t_dof)
     fx_dof: float | None | str = None    # Student-t dof for USD/TWD; None = legacy (shares t_dof)
 
@@ -97,15 +97,41 @@ def initial_state(curve: ZeroCurve) -> tuple[np.ndarray, np.ndarray]:
 
 def _mixing(dof: float, rng: np.random.Generator, shape: tuple) -> np.ndarray:
     """Student-t mixing variable with unit second moment: sqrt((dof - 2) / chi2(dof))."""
+    if np.isposinf(dof):
+        return np.ones(shape)
+    if not np.isfinite(dof) or dof <= 2:
+        raise ValueError(f"Student-t degrees of freedom must be > 2, got {dof}")
     return np.sqrt((dof - 2) / rng.chisquare(dof, size=shape))
 
 
+def _dof(value, name: str, *, allow_gaussian: bool = False) -> float | None:
+    """Normalize a tail option; None inherits the legacy block behavior."""
+    expected = (
+        "a Student-t dof > 2, positive infinity, or 'gaussian'"
+        if allow_gaussian else "a Student-t dof > 2 or positive infinity"
+    )
+    if value is None:
+        return None
+    if isinstance(value, str):
+        if allow_gaussian and value.strip().lower() == "gaussian":
+            return np.inf
+        raise ValueError(f"{name} must be {expected}, got {value!r}")
+    try:
+        dof = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be {expected}, got {value!r}") from exc
+    if np.isposinf(dof):
+        return np.inf
+    if not np.isfinite(dof) or dof <= 2:
+        raise ValueError(f"{name} must be {expected}, got {value!r}")
+    return dof
+
+
 def _block_mixing(dof, w_eq, rng: np.random.Generator, shape: tuple):
-    """A block's mixing: 1.0 for "gaussian" or inf, its own t draw for a finite dof, else the
-    equities' (None: the legacy shared tails)."""
-    if (isinstance(dof, str) and dof.lower() == "gaussian") or (isinstance(dof, (int, float)) and np.isinf(dof)):
+    """Use Gaussian at inf, a block-specific t draw for finite dof, or legacy equity mixing at None."""
+    if isinstance(dof, (int, float, np.number)) and np.isposinf(dof):
         return 1.0
-    if isinstance(dof, (int, float)):
+    if isinstance(dof, (int, float, np.number)):
         return _mixing(float(dof), rng, shape)
     return w_eq if w_eq is not None else 1.0
 
@@ -124,13 +150,24 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
              start: dict | None = None, m0: int = 0) -> Scenarios:
     """Simulate n scenarios for p.months months. `start` overrides month-0 state
     (keys: beta, infl, fx_log, tw_cost_log, each (n,...)) for nested simulation."""
+    t_dof = _dof(p.t_dof, "t_dof")
+    rate_dof = _dof(p.rate_dof, "rate_dof", allow_gaussian=True)
+    infl_dof = _dof(p.infl_dof, "infl_dof", allow_gaussian=True)
+    fx_dof = _dof(p.fx_dof, "fx_dof", allow_gaussian=True)
+    try:
+        rate_shared = float(p.rate_shared)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"rate_shared must be a finite fraction in [0, 1], got {p.rate_shared!r}") from exc
+    if not np.isfinite(rate_shared) or not 0.0 <= rate_shared <= 1.0:
+        raise ValueError(f"rate_shared must be a finite fraction in [0, 1], got {p.rate_shared!r}")
+
     rng = np.random.default_rng(seed)
     M, k = p.months, p.cov.shape[0]
     half = (n + 1) // 2 if antithetic else n
     z = rng.standard_normal((half, M, k))
-    if p.rate_dof is None and p.rate_shared == 0.0 and p.infl_dof is None and p.fx_dof is None:
-        if p.t_dof:
-            w = np.sqrt((p.t_dof - 2) / rng.chisquare(p.t_dof, size=(half, M, 1)))
+    if rate_dof is None and rate_shared == 0.0 and infl_dof is None and fx_dof is None:
+        if t_dof:
+            w = _mixing(t_dof, rng, (half, M, 1))
             z = z * w
     else:
         # Each block's independent normals are scaled by its own mixing variable before the Cholesky
@@ -138,15 +175,15 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
         # that is correlated with equities keeps the equities' tails. Draw order: equities, rates,
         # inflation, FX (only blocks with their own numeric dof draw).
         K = len(p.eq_geo)
-        w_eq = _mixing(p.t_dof, rng, (half, M, 1)) if p.t_dof else None
+        w_eq = _mixing(t_dof, rng, (half, M, 1)) if t_dof else None
         if w_eq is not None:
             z[..., :K] *= w_eq
-        w_rate = _block_mixing(p.rate_dof, w_eq, rng, (half, M, 1))
-        if p.rate_shared > 0.0 and w_eq is not None:
-            lam = float(p.rate_shared)
+        w_rate = _block_mixing(rate_dof, w_eq, rng, (half, M, 1))
+        if rate_shared > 0.0 and w_eq is not None:
+            lam = rate_shared
             w_rate = np.sqrt(lam * w_eq ** 2 + (1.0 - lam) * np.asarray(w_rate) ** 2)
-        for sl, dof, w in ((slice(K, K + 3), None, w_rate), (slice(K + 3, K + 4), p.infl_dof, None),
-                           (slice(K + 4, K + 5), p.fx_dof, None)):
+        for sl, dof, w in ((slice(K, K + 3), None, w_rate), (slice(K + 3, K + 4), infl_dof, None),
+                           (slice(K + 4, K + 5), fx_dof, None)):
             w = w if w is not None else _block_mixing(dof, w_eq, rng, (half, M, 1))
             if not (np.isscalar(w) and w == 1.0):
                 z[..., sl] *= w

@@ -26,6 +26,12 @@ def test_default_rate_tails_bit_for_bit_identical(base_params):
     np.testing.assert_array_equal(sc_default.fx_log, sc_same.fx_log)
     np.testing.assert_array_equal(sc_default.tw_cost_log, sc_same.tw_cost_log)
 
+    # Infinite degrees of freedom are the Gaussian limit and require no random mixing draw.
+    sc_gaussian = esg.simulate(dc.replace(base_params, t_dof=np.inf), n=500, seed=42)
+    sc_normal = esg.simulate(dc.replace(base_params, t_dof=None), n=500, seed=42)
+    np.testing.assert_array_equal(sc_gaussian.eq_log, sc_normal.eq_log)
+    np.testing.assert_array_equal(sc_gaussian.beta, sc_normal.beta)
+
 
 def test_covariance_preserved_across_options(base_params):
     """Covariance of shocks must match p.cov for all rate tail variants."""
@@ -127,3 +133,25 @@ def test_calibrate_block_tails():
     assert 0.4 < res["d_rate5y"]["excess_kurtosis"] < 0.8
     # Check df_mom is near 14
     assert 10.0 < res["d_rate5y"]["df_mom"] < 20.0
+
+
+@pytest.mark.parametrize("field", ["t_dof", "rate_dof", "infl_dof", "fx_dof"])
+@pytest.mark.parametrize("value", [0.0, 2.0, -1.0, np.nan, -np.inf])
+def test_invalid_tail_degrees_of_freedom_are_rejected(base_params, field, value):
+    p = dc.replace(base_params, months=1, **{field: value})
+    with pytest.raises(ValueError, match=field):
+        esg.simulate(p, n=2, seed=1)
+
+
+@pytest.mark.parametrize("field", ["rate_dof", "infl_dof", "fx_dof"])
+def test_unknown_tail_names_are_rejected(base_params, field):
+    p = dc.replace(base_params, months=1, **{field: "student"})
+    with pytest.raises(ValueError, match=field):
+        esg.simulate(p, n=2, seed=1)
+
+
+@pytest.mark.parametrize("value", [-0.01, 1.01, np.nan, np.inf])
+def test_rate_shared_must_be_a_finite_fraction(base_params, value):
+    p = dc.replace(base_params, months=1, rate_shared=value)
+    with pytest.raises(ValueError, match="rate_shared"):
+        esg.simulate(p, n=2, seed=1)

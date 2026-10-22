@@ -345,3 +345,8 @@ down from their 2008-era level, which favours the target that pulls them down.
 The Taiwan-cost correlation controls now reject non-finite coefficients and values outside [-1, 1].
 Previously an invalid FX coefficient could produce NaNs, while the CPI path could silently alter the
 innovation variance. Eight parameterized cases cover both controls; valid headline defaults are unchanged.
+
+The tail controls (`t_dof`, `rate_dof`, `infl_dof`, `fx_dof`, and `rate_shared`) now reject degrees of
+freedom that cannot define a unit-variance Student-t and invalid mixing shares before consuming random
+draws. Unknown tail names no longer fall through to inherited behavior; positive infinity is handled
+as Gaussian. Tests preserve the legacy default bit-for-bit and cover invalid values.
