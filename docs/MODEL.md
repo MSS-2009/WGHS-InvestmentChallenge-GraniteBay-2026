@@ -306,15 +306,20 @@ $100k is 0.03%, below $120k 0.4%, below $140k 2.8%.
 `docs/loop/IMPROVEMENT_LOG.md` records every round, what was checked and what was rejected. Adopted
 into the headline numbers: Gaussian rate shocks; the DGBAS-based AR(2) Taiwan building-cost process,
 correlated with USD/TWD as history shows (real median $156.8k -> $166.7k); commissions compounded as
-if paid when incurred (median -$0.3k), plus the sale tickets in January 2033 (-$0.2k); rate-factor persistence bias-corrected (wider long-horizon
-rate spread, median unchanged); real Taiwan cost paths in the replay; the 2031 quote from a band of
-scenarios. Built but left off, with the evidence for each: expected-return uncertainty (no material
-effect), GARCH volatility clustering (worse calibrated on history), a USD/TWD drift (the forward is
-a biased forecast for TWD). Studies whose decisions belong to the client, not the model: the policy
-search and robustness study (`docs/loop/r1_policy_findings.md`, `r2_policy_findings.md`,
-`r3_robust_findings.md`), a STRIPS reserve outside WInS (`r3_strips_findings.md`) and FX hedging
-(`r4_fx_findings.md`). Study reports in `reports/` written before this integration (for example
-`taiwan_variants.csv`, `rate_tails_impact.csv`, `policy_search.csv`) used the earlier defaults.
+if paid when incurred (median -$0.3k), plus the sale tickets in January 2033 (-$0.2k); rate-factor
+persistence bias-corrected (wider long-horizon rate spread, median unchanged); J.P. Morgan's 2027
+assumptions in place of its 2026 ones (median -$0.1k); real Taiwan cost paths in the replay; the 2031
+quote from a band of scenarios. Built but left off, with the evidence for each: expected-return
+uncertainty (no material effect), GARCH volatility clustering (worse calibrated on history), a USD/TWD
+drift (the forward is a biased forecast for TWD), a rate-dependent ladder premium (+$27 median, and it
+relies on 3% cash in low-rate scenarios). Checked and found not to need a change: the stock-rate
+correlation regime (the IPS barely moves), crash-month co-movement (not significant), and long-horizon
+mean reversion in stocks or USD/TWD (neither significant). Studies whose decisions belong to the
+client, not the model: the policy search and robustness study (`docs/loop/r1_policy_findings.md`,
+`r2_policy_findings.md`, `r3_robust_findings.md`), a STRIPS reserve outside WInS
+(`r3_strips_findings.md`) and FX hedging (`r4_fx_findings.md`). Study reports in `reports/` that
+`scripts/run_all.py` does not regenerate (for example `taiwan_variants.csv`, `rate_tails_impact.csv`)
+used the defaults of their round.
 
 ## Caveats
 - The analyst judgments in `qualitative_judgments.csv` rest on the public record to mid-2026, then on
