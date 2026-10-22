@@ -66,3 +66,12 @@ equity), which is that policy's real risk, not an artifact.
 Make `rate_dof="gaussian"` the default for headline numbers; keep `infl_dof` and `fx_dof` shared. It is
 a correctness fix supported by the data, and it changes the headline median by $64. Adopting it
 regenerates every report, so it is listed with the other default changes for the user to approve.
+
+## Addendum (round 6, planner): the crash co-movement gap is not a gap
+`scripts/crash_comovement.py`: the 0.39 crash correlation rests on 12 months (Aug 2007 on, VEA's
+first month) and has p = 0.11 against a bivariate normal with the full-sample correlation and the
+same truncation (bootstrap 90% interval -0.42 to +0.64). What matters for an open ladder is the rate
+change in crash months, and history shows no flight to quality on average (+0.05 points, rates down
+in 58% of them). No regime or copula model is needed. The full-sample stock-rate correlation is a
+regime question instead (+0.36 in 2000-2021, -0.47 since 2022); `scripts/stock_rate_corr.py` shows
+the IPS is insensitive to it (docs/MODEL.md, "Stock-rate correlation").

@@ -56,6 +56,18 @@ ladder as held is $189 short for the 2034 payment, fixed by 6 more IBTO shares
 long-run level moves with today's, matching the "unchanged" expectation): the IPS median falls from
 $197.6k to $161.5k, and still funds every payment. 0.75 points higher: $233.1k.
 
+**Stock-rate correlation.** Correlations come from Aug 2017-Sep 2026, the youngest fund's history,
+where the S&P 500's monthly correlation with the 5-year rate change is -0.16 (the model's core: -0.17).
+That window averages two regimes, +0.41 in 2017-2021 and -0.47 since 2022, and over longer history the
+sign follows inflation: 1994-1999 -0.30, 2000-2021 +0.36, 1994-2026 +0.09. A positive correlation is
+the bad case for an open ladder (rates fall as stocks fall). Re-scoring with the equity-rate block
+rescaled to each regime (`scripts/stock_rate_corr.py`): the IPS median stays within $0.2k and its 5th
+percentile ranges from $145.6k (the 2000-2021 regime) to $147.2k (today's). The index-first 60/40, which leaves the liabilities open, is exposed: its 5th percentile runs from $52.0k
+to $32.3k. Crash months show no flight to quality on average either: in the worst 5% of equity months
+since 2007 the 5-year rate rose 0.05 points on average and fell in 58% of them, and the "crash
+correlation" of 0.39 rests on 12 months (p = 0.11 against no extra tail dependence;
+`scripts/crash_comovement.py`).
+
 ## Part 2a — ETF core (Black-Litterman)
 Nine equity groups, one ETF each (VUG, VTV, VB, VGK, BBJP, EPP, BBCA, EMXC, MCHI). Bonds in the growth
 sleeve are IBTM.
@@ -279,7 +291,8 @@ $100k is 0.03%, below $120k 0.4%, below $140k 2.7%.
 `docs/loop/IMPROVEMENT_LOG.md` records every round, what was checked and what was rejected. Adopted
 into the headline numbers: Gaussian rate shocks; the DGBAS-based AR(2) Taiwan building-cost process,
 correlated with USD/TWD as history shows (real median $156.8k -> $167.0k); commissions compounded as
-if paid when incurred (median -$0.3k); real Taiwan cost paths in the replay; the 2031 quote from a band of
+if paid when incurred (median -$0.3k); rate-factor persistence bias-corrected (wider long-horizon
+rate spread, median unchanged); real Taiwan cost paths in the replay; the 2031 quote from a band of
 scenarios. Built but left off, with the evidence for each: expected-return uncertainty (no material
 effect), GARCH volatility clustering (worse calibrated on history), a USD/TWD drift (the forward is
 a biased forecast for TWD). Studies whose decisions belong to the client, not the model: the policy

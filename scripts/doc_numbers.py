@@ -103,6 +103,16 @@ def checks() -> list[tuple[str, str, str]]:
     v2 = json.loads((R / "plans_v2_rate_stress.json").read_text())
     out.append(("VALIDATION", "Plans v2 rate stress",
                 f"{k(v2['base_median'])} -> {k(v2['minus_75bp_median'])}"))
+    sr = pd.read_csv(R / "stock_rate_corr.csv")
+    ips_sr = sr[sr.strategy.str.startswith("IPS")].set_index("variant")
+    s2_sr = sr[sr.strategy.str.startswith("S2")].set_index("variant")
+    out.append(("MODEL", "stock-rate correlation, IPS p5",
+                f"percentile ranges from {k(ips_sr.p5.min())} (the 2000-2021 regime) to {k(ips_sr.p5.max())} (today's)"))
+    out.append(("MODEL", "stock-rate correlation, open 60/40 p5",
+                f"its 5th percentile runs from {k(s2_sr.loc['2022..2026', 'p5'])}\nto {k(s2_sr.loc['2000..2021', 'p5'])}"))
+    cc = pd.read_csv(R / "crash_comovement.csv").iloc[0]
+    out.append(("MODEL", "crash months", f"rose {cc.crash_mean_dr:.2f} points on average and fell in "
+                                         f"{cc.crash_share_rates_down:.0%} of them"))
     return out
 
 
