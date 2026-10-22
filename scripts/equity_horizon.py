@@ -6,7 +6,9 @@ months, nominal and in excess of T-bills, from three start dates, each against a
 resampling the same months (`calibrate.variance_ratio_test`). If stocks mean-reverted, the model's
 i.i.d. shocks would overstate the spread of six-year returns. Writes reports/equity_horizon.csv, and
 reports/equity_vol_history.csv: the market's annual volatility by period, against the 2005-2026 window
-the generator's equity volatilities come from.
+the generator's equity volatilities come from; and reports/equity_vol_forecast.csv: how well trailing
+windows of 3, 9 and 21 years (the generator uses about 21) and the whole history since 1926 forecast the
+next 3 or 6 years' volatility, from every half-year end since 1946.
 """
 import sys
 from pathlib import Path
@@ -19,6 +21,7 @@ from lgm.data import french
 
 OUT = Path(__file__).resolve().parents[1] / "reports" / "equity_horizon.csv"
 VOL_OUT = OUT.with_name("equity_vol_history.csv")
+FORECAST_OUT = OUT.with_name("equity_vol_forecast.csv")
 PERIODS = (("1926", "2026"), ("1946", "2026"), ("1946", "2004"), ("2005", "2026"))
 
 
@@ -39,7 +42,28 @@ def main(n_null: int = 20_000):
     vol = pd.DataFrame([{"period": f"{a}-{b}", "annual_vol": float(m.loc[a:b].std() * np.sqrt(12))} for a, b in PERIODS])
     vol.round(4).to_csv(VOL_OUT, index=False)
     print(vol.to_string(index=False))
-    print(f"Wrote {OUT} and {VOL_OUT}")
+    fc = vol_forecast(m)
+    fc.round(4).to_csv(FORECAST_OUT, index=False)
+    print(fc.to_string(index=False))
+    print(f"Wrote {OUT}, {VOL_OUT} and {FORECAST_OUT}")
+
+
+def vol_forecast(m: pd.Series) -> pd.DataFrame:
+    """Log error of each trailing-window volatility against the next `horizon` months' volatility."""
+    windows = {"3 years": 36, "9 years": 108, "21 years": 252, "since 1926": None}
+    rows = []
+    for horizon in (36, 72):
+        for end in pd.date_range("1946-12-31", m.index[-1] - pd.DateOffset(months=horizon), freq="6ME"):
+            past, future = m.loc[:end], m.loc[end + pd.offsets.MonthEnd(1):].iloc[:horizon]
+            for name, n in windows.items():
+                est = past if n is None else past.iloc[-n:]
+                rows.append({"horizon_m": horizon, "est_end": end, "window": name,
+                             "log_error": float(np.log(est.std() / future.std()))})
+    d = pd.DataFrame(rows)
+    d["period"] = np.where(d.est_end.dt.year <= 1980, "1946-1980", "1981 on")
+    rms = lambda s: float(np.sqrt((s ** 2).mean()))
+    return (d.groupby(["horizon_m", "period", "window"], sort=False).log_error
+            .agg(origins="size", bias="mean", rms=rms).reset_index())
 
 
 if __name__ == "__main__":

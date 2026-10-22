@@ -428,6 +428,12 @@ def checks() -> list[tuple[str, str, str]]:
                 f"volatility was {ev['2005-2026']:.1%} a year in 2005-2026, the window the equity volatilities come from, "
                 f"against {ev['1946-2026']:.1%} for 1946-2026; only 1926-1945 (the Depression and the war) lifts the 1926-2026 figure to "
                 f"{ev['1926-2026']:.1%}"))
+    vf = pd.read_csv(R / "equity_vol_forecast.csv")
+    vf = vf[(vf.horizon_m == 72) & (vf.period == "1981 on")].set_index("window")
+    out.append(("VALIDATION", "equity vol window forecast",
+                f"a trailing 21-year volatility missed the next six\n  years' by {vf.rms['21 years']:.2f} in logs (root mean "
+                f"square; bias {vf.bias['21 years']:+.1%}), against {vf.rms['9 years']:.2f} for 9 years, "
+                f"{vf.rms['3 years']:.2f} for 3 years\n  and {vf.rms['since 1926']:.2f} for all history since 1926"))
     out.append(("MODEL", "headline in the sensitivity intro",
                 f"The IPS median is {k(plan['median'])} and its 5th percentile {k(plan['p5'])}."))
     zr = stress["reserve_certain_at_0pct_reinvestment"]
