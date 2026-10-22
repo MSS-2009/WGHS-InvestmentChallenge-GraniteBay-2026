@@ -323,3 +323,7 @@ down from their 2008-era level, which favours the target that pulls them down.
   sit at their floor, so one firm's revision does not move them. Only the robustness study's
   25th-percentile-firm shift moves (IPS median under it $193.9k -> $194.3k). Amundi and Northern Trust
   publish no developed ex-US figure and stay out.
+- **WInS orders include the ladder top-up**: `wins_ladder_check.py` found the reserve held in WInS $189
+  short for 2034 at WInS's 0% cash rate, but `wins_rebalance.py`'s order list did not fix it. It now buys
+  the cheapest top-up first (6 IBTO, $139) and sizes the growth sleeve from what is left; with it every
+  payment is covered (smallest surplus +$9). Regression test in `tests/test_audit_fixes.py`.

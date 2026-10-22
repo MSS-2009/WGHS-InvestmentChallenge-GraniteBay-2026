@@ -100,3 +100,13 @@ def test_close_on_reads_the_cache_without_the_network(monkeypatch):
         raise AssertionError("network used")
     monkeypatch.setattr(yahoo.requests, "get", offline)
     assert yahoo.close_on("VUG", asof.PRICE_DATE) > 0
+
+
+def test_wins_orders_include_the_ladder_top_up(capsys):
+    """The order list buys what the ladder check says is missing before sizing the growth sleeve."""
+    _script("wins_rebalance").main()
+    out = capsys.readouterr().out
+    buys = {line.split()[1]: int(line.split()[2]) for line in out.splitlines() if line.strip().startswith("Buy")}
+    assert buys.get("IBTO", 0) >= 6                 # the 2034 payment is $189 short at 0% interest
+    left = float(out.rsplit("about $", 1)[1].split()[0].replace(",", ""))
+    assert left > 0

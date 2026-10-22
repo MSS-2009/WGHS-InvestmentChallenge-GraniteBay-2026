@@ -124,7 +124,7 @@ ladder costs 3.7% over zero-coupon value instead of 1.8%. Pricing the reserve so
 then lowers the median facility by $7.8k (`reports/report_numbers.json`, `stress`). Cash rates are
 about 4.3% today, so 3% is cautious, but the WInS account itself pays no interest on cash: there the
 ladder as held is $189 short for the 2034 payment, fixed by 6 more IBTO shares
-(`scripts/wins_ladder_check.py`).
+(`scripts/wins_ladder_check.py`), which the WInS order list now buys first (`scripts/wins_rebalance.py`).
 
 The 1.8% premium itself moves with rates, because cash awaiting a payment is assumed to earn a fixed 3%:
 re-solving the LP on simulated January 2027 curves gives 1.64% at today's 5-year rate plus 0.57 points
