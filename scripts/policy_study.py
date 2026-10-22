@@ -48,8 +48,7 @@ def main(n: int = 20_000):
         st = dc.replace(base, floor_share_2031=f)
         r = engine.run(st, sc, cfg, snapshot_2031=True)
         fac = r["facility"]
-        typical = int(np.argsort(r["growth_2031"])[int(0.5 * (n - 1))])     # same world as report_numbers.py
-        c = engine.conditional_2031(st, sc, r, p, i=typical, n_inner=3000, cfg=cfg)
+        c = engine.conditional_2031_band(st, sc, r, p, q=0.5, n_inner=3000, cfg=cfg)   # same world as report_numbers.py
         frontier.append({"floor_share": f, "median": round(float(np.median(fac))), "p5": round(float(np.percentile(fac, 5))),
                          "p95": round(float(np.percentile(fac, 95))),
                          "secured_2031_typical": round(0.85 * c["floor"]),

@@ -89,7 +89,6 @@ def main(n: int = 20_000):
     out["plan"]["contribution_p5"] = round(float(np.percentile(res["contribution"], 5)), 1)
     out["plan"]["kept_by_laura_median"] = round(float(np.median(res["facility"] - res["contribution"])), 1)
     out["plan"]["lock_cost_2027_median"] = round(float(np.median(res["lock_cost_2027"])), 1)
-    order = np.argsort(res["growth_2031"])
     # The model's 10th-90th percentile range held ~98% of real outcomes on history; the band that held 80%
     # comes from scripts/policy_study.py (run it first).
     policy = OUT / "policy_study.json"
@@ -97,14 +96,16 @@ def main(n: int = 20_000):
               if policy.exists() else (20.0, 80.0))
     quotes = {"calibrated_band_percentiles": [lo, hi]}
     for label, q in (("bad_p10", 0.10), ("median", 0.50), ("good_p90", 0.90)):
-        i = int(order[int(q * (len(order) - 1))])
-        c = engine.conditional_2031(st, sc, res, p, i=i, n_inner=3000, cfg=cfg)
+        # Each world is a band of 21 scenarios around percentile q (engine.conditional_2031_band)
+        c = engine.conditional_2031_band(st, sc, res, p, q=q, n_inner=3000, cfg=cfg,
+                                         percentiles=sorted({5, 10, 50, 90, 95, lo, hi}))
         quotes[label] = {"growth_2031": round(c["growth_2031"], 1), "floor_dec_2032": round(c["floor"], 1),
+                         "floor_dec_2032_band": [round(x, 1) for x in c["floor_range"]],
                          "guaranteed_contribution": round(0.85 * c["floor"], 1),
                          "facility_p10": round(c["p10"], 1), "facility_p90": round(c["p90"], 1),
                          "contribution_range": [round(0.85 * c["p10"], -2), round(0.85 * c["p90"], -2)],
-                         "contribution_range_calibrated": [round(0.85 * float(np.percentile(c["inner"], lo)), -2),
-                                                           round(0.85 * float(np.percentile(c["inner"], hi)), -2)]}
+                         "contribution_range_calibrated": [round(0.85 * c[f"p{lo:g}"], -2),
+                                                           round(0.85 * c[f"p{hi:g}"], -2)]}
     out["quotes_2031"] = quotes
 
     # 4. Stress tests

@@ -319,3 +319,25 @@ def conditional_2031(st: Strategy, sc: Scenarios, res: dict, params, i: int | No
     return {"scenario": i, "floor": float(res["floor_2033"][i]), "growth_2031": float(res["growth_2031"][i]),
             "p10": float(np.percentile(f, 10)), "median": float(np.median(f)), "p90": float(np.percentile(f, 90)),
             "p5": float(np.percentile(f, 5)), "p95": float(np.percentile(f, 95)), "inner": f}
+
+
+def conditional_2031_band(st: Strategy, sc: Scenarios, res: dict, params, q: float = 0.5,
+                          width: float = 0.05, k: int = 21, n_inner: int = 3000, seed: int = 99,
+                          cfg: EngineConfig | None = None, percentiles=(5, 10, 20, 50, 80, 90, 95)) -> dict:
+    """The 2031 quote for a world at percentile q of Jan 2031 wealth, made stable: the median, across k
+    scenarios spread evenly over percentiles q-width..q+width, of each scenario's own quote. One
+    scenario alone is noisy: within the 45-55th percentile band the floor bought in Jan 2031 varies by
+    about +/-$4k with that month's interest rates."""
+    rank_on = res.get("assets_2031", res["growth_2031"])
+    order = np.argsort(rank_on)
+    n = len(order)
+    picks = [int(order[int(round(x * (n - 1)))]) for x in np.linspace(max(q - width, 0), min(q + width, 1), k)]
+    rows = [conditional_2031(st, sc, res, params, i=i, n_inner=n_inner, seed=seed, cfg=cfg) for i in picks]
+    floors = np.array([c["floor"] for c in rows])
+    out = {"scenarios": picks, "floor": float(np.median(floors)),
+           "floor_range": (float(floors.min()), float(floors.max())),
+           "growth_2031": float(np.median([c["growth_2031"] for c in rows]))}
+    for pc in percentiles:
+        out[f"p{pc:g}"] = float(np.median([np.percentile(c["inner"], pc) for c in rows]))
+    out["median"] = out.get("p50", float(np.median([c["median"] for c in rows])))
+    return out
