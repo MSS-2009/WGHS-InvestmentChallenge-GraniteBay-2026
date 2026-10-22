@@ -81,3 +81,30 @@ it is then applied to the instantaneous rate, giving a 72-month p5-p95 of -15% t
 history's -0.3% to +44%. Monthly changes have autocorrelation 0.60 / 0.30 / 0.03 at lags 1 / 2 / 12,
 and the k-month dispersion is 1.7x the i.i.d. scaling at every horizon from 12 to 72 months:
 persistence lasts months, not years. So "the starting state dominates" is unproven. Round 3 refits.
+
+### r3-robust (merged)
+Seven shortlisted policies x 11 assumption shifts, common random numbers. Maximum regret across shifts
+(gap to the best shortlisted policy under each shift):
+
+| Policy | median | p5 | CVaR5 | CE gamma 4 | CE gamma 8 | secured 2031 |
+|---|---:|---:|---:|---:|---:|---:|
+| IPS (60/40, 60% floor 2031) | 39.6k | 16.6k | 19.6k | 6.8k | 12.5k | 92.1k |
+| P2305 (40/60, no floor) | 41.3k | 9.7k | 10.9k | 4.4k | 6.8k | 231.2k |
+| P2333 (40/60, 60% floor 2030) | 49.0k | 2.7k | 2.9k | 9.5k | 1.8k | 93.3k |
+| P2361 (40/60, 100% floor 2031) | 50.3k | 4.3k | 4.9k | 11.1k | 3.7k | 0.8k |
+| P2485 (40 to 0, 100% floor 2030) | 55.4k | 2.2k | 1.5k | 14.9k | 5.7k | 4.8k |
+| P1729 (70/30, no floor, 75% lock) | 23.5k | 34.7k | 39.6k | 17.2k | 31.2k | 231.2k |
+| P0964 (all equity, 50% lock) | 10.4k | 64.5k | 73.3k | 49.0k | 117.3k | 231.2k |
+
+No policy is robust on every objective; the IPS is in the middle on each. Under the lowest-forecast
+equity returns (-2.8 points), every 40%-equity policy beats the IPS on median as well.
+Found in review: under `t_dof = 3`, one scenario's 5-year rate falls about 4.5 points in the two
+months before the 2027 lock and ends $450 short for every policy, so all CE values in the
+`tails_tdof3` rows are that artifact (about $27). Cause: the common Student-t mixing variable gives
+rate shocks fat tails that history does not have (5-year zero, monthly change: history excess
+kurtosis 0.6, worst month -0.81 pp; model at t5 worst month -1.99 pp; Gaussian rates -1.22 pp).
+
+## Round 4
+| Thread | Branch | Brief | Question |
+|---|---|---|---|
+| lgm-rates | r4-rates | `docs/loop/r4_rates.md` | Give rate shocks their own (thinner) tails, keep crash correlations, measure the effect |
