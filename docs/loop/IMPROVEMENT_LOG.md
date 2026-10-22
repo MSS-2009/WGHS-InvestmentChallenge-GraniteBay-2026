@@ -70,3 +70,14 @@ releases at green. COMMON.md rule 11 asks workers to keep peak memory under abou
 |---|---|---|---|
 | lgm-esg | r3-strips | `docs/loop/r3_strips.md` | Real-world reserve with no reinvestment assumption: STRIPS and December maturities |
 | lgm-policy | r3-robust | `docs/loop/r3_robust.md` | Does the policy choice survive pessimistic returns, vol, tails and rate shocks? |
+| lgm-taiwan | r3-taiwan | `docs/loop/r3_taiwan.md` | Refit the Taiwan cost process on monthly changes; validate unconditional and conditional |
+
+### r2-taiwan (merged, specification not adopted)
+Plumbing merged: opt-in persistent process, state pass-through to `conditional_2031`, real DGBAS
+cost paths in the historical replay (real median $169.9k against $155.1k with the 4% line, on the
+same 184 paths). The specification is wrong: `tw_cost_phi = 0.97` is the AR(1) of the overlapping
+12-month rate, which i.i.d. monthly noise already pushes to 0.92 (planner's simulation, 0.916), and
+it is then applied to the instantaneous rate, giving a 72-month p5-p95 of -15% to +66% against
+history's -0.3% to +44%. Monthly changes have autocorrelation 0.60 / 0.30 / 0.03 at lags 1 / 2 / 12,
+and the k-month dispersion is 1.7x the i.i.d. scaling at every horizon from 12 to 72 months:
+persistence lasts months, not years. So "the starting state dominates" is unproven. Round 3 refits.
