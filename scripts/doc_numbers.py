@@ -349,6 +349,15 @@ def checks() -> list[tuple[str, str, str]]:
                 f"Look-through\ntech/communication is {c['tech_comm']:.1%} (market {c['tech_comm_market']:.1%}); "
                 f"China+Taiwan is {c['china_taiwan']:.1%} (market {c['china_taiwan_market']:.1%})."))
     out.append(("MODEL", "FX hedge frontier", hedge_sentence()))
+    so = pd.read_csv(R / "satellite_oos.csv")
+    sel, ctrl = so.sel_vol_ratio.mean(), so.ctrl_vol_ratio_median.mean()
+    out.append(("MODEL", "satellite out of sample",
+                f"volatility fell by a factor of {sel:.2f} out of sample, against {ctrl:.2f} for random 35-name baskets"))
+    out.append(("MODEL", "satellite selection effect", f"selection made in-sample risk look about {sel / ctrl - 1:.0%} too low"))
+    lpm = pd.read_csv(R / "ladder_premium.csv")
+    lpm = lpm[(lpm.kind == "score") & lpm.strategy.str.startswith("IPS")].set_index("variant")
+    out.append(("MODEL", "ladder slope, loop summary",
+                f"a rate-dependent ladder premium (+${lpm.loc['rate slope', 'median_vs_engine']:,.0f} median"))
     out += [("MODEL", f"sensitivity row {i + 1}", row) for i, row in enumerate(sensitivity_rows())]
     tw10 = fx.loc["random_walk", "real_median"] - fx.loc["random_walk_tw_drift_10y", "real_median"]
     out.append(("MODEL", "Taiwan drift effect", f"the real median by {k(tw10)} (`scripts/fx_variants.py`"))

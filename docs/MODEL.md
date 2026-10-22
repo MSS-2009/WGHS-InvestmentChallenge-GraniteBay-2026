@@ -50,8 +50,9 @@ Market inputs (all keyless):
   forwards minus the Kim-Wright term premium 7.5%, pure forwards 10.0%. Unchanged also has the
   smallest bias, so it stays. Run today with the Kim-Wright path instead, the median facility is
   $0.5k lower (`reports/rate_path_scenario.json`).
-- **Inflation:** reverts from the latest CPI reading (September: 3.7%) toward 7-year breakeven inflation from Treasury's
-  nominal and TIPS par curves (2.37% on October 20, 2026). TIPS are a gauge only; WInS forbids them.
+- **Inflation:** reverts from the latest CPI reading (September: 3.7%) toward 7-year breakeven
+  inflation from Treasury's nominal and TIPS par curves (2.37% on October 20, 2026). TIPS are a gauge
+  only; WInS forbids them.
 - **USD/TWD:** the Federal Reserve's H.10 noon buying rate, from 2000 (replaces Yahoo's series, which
   needed bad prints filtered out). No drift: on TWD's own history the random walk forecasts better
   than the forward at 12, 36 and 72 months, and the actual central-bank forward is biased (Fama slope
@@ -267,12 +268,12 @@ in 2033 at face value. The January 2033 sale that pays the contribution in cash 
 ticket per fund still held (nine for the core, $225; 35 more for the satellite, $875;
 `EngineConfig.sell_at_settlement`).
 
-The base BL core median in this run is $197.0k. It is $0.3k below the core's own run because the satellite
-view, being relative, lowers the core funds' posterior returns by a few basis points; comparisons
-within the run are unaffected. Funding stays 100% in every case: the satellite cannot touch the
-payments. At a 20% share, each extra 1pp of alpha moves the median by about $810. With $25 commissions
-the satellite needs about 5.3pp a year of alpha beyond the posterior to break even, which is not
-credible. The cost is fixed per trade rather than proportional, so at WInS commission levels a
+The base BL core median in this run is $197.0k. It is $0.3k below the core's own run because the
+satellite view, being relative, lowers the core funds' posterior returns by a few basis points;
+comparisons within the run are unaffected. Funding stays 100% in every case: the satellite cannot
+touch the payments. At a 20% share, each extra 1pp of alpha moves the median by about $810. With $25
+commissions the satellite needs about 5.3pp a year of alpha beyond the posterior to break even, which
+is not credible. The cost is fixed per trade rather than proportional, so at WInS commission levels a
 smaller satellite is no cheaper. Without commissions it is roughly neutral.
 
 Commission assumptions are an upper bound. Every invest or rebalance event trades all 35 names
@@ -348,7 +349,7 @@ persistence bias-corrected (wider long-horizon rate spread, median unchanged); J
 assumptions in place of its 2026 ones (median -$0.1k); real Taiwan cost paths in the replay; the 2031
 quote from a band of scenarios. Built but left off, with the evidence for each: expected-return
 uncertainty (no material effect), GARCH volatility clustering (worse calibrated on history), a USD/TWD
-drift (the forward is a biased forecast for TWD), a rate-dependent ladder premium (+$27 median, and it
+drift (the forward is a biased forecast for TWD), a rate-dependent ladder premium (+$29 median, and it
 relies on 3% cash in low-rate scenarios). Checked and found not to need a change: the stock-rate
 correlation regime (the IPS barely moves), crash-month co-movement (not significant), and long-horizon
 mean reversion in stocks or USD/TWD (neither significant). Studies whose decisions belong to the
@@ -367,15 +368,14 @@ used the defaults of their round.
   quantitative screen at four dates in 2023 and following each basket for about three years, the
   chosen names' volatility fell by a factor of 0.86 out of sample, against 0.77 for random 35-name
   baskets from the same universe over the same windows (the market got calmer for everyone). Relative
-  to random baskets, selection made in-sample risk look about 12% too low; out of sample the "low-risk"
-  picks were no calmer than random baskets. Correcting for it (`scripts/satellite_risk_sensitivity.py`)
-  raises the satellite's volatility from 15.1% to 16.9% and its beta from 0.89 to 0.99: at a 20% share
-  and no commissions the median stays positive (+$0.4k as estimated, +$0.6k
-  to +$0.8k corrected), but the 5th percentile goes from +$0.2k to -$0.2k
-  to -$0.3k against the core alone; with $25 commissions from -$4.0k to -$4.6k
-  to -$4.7k. Thin
-  evidence: four overlapping screens, one market episode, today's index members only, and the
-  qualitative judgments could not be re-run historically.
+  to random baskets, selection made in-sample risk look about 12% too low; out of sample the
+  "low-risk" picks were no calmer than random baskets. Correcting for it
+  (`scripts/satellite_risk_sensitivity.py`) raises the satellite's volatility from 15.1% to 16.9% and
+  its beta from 0.89 to 0.99: at a 20% share and no commissions the median stays positive (+$0.4k as
+  estimated, +$0.6k to +$0.8k corrected), but the 5th percentile goes from +$0.2k to -$0.2k to -$0.3k
+  against the core alone; with $25 commissions from -$4.0k to -$4.6k to -$4.7k. Thin evidence: four
+  overlapping screens, one market episode, today's index members only, and the qualitative judgments
+  could not be re-run historically.
 - Locked payments are certain only if cash awaiting a payment earns at least 3% (see "How certain is
   'certain'?"); the Monte Carlo does not simulate that reinvestment rate.
 
@@ -384,7 +384,7 @@ Every run is anchored to the dates in `config/asof.yaml` (curve date, last month
 the WInS account's cash and holdings are in `config/wins_account.yaml`. To refresh before the Final
 Report, change the dates and run `python scripts/run_all.py --refresh`.
 ```
-python scripts/run_all.py              # every script below, in dependency order (about 30 s)
+python scripts/run_all.py              # every script, the studies the docs quote, then the doc check (~90 s)
 python scripts/build_core.py           # ETF core: reports/core_bl.csv, core_scoring.csv
 python scripts/build_satellite.py      # satellite: reports/satellite_*.csv (add --rescreen to refetch)
 python scripts/validate_model.py       # how good is it: generator checks, convergence, replay, BL sensitivity
