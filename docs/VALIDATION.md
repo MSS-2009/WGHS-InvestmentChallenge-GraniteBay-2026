@@ -124,6 +124,10 @@ Run `python scripts/validate_model.py` (reports `validation_esg.csv`, `validatio
   points, and the one correlation checked (VTV-VGK, 0.793).
 - **Tails are fatter than history:** monthly excess kurtosis 3.9-6.0 against 0.1-3.4 in 2005-2026,
   so crash risk is, if anything, overstated.
+- **No long-horizon mean reversion to leave out:** US stocks' 74-month variance ratio since 1926 is 0.75
+  against 0.91 for i.i.d. returns of the same length (p = 0.26; every start date and horizon tested,
+  nominal or excess, has p of 0.26 or more), so i.i.d. monthly shocks do not overstate six-year
+  risk (`scripts/equity_horizon.py`). The same test on USD/TWD: `docs/MODEL.md`.
 - **Rates:** the 10-year yield's change to January 2033 spans -2.8 to +2.8 points (5th-95th
   percentile), against -2.7 to +2.4 points over every 74-month window since 1994.
 - **Convergence:** across 8 seeds of 20,000 scenarios the median facility is $197,600 with a standard

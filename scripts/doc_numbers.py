@@ -157,6 +157,11 @@ def checks() -> list[tuple[str, str, str]]:
     out.append(("MODEL", "ladder premium impact",
                 f"changes the IPS median by +${sl.median_vs_engine:,.0f} and its 5th percentile by +{k(sl.p5_vs_engine)}; "
                 f"with the lower level as well,\n+{k(lv.median_vs_engine)} and +{k(lv.p5_vs_engine)}"))
+    eh = pd.read_csv(R / "equity_horizon.csv")
+    e74 = eh[(eh.returns == "nominal") & (eh.start == 1926) & (eh.horizon_m == 74)].iloc[0]
+    out.append(("VALIDATION", "equity variance ratio", f"74-month variance ratio since 1926 is {e74.variance_ratio:.2f}\n  "
+                f"against {e74.null_median:.2f} for i.i.d. returns of the same length (p = {e74.p_mean_reversion:.2f}; "
+                f"every start date and horizon tested,\n  nominal or excess, has p of {eh.p_mean_reversion.min():.2f} or more)"))
     return out
 
 

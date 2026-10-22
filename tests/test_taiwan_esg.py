@@ -232,3 +232,16 @@ def test_cost_fx_correlation_carries_to_long_horizons():
         assert abs(c - (-0.25)) < 0.03
     off = simulate(dc.replace(p, tw_cost_fx_corr=None), n=20_000, seed=3)
     assert np.array_equal(off.fx_log, sc.fx_log)          # only the cost path changes
+
+
+def test_variance_ratio_separates_iid_from_mean_reversion():
+    from lgm.calibrate import variance_ratio, variance_ratio_test
+
+    rng = np.random.default_rng(3)
+    iid = rng.standard_normal(5000)
+    e = rng.standard_normal(40_001)
+    ma = e[1:] - 0.5 * e[:-1]                       # lag-1 autocorrelation -0.4: VR(h) = 1 - 0.8 (1 - 1/h)
+    assert abs(variance_ratio(iid, 12) - 1) < 0.15
+    assert variance_ratio(ma, 36) == pytest.approx(1 - 0.8 * 35 / 36, abs=0.03)
+    t = variance_ratio_test(ma[:600], 36, n_null=2000)
+    assert t["p_mean_reversion"] < 0.05 and t["null_median"] < 1

@@ -81,6 +81,25 @@ def kendall_corrected(phi: np.ndarray, n_obs: int, cap: float = 0.995) -> np.nda
     return np.minimum(phi + (1 + 3 * phi) / n_obs, cap)
 
 
+def variance_ratio(changes: np.ndarray, h: int) -> float:
+    """Variance of overlapping h-period sums over h times the one-period variance (Lo-MacKinlay, both
+    around the sample mean). Below 1: mean reversion; above 1: trending."""
+    r = np.asarray(changes, dtype=float)
+    x, mu = np.r_[0.0, np.cumsum(r)], r.mean()
+    return float(((x[h:] - x[:-h] - h * mu) ** 2).mean() / (h * ((r - mu) ** 2).mean()))
+
+
+def variance_ratio_test(changes: np.ndarray, h: int, n_null: int = 20_000, seed: int = 0) -> dict:
+    """The ratio against an i.i.d. null built by resampling the same changes (same length and tails, so
+    the small-sample downward bias of overlapping ratios is in the null too). p: share of null ratios at
+    or below the observed one, i.e. the evidence for mean reversion."""
+    r = np.asarray(changes, dtype=float)
+    rng = np.random.default_rng(seed)
+    null = np.array([variance_ratio(rng.choice(r, len(r)), h) for _ in range(n_null)])
+    vr = variance_ratio(r, h)
+    return {"variance_ratio": vr, "null_median": float(np.median(null)), "p_mean_reversion": float((null <= vr).mean())}
+
+
 def calibrate(eq_window_start: str = "2007-08-31", end: str = DATA_END) -> Calibration:
     fh = factor_history()
     phis, resids = [], []

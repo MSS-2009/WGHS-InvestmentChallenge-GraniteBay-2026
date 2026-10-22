@@ -32,8 +32,8 @@ Market inputs (all keyless):
   -0.09; `docs/loop/r4_fx_findings.md`). Hedging at today's forward (-2.28% a year) would fix the
   Taiwan-dollar value at a real median of $145.6k instead of $167.0k.
   No mean reversion either: over 2000-2026 the 74-month change spread is half a random walk's
-  (variance ratio 0.34), but a random walk of the same length gives a median of 0.67 and 0.34 or less
-  15% of the time; on FRED's copy of the same rate from 1983 the ratio is 1.55 (the late-1980s
+  (variance ratio 0.34), but a random walk of the same length gives a median of 0.66 and 0.34 or less
+  14% of the time; on FRED's copy of the same rate from 1983 the ratio is 1.55 (the late-1980s
   appreciation). The model's 74-month spread (sd 14.0%) lies between the two samples' 6.5% and 16.4%
   (`scripts/fx_horizon.py`).
 - **Taiwan building costs:** the official DGBAS construction cost index, 1991-2026
