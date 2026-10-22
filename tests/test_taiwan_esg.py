@@ -217,6 +217,10 @@ def test_headline_defaults_use_fitted_taiwan_process_and_gaussian_rates():
     assert p.tw_cost_phi == (0.6546, -0.0939) and p.tw_cost_growth == 0.0285
     assert p.tw_cost_state0 == (0.00284974, 0.00650706)
     assert p.tw_cost_fx_corr == -0.25
+    from lgm.calibrate import kendall_corrected
+    from lgm.profiles import _cal
+    assert np.allclose(p.phi, kendall_corrected(_cal().phi, _cal().notes["months_rates"]))
+    assert (p.phi > _cal().phi).all() and (p.phi <= 0.995).all()
 
 
 def test_cost_fx_correlation_carries_to_long_horizons():

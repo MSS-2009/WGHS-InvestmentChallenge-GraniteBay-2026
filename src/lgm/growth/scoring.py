@@ -51,13 +51,20 @@ def taiwan_cost_params(drift_key: str = "full_sample_35y") -> dict:
 def esg_params(cal: dict, eq_geo: np.ndarray, curve_date: str = CURVE_DATE, infl_phi: float = 0.966,
                phi: np.ndarray | None = None, infl_mu: float | None = None) -> ESGParams:
     """Inflation starts at the latest CPI reading and reverts toward market breakeven inflation unless
-    `infl_mu` is given. Rate shocks are Gaussian while equities keep Student-t(5) tails
-    (docs/loop/r4_rates_findings.md); Taiwan building costs follow the fitted AR(2)."""
+    `infl_mu` is given. Rate-factor persistence is bias-corrected (`calibrate.kendall_corrected`); rate
+    shocks are Gaussian while equities keep Student-t(5) tails (docs/loop/r4_rates_findings.md); Taiwan
+    building costs follow the fitted AR(2)."""
     from ..profiles import _cal
 
     zc = bootstrap(par_curve(curve_date))
     beta0, resid = initial_state(zc)
-    phi = _cal().phi if phi is None else phi
+    if phi is None:
+        # Rate factors: OLS persistence corrected for its small-sample bias, so the 74-month spread of
+        # rate changes comes closer to history's (5-year rate sd: 1.26 -> 1.61 points; history 1.84)
+        from ..calibrate import kendall_corrected
+
+        cal_ = _cal()
+        phi = kendall_corrected(cal_.phi, cal_.notes["months_rates"])
     return ESGParams(months=engine.M_2033, beta0=beta0, resid=resid, beta_mu=beta0.copy(), phi=phi,
                      cov=cal["cov"], eq_geo=np.asarray(eq_geo), infl0=latest_inflation(),
                      infl_mu=market_inflation(curve_date) if infl_mu is None else infl_mu,

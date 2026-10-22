@@ -27,7 +27,7 @@ MCHI volatility,0.2313,0.2316,0.2444
 MCHI median annual return,0.0417,0.0417,0.0044
 MCHI monthly excess kurtosis,,4.941,1.8132
 Correlation VTV-VGK,0.7928,0.7929,0.8647
-"10-year yield change to Jan 2033, p5",,-0.0212,-0.0269
+"10-year yield change to Jan 2033, p5",,-0.0275,-0.0269
 "10-year yield change to Jan 2033, p50",,0.0,-0.0107
-"10-year yield change to Jan 2033, p95",,0.0216,0.0237
+"10-year yield change to Jan 2033, p95",,0.0283,0.0237
 10-year yield today (2026-10-20),0.0522,0.0522,

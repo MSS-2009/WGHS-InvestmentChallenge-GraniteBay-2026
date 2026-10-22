@@ -11,7 +11,10 @@ and a monthly scenario generator: Nelson-Siegel rates, K equity assets, inflatio
 building costs. Equity, inflation and USD/TWD shocks are Student-t(5); rate shocks are Gaussian,
 which is what 1994-2026 history shows (worst 0.1% of monthly 5-year moves: -0.80 points in history and
 in the model; with shared t5 tails the model produced 2-5 point jumps in two months,
-`docs/loop/r4_rates_findings.md`). The engine applies a strategy month by month (lock schedule,
+`docs/loop/r4_rates_findings.md`). Rate-factor persistence is the OLS estimate corrected for its small-sample bias (Kendall,
+`calibrate.kendall_corrected`: 0.984/0.979/0.954 become 0.994/0.989/0.964), which widens the spread of
+74-month 5-year rate changes from 1.26 to 1.61 points (history 1.84) and leaves the IPS median within
+$0.1k. The engine applies a strategy month by month (lock schedule,
 mix, rebalancing band, 2031 floor, contribution rule). `docs/VALIDATION.md` checks this against the
 former team's guide and Plans v2.
 
@@ -20,14 +23,14 @@ Market inputs (all keyless):
   the curve 74 months ahead from 320 month-ends. Error in the cost of ten payments: unchanged 7.7%,
   forwards minus the Kim-Wright term premium 7.5%, pure forwards 10.0%. Unchanged also has the
   smallest bias, so it stays. Run today with the Kim-Wright path instead, the median facility is
-  $0.7k lower (`reports/rate_path_scenario.json`).
+  $0.5k lower (`reports/rate_path_scenario.json`).
 - **Inflation:** reverts from the latest CPI reading (September: 3.7%) toward 7-year breakeven inflation from Treasury's
   nominal and TIPS par curves (2.37% on October 20, 2026). TIPS are a gauge only; WInS forbids them.
 - **USD/TWD:** the Federal Reserve's H.10 noon buying rate, from 2000 (replaces Yahoo's series, which
   needed bad prints filtered out). No drift: on TWD's own history the random walk forecasts better
   than the forward at 12, 36 and 72 months, and the actual central-bank forward is biased (Fama slope
   -0.09; `docs/loop/r4_fx_findings.md`). Hedging at today's forward (-2.28% a year) would fix the
-  Taiwan-dollar value at a real median of $145.7k instead of $167.0k.
+  Taiwan-dollar value at a real median of $145.6k instead of $167.0k.
 - **Taiwan building costs:** the official DGBAS construction cost index, 1991-2026
   (`data/raw/taiwan/`). Monthly log changes follow a fitted AR(2) (0.655, -0.094) that reproduces the
   index's autocorrelation and the spread of its 1- to 72-month changes, started from the Aug and Sep
@@ -51,7 +54,7 @@ ladder as held is $189 short for the 2034 payment, fixed by 6 more IBTO shares
 
 **Rate stress.** Rates 0.75 points lower before the January 2027 lock, and expected to stay there (the
 long-run level moves with today's, matching the "unchanged" expectation): the IPS median falls from
-$197.6k to $161.6k, and still funds every payment. 0.75 points higher: $233.0k.
+$197.6k to $161.5k, and still funds every payment. 0.75 points higher: $233.1k.
 
 ## Part 2a — ETF core (Black-Litterman)
 Nine equity groups, one ETF each (VUG, VTV, VB, VGK, BBJP, EPP, BBCA, EMXC, MCHI). Bonds in the growth
@@ -99,7 +102,7 @@ Monte Carlo, median facility (IPS rules, 20,000 scenarios, `reports/report_numbe
 | Sleeve | Views right, $25 trades | Views right, no commissions | Views wrong (equilibrium), $25 trades |
 |---|---:|---:|---:|
 | VTI/VEA/VWO 60/30/10 (3 funds) | $197.8k | $198.6k | $197.2k |
-| Black-Litterman core (9 funds) | $197.6k | $199.0k | $196.3k |
+| Black-Litterman core (9 funds) | $197.6k | $199.0k | $196.4k |
 
 The core's views are worth about $0.4k before commissions. Its six extra funds cost the same in
 WInS commissions. So the core is a risk-control choice, not a return engine: it holds technology and
@@ -192,10 +195,10 @@ funded from VUG/VTV pro rata, so the core's region and style decisions stand.
 ### Monte Carlo verdict (median facility vs the BL core alone, IPS rules)
 | Beliefs | Commissions | +10% | +20% | +30% |
 |---|---|---:|---:|---:|
-| Equilibrium (no alpha) | $25 per trade (WInS) | −$3.7k | −$3.8k | −$4.0k |
-| BL posterior (+0.22%) | $25 per trade (WInS) | −$3.5k | −$3.4k | −$3.2k |
-| BL posterior (+0.22%) | none | +$0.2k | +$0.5k | +$0.6k |
-| Alpha as hoped (+0.82%) | $25 per trade (WInS) | −$3.3k | −$2.9k | −$2.5k |
+| Equilibrium (no alpha) | $25 per trade (WInS) | −$3.8k | −$4.0k | −$4.1k |
+| BL posterior (+0.22%) | $25 per trade (WInS) | −$3.6k | −$3.4k | −$3.2k |
+| BL posterior (+0.22%) | none | +$0.3k | +$0.4k | +$0.6k |
+| Alpha as hoped (+0.82%) | $25 per trade (WInS) | −$3.3k | −$3.0k | −$2.5k |
 
 Commissions are charged as if paid from the portfolio when incurred (they lose the returns the
 portfolio would have earned), which raises the satellite's cost by about $0.5k against charging them
@@ -234,11 +237,11 @@ names get zero shares. Hence the IPS keeps the satellite out of WInS.
 
 | Floor | Median | 5th pct | 95th pct | Secured in 2031 (typical) | 10th-90th pct range (typical) |
 |---|---:|---:|---:|---:|---|
-| 0% | $200.8k | $141.8k | $290.3k | $0 | $145.1k-$201.7k |
-| 40% | $198.8k | $145.9k | $275.0k | $66.5k | $152.7k-$186.9k |
-| 60% (IPS) | $197.6k | $147.3k | $269.5k | $99.8k | $156.7k-$179.4k |
-| 80% | $196.3k | $147.6k | $265.3k | $133.0k | $161.0k-$172.3k |
-| 100% | $195.2k | $147.2k | $262.5k | $166.3k | $165.4k |
+| 0% | $200.8k | $141.6k | $290.5k | $0 | $144.5k-$202.5k |
+| 40% | $198.8k | $145.8k | $275.2k | $66.5k | $153.1k-$187.1k |
+| 60% (IPS) | $197.6k | $147.2k | $269.6k | $99.8k | $157.3k-$180.1k |
+| 80% | $196.2k | $147.3k | $265.6k | $133.1k | $161.3k-$172.7k |
+| 100% | $195.2k | $146.9k | $262.7k | $166.3k | $165.4k |
 
 "Typical" is the median, across 21 scenarios between the 45th and 55th percentile of January 2031
 wealth, of each scenario's own quote (`engine.conditional_2031_band`). A single scenario is noisy:
@@ -260,15 +263,15 @@ that matches its label. In the typical world, 85% of the facility gives:
 
 | Quote for co-sponsors (typical 2031 world) | Contribution range |
 |---|---|
-| Model 10th-90th percentile (historically ~98% of outcomes) | $156.7k-$179.4k |
-| 20th-80th percentile (historically ~80% of outcomes) | $159.7k-$174.8k |
+| Model 10th-90th percentile (historically ~98% of outcomes) | $157.3k-$180.1k |
+| 20th-80th percentile (historically ~80% of outcomes) | $160.3k-$175.5k |
 
 Quote the second as the 80% range, and the first as the cautious range. The paths overlap (about four
 independent six-year windows), so the calibration is thin evidence; both quotes sit above the $99.8k
 already secured by the floor. `scripts/report_numbers.py` writes both for the bad, typical and good
 worlds (`quotes_2031`).
 
-**Reverse stress test.** The worst 1% of futures average a $121.3k facility, with stocks down 32%
+**Reverse stress test.** The worst 1% of futures average a $120.9k facility, with stocks down 32%
 over 2028-2033 and a worst 12 months of -30%; rates barely move. The chance the facility ends below
 $100k is 0.03%, below $120k 0.4%, below $140k 2.7%.
 

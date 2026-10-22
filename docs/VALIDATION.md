@@ -124,13 +124,13 @@ Run `python scripts/validate_model.py` (reports `validation_esg.csv`, `validatio
   points, and the one correlation checked (VTV-VGK, 0.792).
 - **Tails are fatter than history:** monthly excess kurtosis 3.9-6.0 against 0.1-3.4 in 2005-2026,
   so crash risk is, if anything, overstated.
-- **Rates:** the 10-year yield's change to January 2033 spans -2.1 to +2.2 points (5th-95th
+- **Rates:** the 10-year yield's change to January 2033 spans -2.8 to +2.8 points (5th-95th
   percentile), against -2.7 to +2.4 points over every 74-month window since 1994.
-- **Convergence:** across 8 seeds of 20,000 scenarios the median facility is $197,587 with a standard
-  error of $28; the 5th percentile's is $125.
+- **Convergence:** across 8 seeds of 20,000 scenarios the median facility is $197,600 with a standard
+  error of $28; the 5th percentile's is $127.
 - **Historical replay:** 184 real six-year paths (starts April 2005 to July 2020) applied to today's
   curve. With returns re-centred on our expectations, the IPS median is $196.3k against $197.6k
-  simulated; its 5th percentile is $155.4k against $147.3k simulated, so the simulation is the more
+  simulated; its 5th percentile is $155.4k against $147.2k simulated, so the simulation is the more
   cautious. All-stock funds every payment in 90.2% of real paths against 86.8% simulated.
 - **Expected rate path:** forecasting the curve 74 months ahead from 320 month-ends (1994-2020), the
   error in the cost of ten payments is 7.7% for "unchanged", 7.5% for forwards minus the Kim-Wright term

@@ -74,6 +74,13 @@ def ar1(x: pd.Series) -> tuple[float, pd.Series]:
     return float(phi), resid
 
 
+def kendall_corrected(phi: np.ndarray, n_obs: int, cap: float = 0.995) -> np.ndarray:
+    """Kendall (1954) correction of OLS AR(1) coefficients, which are biased toward mean reversion in
+    persistent series: phi + (1 + 3 phi) / T, capped below a unit root."""
+    phi = np.asarray(phi, dtype=float)
+    return np.minimum(phi + (1 + 3 * phi) / n_obs, cap)
+
+
 def calibrate(eq_window_start: str = "2007-08-31", end: str = DATA_END) -> Calibration:
     fh = factor_history()
     phis, resids = [], []
