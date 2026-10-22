@@ -1,0 +1,3 @@
+check,n_months,first,last,mean_forward_premium,mean_cip_drift,mean_gap,sd_gap,corr,latest_forward_premium,latest_cip_drift,fama_alpha,fama_beta,fama_se,t_beta_0,t_beta_1,rmse_random_walk,rmse_forward
+cip_vs_forward,320,2000-01,2026-08,-0.016092,-0.007559,-0.008533,0.006464,0.8946,-0.022841,-0.020712,,,,,,,
+fama_actual_forward_6m,314,2000-01,2026-02,,,,,,,,-7.6e-05,-0.0925,0.5112,-0.18,-2.14,0.038776,0.040342

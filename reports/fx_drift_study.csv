@@ -1,0 +1,16 @@
+horizon_months,rule,bias,rmse,mae,n_windows,n_independent_windows,fama_beta,fama_se,fama_t_stat_0,fama_t_stat_1,notes
+12,random_walk,-0.000139,0.05083,0.041668,308,25,,,,,No change (fx_drift = 0); baseline random walk
+12,cip_forward,-0.007164,0.05325,0.043941,308,25,,,,,Full Covered Interest Parity forward rate differential
+12,half_cip,-0.003652,0.05143,0.042301,308,25,,,,,Half CIP forward rate differential
+12,trailing_10y_drift,-0.004967,0.053735,0.045369,188,15,,,,,Trailing 10-year (120-month) annualized historical drift
+12,fama_regression,0.00028,,,308,25,0.02,0.412,0.05,-2.38,"Fama OLS: realized = 0.0003 + 0.0200 * f_cip (NW SE: 0.4120, lag=12)"
+36,random_walk,0.00609,0.069483,0.056799,284,7,,,,,No change (fx_drift = 0); baseline random walk
+36,cip_forward,-0.008406,0.077798,0.06367,284,7,,,,,Full Covered Interest Parity forward rate differential
+36,half_cip,-0.001158,0.070872,0.057835,284,7,,,,,Half CIP forward rate differential
+36,trailing_10y_drift,-0.029532,0.086011,0.070277,164,4,,,,,Trailing 10-year (120-month) annualized historical drift
+36,fama_regression,-0.004757,,,284,7,0.092,0.2781,0.33,-3.26,"Fama OLS: realized = -0.0048 + 0.0920 * f_cip (NW SE: 0.2781, lag=36)"
+72,random_walk,0.025587,0.069453,0.05826,248,3,,,,,No change (fx_drift = 0); baseline random walk
+72,cip_forward,0.002894,0.085964,0.068603,248,3,,,,,Full Covered Interest Parity forward rate differential
+72,half_cip,0.01424,0.069003,0.054184,248,3,,,,,Half CIP forward rate differential
+72,trailing_10y_drift,-0.046231,0.101118,0.089978,128,1,,,,,Trailing 10-year (120-month) annualized historical drift
+72,fama_regression,-0.02173,,,248,3,0.17,0.2231,0.76,-3.72,"Fama OLS: realized = -0.0217 + 0.1700 * f_cip (NW SE: 0.2231, lag=72)"
