@@ -28,6 +28,22 @@ def rng(a: float, b: float) -> str:
     return f"{k(a)}-{k(b)}"
 
 
+def hedge_sentence() -> str:
+    """The FX hedging sentence in docs/MODEL.md's USD/TWD bullet, from reports/fx_hedge_frontier.csv."""
+    hf = pd.read_csv(R / "fx_hedge_frontier.csv").set_index(["belief", "hedge_ratio"])
+    rw, fw = hf.loc["random walk (headline)"], hf.loc["forward unbiased"]
+    best = fw.real_p5.idxmax()
+    return (f"Partial hedges (`scripts/fx_hedge_frontier.py`, a share of the median facility sold forward in\n"
+            f"  January 2027): on the random walk every hedge lowers the real 5th percentile as well as the median\n"
+            f"  (fully hedged {k(rw.loc[1.0, 'real_p5'])} and {k(rw.loc[1.0, 'real_median'])} against "
+            f"{k(rw.loc[0.0, 'real_p5'])} and {k(rw.loc[0.0, 'real_median'])}). Only if the forward is an\n"
+            f"  unbiased forecast does hedging pay, and then modestly: the median is unchanged within "
+            f"{k(fw.real_median.max() - fw.real_median.min())} and the 5th\n"
+            f"  percentile rises from {k(fw.loc[0.0, 'real_p5'])} to at most {k(fw.real_p5.max())} "
+            f"(at {best:.0%} hedged). Most of the real risk is the facility's own\n"
+            f"  dollar value, which no currency hedge removes.")
+
+
 def sensitivity_rows() -> list[str]:
     """The 'What the numbers rest on' table in docs/MODEL.md: each assumption, the alternative tried,
     and what it does to the IPS (headline median, 5th percentile, or real median where that is the point)."""
@@ -319,6 +335,7 @@ def checks() -> list[tuple[str, str, str]]:
                 f"with {c['volatility']:.1%} volatility, a {c['fee']:.2%} average fee and a {c['tracking_error']:.2%} tracking error. "
                 f"Look-through\ntech/communication is {c['tech_comm']:.1%} (market {c['tech_comm_market']:.1%}); "
                 f"China+Taiwan is {c['china_taiwan']:.1%} (market {c['china_taiwan_market']:.1%})."))
+    out.append(("MODEL", "FX hedge frontier", hedge_sentence()))
     out += [("MODEL", f"sensitivity row {i + 1}", row) for i, row in enumerate(sensitivity_rows())]
     tw10 = fx.loc["random_walk", "real_median"] - fx.loc["random_walk_tw_drift_10y", "real_median"]
     out.append(("MODEL", "Taiwan drift effect", f"the real median by {k(tw10)} (`scripts/fx_variants.py`"))

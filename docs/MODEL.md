@@ -59,6 +59,12 @@ Market inputs (all keyless):
   14% of the time; on FRED's copy of the same rate from 1983 the ratio is 1.55 (the late-1980s
   appreciation). The model's 74-month spread (sd 14.0%) lies between the two samples' 6.5% and 16.4%
   (`scripts/fx_horizon.py`).
+  Partial hedges (`scripts/fx_hedge_frontier.py`, a share of the median facility sold forward in
+  January 2027): on the random walk every hedge lowers the real 5th percentile as well as the median
+  (fully hedged $94.9k and $144.3k against $110.8k and $166.7k). Only if the forward is an
+  unbiased forecast does hedging pay, and then modestly: the median is unchanged within $0.9k and the 5th
+  percentile rises from $96.6k to at most $100.8k (at 75% hedged). Most of the real risk is the facility's own
+  dollar value, which no currency hedge removes.
 - **Taiwan building costs:** the official DGBAS construction cost index, 1991-2026
   (`data/raw/taiwan/`). Monthly log changes follow a fitted AR(2) (0.655, -0.094) that reproduces the
   index's autocorrelation and the spread of its 1- to 72-month changes, started from the Aug and Sep
