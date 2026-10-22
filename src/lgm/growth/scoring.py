@@ -48,7 +48,7 @@ def taiwan_cost_params(drift_key: str = "full_sample_35y") -> dict:
             "tw_cost_fx_corr": tw["usd_twd_innovation_corr"]}
 
 
-def esg_params(cal: dict, eq_geo: np.ndarray, curve_date: str = CURVE_DATE, infl_phi: float = 0.966,
+def esg_params(cal: dict, eq_geo: np.ndarray, curve_date: str = CURVE_DATE,
                phi: np.ndarray | None = None, infl_mu: float | None = None) -> ESGParams:
     """Inflation starts at the latest CPI reading and reverts toward market breakeven inflation unless
     `infl_mu` is given. Rate-factor persistence is bias-corrected (`calibrate.kendall_corrected`); rate
