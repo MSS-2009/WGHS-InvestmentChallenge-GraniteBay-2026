@@ -17,7 +17,6 @@ from lgm import engine, ladder
 from lgm.asof import CURVE_DATE
 from lgm.curve import bootstrap
 from lgm.data.strips import (
-    december_notes_universe,
     strips_plus_december_universe,
     strips_universe,
 )
@@ -39,7 +38,7 @@ def main(n: int = 20_000):
 
     # 2. Monte Carlo environment (matching scripts/report_numbers.py)
     r = build_core()
-    t, cov, w = r["table"], r["cov"], r["w_bl"]
+    t, w = r["table"], r["w_bl"]
     er = np.array([g.expense_ratio for g in CORE])
     beliefs = t["bl_geo_total"].values
     p = esg_params(r["cal"], beliefs)

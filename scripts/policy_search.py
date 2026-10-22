@@ -20,7 +20,7 @@ from lgm.growth.core import build_core
 from lgm.growth.scoring import esg_params
 from lgm.growth.universe import CORE
 from lgm.esg import simulate
-from lgm.strategies import IPS, Strategy
+from lgm.strategies import IPS
 
 OUT_DIR = Path(__file__).resolve().parents[1] / "reports"
 

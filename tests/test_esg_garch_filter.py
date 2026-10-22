@@ -1,6 +1,5 @@
 """Tests for GARCH variance filtering (Task 1 of r2-esg)."""
 import numpy as np
-import pytest
 
 from lgm.asof import DATA_END
 from lgm.calibrate import calibrate_equity_garch, filter_equity_garch

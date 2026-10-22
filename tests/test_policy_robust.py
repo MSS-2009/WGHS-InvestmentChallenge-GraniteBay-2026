@@ -2,9 +2,7 @@
 from pathlib import Path
 import numpy as np
 import pandas as pd
-import pytest
 
-from lgm.strategies import IPS
 
 REPORTS_DIR = Path(__file__).resolve().parents[1] / "reports"
 OUTPUT_CSV = REPORTS_DIR / "policy_robust.csv"

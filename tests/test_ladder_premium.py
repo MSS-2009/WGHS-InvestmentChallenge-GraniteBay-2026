@@ -1,6 +1,4 @@
 """The opt-in rate slope on the ladder premium (`EngineConfig.kappa_rate_slope`)."""
-import dataclasses as dc
-
 import numpy as np
 import pytest
 

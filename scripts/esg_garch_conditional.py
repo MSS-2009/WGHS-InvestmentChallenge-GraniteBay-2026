@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import dataclasses as dc
 from pathlib import Path
-import sys
 import time
 
 import numpy as np

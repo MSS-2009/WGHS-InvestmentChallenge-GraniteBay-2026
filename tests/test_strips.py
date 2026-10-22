@@ -3,11 +3,11 @@ import numpy as np
 import pytest
 
 from lgm.curve import ZeroCurve, bootstrap
-from lgm.data.strips import december_notes_universe, strips_plus_december_universe, strips_universe
+from lgm.data.strips import december_notes_universe, strips_universe
 from lgm.data.treasury import par_curve
 from lgm.dates import year_frac
-from lgm.instruments import TreasuryBond, TreasuryStrip
-from lgm.ladder import build_matrix, idle_cash_days, payment_schedule, solve, zero_coupon_cost
+from lgm.instruments import TreasuryStrip
+from lgm.ladder import idle_cash_days, solve
 
 
 def test_treasury_strip_flows_and_pricing():

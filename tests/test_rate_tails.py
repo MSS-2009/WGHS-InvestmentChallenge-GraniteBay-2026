@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from scipy import stats
 
-from lgm import calibrate, esg, profiles, nelson_siegel as ns
+from lgm import calibrate, esg, profiles
 
 
 @pytest.fixture
@@ -35,7 +35,6 @@ def test_covariance_preserved_across_options(base_params):
         dc.replace(base_params, rate_dof="gaussian", rate_shared=0.25),
         dc.replace(base_params, rate_dof=8.0, rate_shared=0.10, infl_dof="gaussian"),
     ]
-    chol = np.linalg.cholesky(base_params.cov)
     target_cov = base_params.cov
 
     # Generate 50,000 draws to verify theoretical covariance preservation

@@ -1,10 +1,9 @@
 """Tests for ESG v2 enhancements: expected-return uncertainty and volatility clustering."""
 import numpy as np
-import pytest
 
 from lgm import engine
 from lgm.calibrate import calibrate_cma_dispersion, calibrate_equity_garch
-from lgm.esg import ESGParams, Scenarios, simulate
+from lgm.esg import simulate
 from lgm.growth.core import build_core
 from lgm.growth.scoring import esg_params
 from lgm.growth.universe import CORE
