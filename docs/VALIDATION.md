@@ -168,7 +168,7 @@ tests in `tests/test_audit_fixes.py`:
 | --- | --- |
 | The WInS ladder check judged only the last payment and assumed 3% interest on cash (WInS pays 0%) | Checks every payment at WInS's 0%; prints the cheapest top-up and exits 1 if short. The ladder held is $189 short for 2034; 6 more IBTO shares fix it |
 | Reinvestment risk sat outside "100% funded" | `ladder.premium` derives the ladder premium from the LP (a test pins `kappa0` to it); a stress prices the reserve to be certain at 0% reinvestment (median -$7.9k) |
-| The 2031 "80% range" held 98% of real outcomes | Calibrated on history: the 20th-80th percentile band held 80%; both ranges are now reported |
+| The 2031 "80% range" held 98% of real outcomes | Calibrated on history: the 20th-80th percentile band held about 80% (section 7); both ranges are now reported |
 | Rate stresses faded back to today's curve by 2033 | The long-run level moves with the shock |
 | Negative-equity companies scored a neutral 3 on ROE and leverage | ROE not scored, leverage scores 1 (HLT 4.0 -> 3.5; selection unchanged) |
 | Stale "+1.0%" alpha label; HRP and rate-stress claims with no script behind them | Label follows `config/cma.yaml`; `validate_model.py` and `validate_plans_v2.py` now produce those numbers |
