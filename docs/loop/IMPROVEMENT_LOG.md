@@ -216,3 +216,23 @@ contribution $99.8k, 80% contribution range $160.3k-$175.5k. 109 tests pass; doc
   `doc_numbers.py` (72 s, byte-identical reports). The checker grew from 27 to 70 figures; on the
   way it caught over a dozen stale figures or sentences, including "the six extra funds cost the same in
   commissions" (no longer true) and the 2031 band calibration (80.4% -> 81.5%).
+
+### Round 6, afternoon (planner alone)
+- **Taiwan cost drift in real time** (`scripts/taiwan_drift_study.py`): from every month-end
+  2001-2020, the average since 1991 forecast the next 74 months' cost growth better than the trailing
+  ten-year average (RMSE 0.167 vs 0.222) in each of the four five-year blocks. Supports the headline's
+  2.85%; the ten-year drift would cost $8.7k of real median (now computed, `fx_variants`).
+- **FX hedge frontier** (`scripts/fx_hedge_frontier.py`): on the random walk every hedge ratio lowers
+  both the real 5th percentile and the median; if the forward were unbiased, hedging is about free in
+  the median and lifts the 5th percentile by at most $4.2k. Decision support for the client.
+- **Policy grid rerun** after the day's changes: IPS within $2.2k of the best CE at gamma 4 (rank 533
+  of 3,456); max regrets within $1.0k. Conclusions unchanged. `policy_robust --summary` now says it
+  reads the existing CSV (it had silently skipped the recompute once).
+- **"What the numbers rest on"** table at the top of MODEL.md, generated from the reports: three things
+  move the outcome by more than $10k (the rate level at the 2027/28 locks, which firm is right about
+  stocks, and USD/TWD in Taiwan terms); every other modelling choice moves the median by under $1.5k.
+- **Docs and tooling**: both docs read end to end; doc_numbers ignores line breaks and `--fix` replaces
+  numbers only; 108 figures checked; a test fails if a quoted report is not rewritten by run_all;
+  computed (not typed) CMA shifts in `policy_robust` and table labels; pyflakes clean and in CI; a
+  fresh clone passes the tests and reproduces every committed report byte for byte.
+Headline: median $197,244, p5 $146,831, CVaR5 $135,959, real median $166,709; 119 tests pass.
