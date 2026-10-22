@@ -381,7 +381,8 @@ $100k is 0.03%, below $120k 0.4%, below $140k 3.0%.
 `docs/loop/IMPROVEMENT_LOG.md` records every round, what was checked and what was rejected. Adopted
 into the headline numbers: Gaussian rate shocks; the DGBAS-based AR(2) Taiwan building-cost process,
 correlated with USD/TWD as history shows (real median $156.8k -> $166.5k); commissions compounded as
-if paid when incurred (median -$0.3k), plus the sale tickets in January 2033 (-$0.2k); rate-factor
+if paid when incurred (median -$0.3k), plus the sale tickets in January 2033 (-$0.2k), and the 2031
+floor move charged one ticket per fund instead of counting four twice (+$0.1k); rate-factor
 persistence bias-corrected (wider long-horizon rate spread, median unchanged); J.P. Morgan's 2027
 assumptions in place of its 2026 ones (median -$0.1k); short-history EM and China volatilities
 scaled to include 2008, and the Black-Litterman market level anchored to the consensus (together:
