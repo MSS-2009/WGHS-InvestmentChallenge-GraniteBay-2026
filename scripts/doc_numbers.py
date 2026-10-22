@@ -403,6 +403,11 @@ def checks() -> list[tuple[str, str, str]]:
                 f"China+Taiwan is {c['china_taiwan']:.1%} (market {c['china_taiwan_market']:.1%})."))
     out.append(("MODEL", "FX hedge frontier", hedge_sentence()))
     out.append(("MODEL", "Taiwan cost vs stocks", taiwan_equity_sentence()))
+    ev = pd.read_csv(R / "equity_vol_history.csv").set_index("period").annual_vol
+    out.append(("VALIDATION", "equity vol history",
+                f"volatility was {ev['2005-2026']:.1%} a year in 2005-2026, the window the equity volatilities come from, "
+                f"against {ev['1946-2026']:.1%} for 1946-2026; only 1926-1945 (the Depression and the war) lifts the 1926-2026 figure to "
+                f"{ev['1926-2026']:.1%}"))
     out.append(("MODEL", "headline in the sensitivity intro",
                 f"The IPS median is {k(plan['median'])} and its 5th percentile {k(plan['p5'])}."))
     zr = stress["reserve_certain_at_0pct_reinvestment"]

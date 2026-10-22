@@ -128,6 +128,10 @@ Run `python scripts/validate_model.py` (reports `validation_esg.csv`, `validatio
   against 0.91 for i.i.d. returns of the same length (p = 0.26; every start date and horizon tested,
   nominal or excess, has p of 0.26 or more), so i.i.d. monthly shocks do not overstate six-year
   risk (`scripts/equity_horizon.py`). The same test on USD/TWD: `docs/MODEL.md`.
+- **Volatility window is representative:** the US market's volatility was 15.4% a year in 2005-2026,
+  the window the equity volatilities come from, against 14.9% for 1946-2026; only 1926-1945 (the
+  Depression and the war) lifts the 1926-2026 figure to 18.3% (`reports/equity_vol_history.csv`). The
+  robustness study's x1.2 volatility case covers a return to that.
 - **Rates:** the 10-year yield's change to January 2033 spans -2.8 to +2.8 points (5th-95th
   percentile), against -2.7 to +2.4 points over every 74-month window since 1994.
 - **Convergence:** across 8 seeds of 20,000 scenarios the median facility is $197,253 with a standard
