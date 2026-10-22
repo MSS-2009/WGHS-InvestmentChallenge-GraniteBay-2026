@@ -149,3 +149,20 @@ Fama slopes 0.02 / 0.09 / 0.17 at 12 / 36 / 72 months and -0.09 on the actual 6-
 rejecting an unbiased forward; the random walk has the lowest error at 12 and 36 months. Real median
 (AR(2) Taiwan costs, full-sample drift): $167.4k at zero FX drift, $145.9k at the forward (-2.28%/yr).
 The FX assumption moves the real median twice as much as the Taiwan cost drift.
+
+## Round 5: integration (planner, branch `r5-integrate`, not yet merged into `improve`)
+Data-backed fixes switched on for the headline numbers (`growth.scoring.esg_params`; the former team's
+`cs_team` profile is untouched):
+- Gaussian rate shocks (`rate_dof="gaussian"`); equities, inflation and FX keep Student-t(5).
+- Taiwan building costs: fitted AR(2) at the 2.85% full-sample drift from the Aug/Sep 2026 readings;
+  the historical replay uses the real DGBAS paths (`history_paths(real_tw_cost=True)` by default).
+- New: the 2031 "typical world" quote is the median over 21 scenarios between the 45th and 55th
+  percentile of Jan 2031 wealth (`engine.conditional_2031_band`). Over three seeds and two rate-tail
+  settings the single-scenario floor ranged $114.0k-$120.0k; the band floor $116.8k-$118.7k
+  ($117.4k-$117.7k with Gaussian rates).
+Headline after integration: median $197,846 (was $197,910), p5 $147,396 (+$22), CVaR5 $136,629 (+$415),
+real median $167,359 (was $156,834), typical secured contribution in 2031 $99.8k (was $100.7k), 80%
+contribution range $159.9k-$175.1k (was $161.3k-$176.6k). 106 tests pass; `run_all.py` reproduces
+the committed reports. `docs/MODEL.md` and `docs/VALIDATION.md` updated.
+Not switched on, pending the user: the policy (IPS vs the 40%-equity alternatives), a STRIPS reserve
+outside WInS, FX hedging, and the choice of Taiwan cost drift.
