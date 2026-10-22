@@ -165,48 +165,60 @@
       80.0
     ],
     "bad_p10": {
-      "growth_2031": 143710.0,
-      "floor_dec_2032": 89692.1,
-      "guaranteed_contribution": 76238.3,
-      "facility_p10": 142586.0,
-      "facility_p90": 164116.5,
+      "growth_2031": 143710.3,
+      "floor_dec_2032": 94767.9,
+      "floor_dec_2032_band": [
+        89181.9,
+        98107.9
+      ],
+      "guaranteed_contribution": 80552.7,
+      "facility_p10": 148532.2,
+      "facility_p90": 170173.8,
       "contribution_range": [
-        121200.0,
-        139500.0
+        126300.0,
+        144600.0
       ],
       "contribution_range_calibrated": [
-        123600.0,
-        135800.0
+        128700.0,
+        140800.0
       ]
     },
     "median": {
-      "growth_2031": 179102.7,
-      "floor_dec_2032": 114768.2,
-      "guaranteed_contribution": 97553.0,
-      "facility_p10": 181722.7,
-      "facility_p90": 208643.1,
+      "growth_2031": 179114.7,
+      "floor_dec_2032": 117391.6,
+      "floor_dec_2032_band": [
+        112494.8,
+        123565.2
+      ],
+      "guaranteed_contribution": 99782.9,
+      "facility_p10": 184604.1,
+      "facility_p90": 211460.5,
       "contribution_range": [
-        154500.0,
-        177300.0
+        156900.0,
+        179700.0
       ],
       "contribution_range_calibrated": [
-        157500.0,
-        172700.0
+        159900.0,
+        175100.0
       ]
     },
     "good_p90": {
       "growth_2031": 225592.0,
-      "floor_dec_2032": 148683.0,
-      "guaranteed_contribution": 126380.6,
-      "facility_p10": 233868.8,
-      "facility_p90": 267911.9,
+      "floor_dec_2032": 147771.0,
+      "floor_dec_2032_band": [
+        138533.5,
+        161199.7
+      ],
+      "guaranteed_contribution": 125605.3,
+      "facility_p10": 233102.1,
+      "facility_p90": 267248.3,
       "contribution_range": [
-        198800.0,
-        227700.0
+        198100.0,
+        227200.0
       ],
       "contribution_range_calibrated": [
-        202600.0,
-        221800.0
+        201900.0,
+        221300.0
       ]
     }
   },
