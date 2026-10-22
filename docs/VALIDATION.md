@@ -192,3 +192,17 @@ tests in `tests/test_audit_fixes.py`:
 | Stale "+1.0%" alpha label; HRP and rate-stress claims with no script behind them | Label follows `config/cma.yaml`; `validate_model.py` and `validate_plans_v2.py` now produce those numbers |
 | Dates and WInS account state hard-coded across files; WInS scripts always re-downloaded prices | `config/asof.yaml` (the engine's month timeline follows the curve date), `config/wins_account.yaml`, a price cache, `scripts/run_all.py [--refresh]` |
 | Downloaders cached whatever came back (FRED served an HTML maintenance page with status 200 during the audit) | Every downloader checks the response before overwriting its cache; a refresh keeps the cached copy of any source that fails |
+
+## 10. Self-review during the improvement loop (October 22, 2026)
+
+A read of the engine, the order scripts and the documents, with each finding fixed and, where it
+is code, tested (`docs/loop/IMPROVEMENT_LOG.md` gives the effects):
+
+| Finding | Fix |
+| --- | --- |
+| The 2031 floor move charged 4 ETF tickets on top of the forced rebalance, which already charges one per fund | One ticket per fund; a separate floor ticket only when the sleeve holds VGIT (`tests/test_review_fixes.py`) |
+| `wins_rebalance.py` ignored the ladder check's shortfall | The cheapest top-up (6 IBTO) is ordered first (`tests/test_audit_fixes.py`) |
+| A Taiwan cost correlation with both CPI and USD/TWD would have diluted the first | Refused (`tests/test_taiwan_esg.py`); the headline uses only USD/TWD |
+| `esg_params` took an `infl_phi` argument and ignored it | Removed; the fitted value is used, as before |
+| The equity correlation target was changed on an argument, not a test | Tested out of sample and reverted (`scripts/corr_shrink_oos.py`) |
+| Doc sentences gone stale as figures moved: "up from 1.74" when δ was 1.74, "$-0.2k below" for a base that was above, 99.5% given for both calibration samples | Rewritten, each with a check in `scripts/doc_numbers.py`; negatives now print as -$x |
