@@ -75,7 +75,7 @@ def score(weights: dict[str, np.ndarray], ers: dict[str, np.ndarray], params: ES
         r = engine.run(st, sc, cfg, snapshot_2031=with_2031)
         s = engine.summarize(r)
         if with_2031:
-            c = engine.conditional_2031(st, sc, r, params, cfg=cfg, n_inner=3000)
+            c = engine.conditional_2031_band(st, sc, r, params, cfg=cfg, n_inner=3000)
             s.update({"floor_2031": c["floor"], "range80_lo": c["p10"], "range80_hi": c["p90"]})
         s["contribution_median"] = float(np.median(r["contribution"]))
         out[name] = s
