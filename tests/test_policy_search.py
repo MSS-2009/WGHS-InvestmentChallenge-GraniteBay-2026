@@ -122,10 +122,7 @@ def test_ratchet_hand_checkable():
     assert r_off["floor_2033"][0] == 0.0
     assert r_on["floor_2033"][0] > 0.0
 
-    # Extra commissions were paid for ratchet trades
-    # Compare costs:
-    # r_off costs commissions for initial ladder & invest, plus any drift rebalances
-    # r_on triggers ratchet and incurs 4 ETF tickets per trigger
+    # The ratchet's trades are charged through the forced rebalance (one ticket per fund)
     assert r_on["facility"][0] > 0
 
 

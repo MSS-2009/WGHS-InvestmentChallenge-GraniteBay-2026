@@ -1,11 +1,11 @@
 step,median,p5,cvar5,real_median,median_change,p5_change,cvar5_change,real_median_change
-Morning model (round 5 merged),197846.0,147381.7,136632.5,167361.5,0.0,0.0,0.0,0.0
-Commissions compounded,197573.6,147311.3,136586.3,167099.7,-272.4,-70.4,-46.1,-261.8
-Sale tickets in January 2033,197348.6,147086.3,136361.3,166908.5,-225.0,-225.0,-225.0,-191.2
-Taiwan cost growth correlated with USD/TWD,197348.6,147086.3,136361.3,166861.9,0.0,0.0,0.0,-46.6
-Rate persistence bias-corrected (Kendall),197372.8,146919.0,136036.0,166796.9,24.2,-167.3,-325.4,-64.9
-J.P. Morgan 2027 assumptions,197250.7,146824.9,135957.9,166697.5,-122.2,-94.1,-78.1,-99.5
-Equity correlations shrunk toward their average,197277.7,145689.1,134866.0,166929.4,27.0,-1135.8,-1091.9,231.9
-EMXC and MCHI volatility include 2008,198431.6,145915.6,134939.3,168028.9,1153.9,226.5,73.3,1099.5
-Black-Litterman market level anchored to the consensus,196763.7,144769.7,133882.8,166575.7,-1667.8,-1145.9,-1056.5,-1453.2
-Correlation target back to zero (out-of-sample test),196879.2,145992.4,135106.0,166464.1,115.5,1222.7,1223.2,-111.6
+Morning model (round 5 merged),197946.0,147481.7,136732.5,167444.3,0.0,0.0,0.0,0.0
+Commissions compounded,197683.5,147418.1,136694.1,167195.4,-262.5,-63.6,-38.4,-248.9
+Sale tickets in January 2033,197458.5,147193.1,136469.1,167004.3,-225.0,-225.0,-225.0,-191.2
+Taiwan cost growth correlated with USD/TWD,197458.5,147193.1,136469.1,166952.5,0.0,0.0,0.0,-51.7
+Rate persistence bias-corrected (Kendall),197484.6,147029.8,136143.6,166903.2,26.1,-163.3,-325.5,-49.4
+J.P. Morgan 2027 assumptions,197362.6,146929.0,136065.5,166802.2,-122.0,-100.8,-78.1,-101.0
+Equity correlations shrunk toward their average,197388.7,145793.6,134973.6,167026.0,26.0,-1135.5,-1091.9,223.9
+EMXC and MCHI volatility include 2008,198545.2,146026.1,135047.0,168118.3,1156.5,232.6,73.4,1092.3
+Black-Litterman market level anchored to the consensus,196880.8,144874.9,133990.3,166663.0,-1664.4,-1151.3,-1056.7,-1455.3
+Correlation target back to zero (out-of-sample test),196989.2,146101.9,135213.5,166547.4,108.4,1227.0,1223.3,-115.6

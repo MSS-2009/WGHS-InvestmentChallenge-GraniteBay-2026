@@ -130,3 +130,19 @@ def test_short_history_funds_borrow_a_longer_proxys_volatility():
     for fund in VOL_PROXIES:
         assert on[fund] > off[fund] * 1.05                   # 2008 raises them
     assert all(on[x] == off[x] for x in t if x not in VOL_PROXIES)
+
+
+
+def test_the_2031_floor_move_is_one_ticket_per_fund():
+    """Moving money into the floor and rebalancing the rest trades each fund once: nine equity funds and
+    IBTM, plus a separate IBTM ticket only when the sleeve's bonds are VGIT."""
+    from lgm.strategies import IPS
+
+    sc = _flat(0.05, k=9)
+    sc.eq_log[:] = np.log(1.05) / 12                    # everything earns 5%: no band rebalancing
+    cfg = engine.EngineConfig(eq_er=(0.0,) * 9, compound_costs=False)
+    for vehicle, tickets in (("IBTM", 10), ("VGIT", 11)):
+        st = dc.replace(IPS, region_weights=tuple(np.full(9, 1 / 9)), bond_vehicle=vehicle)
+        floor = engine.run(st, sc, cfg)["costs_2033"]
+        none = engine.run(dc.replace(st, floor_share_2031=0.0), sc, cfg)["costs_2033"]
+        assert np.allclose(floor - none, tickets * engine.COMMISSION_ETF)

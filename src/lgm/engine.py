@@ -248,18 +248,22 @@ def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: Sta
             f_move = g_rem * floor_share if is_floor_year else np.zeros(n)
             to_move = r_move + f_move
 
+            # Moving money into the floor and rebalancing the rest is one trade per fund: the forced
+            # rebalance charges a ticket for each fund and the sleeve's bond fund. The floor's IBTM needs
+            # its own ticket only when the sleeve holds VGIT.
+            floor_ticket = COMMISSION_ETF * (st.bond_vehicle == "VGIT")
             if is_floor_year:
                 moved = _liquidate(s, sc, m, to_move)
                 s.floor_face += moved / _ibtm_df(sc, m)
                 _rebalance(s, sc, m, st, cfg, force=True, eq_target=eq_target)
                 if cfg.commissions:
-                    s.costs += COMMISSION_ETF * 4
+                    s.costs += floor_ticket
             elif np.any(to_move > 0):
                 moved = _liquidate(s, sc, m, to_move)
                 s.floor_face += moved / _ibtm_df(sc, m)
                 _rebalance(s, sc, m, st, cfg, force=(to_move > 0), eq_target=eq_target)
                 if cfg.commissions:
-                    s.costs += np.where(to_move > 0, COMMISSION_ETF * 4, 0.0)
+                    s.costs += np.where(to_move > 0, floor_ticket, 0.0)
             else:
                 _rebalance(s, sc, m, st, cfg, eq_target=eq_target)
 
@@ -288,7 +292,8 @@ def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: Sta
     real = facility * np.exp(sc.fx_log[:, i33] - sc.fx_log[:, i27]) / np.exp(sc.tw_cost_log[:, i33] - sc.tw_cost_log[:, i27])
     out.update({"funded": funded, "facility": facility, "contribution": facility * st.contribution_share,
                 "facility_real_tw2027": real, "assets_2033": assets, "open_cost_2033": open_cost,
-                "shortfall": np.maximum(open_cost - assets, 0.0), "locked_2033": s.locked.mean(1)})
+                "shortfall": np.maximum(open_cost - assets, 0.0), "locked_2033": s.locked.mean(1),
+                "costs_2033": s.costs.copy()})
     out.setdefault("floor_2033", np.zeros(n))
     out.setdefault("growth_2031", np.zeros(n))
     out.setdefault("assets_2031", np.zeros(n))

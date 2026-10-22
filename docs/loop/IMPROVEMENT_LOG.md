@@ -261,25 +261,28 @@ Headline: median $197,244, p5 $146,831, CVaR5 $135,959, real median $166,709; 11
 ### Round 6: where the day's headline change came from
 `scripts/round6_waterfall.py` rebuilds the IPS headline (20,000 scenarios, seed 11) from this morning's
 model, switching the day's changes on one at a time; the last row matches `report_numbers.json` to the dollar.
+Every row runs on the final engine, so the first includes the floor-ticket fix below (+$100 against
+the morning's published $197,846).
 
 | Change | Median | 5th pct | Real median |
 |---|---|---|---|
-| Morning model (round 5 merged) | $197,846 | $147,382 | $167,361 |
-| Commissions compounded | -$272 | -$70 | -$262 |
+| Morning model (round 5 merged) | $197,946 | $147,482 | $167,444 |
+| Commissions compounded | -$262 | -$64 | -$249 |
 | Sale tickets in January 2033 | -$225 | -$225 | -$191 |
-| Taiwan cost growth correlated with USD/TWD | $0 | $0 | -$47 |
-| Rate persistence bias-corrected (Kendall) | +$24 | -$167 | -$65 |
-| J.P. Morgan 2027 assumptions | -$122 | -$94 | -$99 |
-| Equity correlations shrunk toward their average | +$27 | -$1,136 | +$232 |
-| EMXC and MCHI volatility include 2008 | +$1,154 | +$226 | +$1,100 |
-| Black-Litterman market level anchored | -$1,668 | -$1,146 | -$1,453 |
-| Correlation target back to zero (below) | +$115 | +$1,223 | -$112 |
-| **Now** | **$196,879** | **$145,992** | **$166,464** |
+| Taiwan cost growth correlated with USD/TWD | $0 | $0 | -$52 |
+| Rate persistence bias-corrected (Kendall) | +$26 | -$163 | -$49 |
+| J.P. Morgan 2027 assumptions | -$122 | -$101 | -$101 |
+| Equity correlations shrunk toward their average | +$26 | -$1,136 | +$224 |
+| EMXC and MCHI volatility include 2008 | +$1,156 | +$233 | +$1,092 |
+| Black-Litterman market level anchored to the consensus | -$1,664 | -$1,151 | -$1,455 |
+| Correlation target back to zero (below) | +$108 | +$1,227 | -$116 |
+| **Now** | **$196,989** | **$146,102** | **$166,547** |
 
 The anchoring row is larger than the volatility-proxy row it was added to correct because the morning model
-already had a drift: anchoring the morning model alone moves its median from $197,846 to $197,372 (-$474).
+already had a drift: anchoring the morning model alone moved its median from $197,846 to $197,372 (-$474,
+before the ticket fix).
 With anchoring on, the volatility proxies are worth +$121 in the median, not +$1,154. So of the day's
--$967 in the median, about -$0.5k is costs that were real but unmodelled (compounding, the sale tickets) and
+-$957 in the median, about -$0.5k is costs that were real but unmodelled (compounding, the sale tickets) and
 -$0.5k a Black-Litterman artifact removed; the risk corrections are close to neutral in the median. The
 5th percentile falls $1.4k, mostly from the same costs, the rate-persistence correction and the anchoring.
 
@@ -327,3 +330,12 @@ down from their 2008-era level, which favours the target that pulls them down.
   short for 2034 at WInS's 0% cash rate, but `wins_rebalance.py`'s order list did not fix it. It now buys
   the cheapest top-up first (6 IBTO, $139) and sizes the growth sleeve from what is left; with it every
   payment is covered (smallest surplus +$9). Regression test in `tests/test_audit_fixes.py`.
+- **2031 floor tickets counted twice** (engine review): moving money into the floor charged 4 ETF
+  tickets on top of the forced rebalance, which already charges one per fund and the bond fund, so
+  the IPS paid 14 tickets for 10 trades (since the first version, then 4 + 4 for 4 trades). The extra
+  ticket is now charged only when the sleeve's bonds are VGIT (the floor's IBTM is then a separate
+  fund). IPS median +$110; regression test `test_the_2031_floor_move_is_one_ticket_per_fund`. The engine
+  now returns `costs_2033`. Policy grid rerun: IPS within $1.8k / $2.2k / $7.6k of the best CE at gamma
+  2 / 4 / 8 (rank 637 of 3,456 at gamma 4).
+- Headline at the end of round 6: median $196,989, 5th percentile $146,102, CVaR5 $135,214, real
+  median $166,547.

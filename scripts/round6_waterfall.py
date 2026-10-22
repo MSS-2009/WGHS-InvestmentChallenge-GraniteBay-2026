@@ -3,7 +3,9 @@
 Usage: python scripts/round6_waterfall.py [n_scenarios]
 Starts from the morning's model (round 5 merged) and switches the round-6 changes on one at a time,
 in the order they were made, re-running the headline IPS (Black-Litterman core and beliefs, WInS
-commissions, 20,000 scenarios, seed 11) after each. The last row is today's headline. Writes
+commissions, 20,000 scenarios, seed 11) after each. The last row is today's headline. Every row uses
+today's engine, so code fixes without a switch (the 2031 floor's double-counted tickets) are in the
+first row too, which therefore differs slightly from the morning's published $197,846. Writes
 reports/round6_waterfall.csv.
 """
 import copy
