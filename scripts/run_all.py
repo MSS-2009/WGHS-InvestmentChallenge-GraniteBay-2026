@@ -5,6 +5,8 @@ Usage: python scripts/run_all.py [--refresh]
              curves for the curve year, CPI, USD/TWD, Kim-Wright, monthly ETF and satellite prices), and
              let the WInS scripts refetch closing prices. Change config/asof.yaml before refreshing.
 Stops at the first script that fails; the WInS ladder check's exit status is reported, not fatal.
+Then the studies whose reports the docs quote, and last `doc_numbers.py`, which fails if a figure in
+docs/MODEL.md or docs/VALIDATION.md no longer matches its report (`doc_numbers.py --fix` rewrites them).
 """
 import subprocess
 import sys
@@ -23,6 +25,17 @@ ORDER = [  # (script, passes --refresh, failure is fatal)
     ("validate_model", False, True),        # after build_satellite: its HRP check reads the selection
     ("wins_rebalance", True, True),         # after report_numbers: it reads the core weights
     ("wins_ladder_check", False, False),
+    # studies quoted in the docs (each reads the headline ESG through growth.scoring.esg_params)
+    ("fx_variants", False, True),
+    ("taiwan_fx_corr", False, True),
+    ("satellite_oos", False, True),         # after build_satellite
+    ("satellite_risk_sensitivity", False, True),
+    ("stock_rate_corr", False, True),
+    ("crash_comovement", False, True),
+    ("ladder_premium", False, True),
+    ("fx_horizon", False, True),
+    ("equity_horizon", False, True),
+    ("doc_numbers", False, True),           # last: every quoted figure against its report
 ]
 
 
