@@ -214,5 +214,5 @@ contribution $99.8k, 80% contribution range $160.3k-$175.5k. 109 tests pass; doc
 - **ESG refactor**: tail-mixing branches folded into helpers, output bit-for-bit identical.
 - **Pipeline and docs**: `run_all.py` now regenerates the nine studies the docs quote and ends with
   `doc_numbers.py` (72 s, byte-identical reports). The checker grew from 27 to 70 figures; on the
-  way it caught 13 stale figures or sentences, including "the six extra funds cost the same in
+  way it caught over a dozen stale figures or sentences, including "the six extra funds cost the same in
   commissions" (no longer true) and the 2031 band calibration (80.4% -> 81.5%).
