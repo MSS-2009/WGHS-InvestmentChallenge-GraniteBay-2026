@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from lgm.growth import black_litterman as bl
 
@@ -34,3 +35,33 @@ def test_resampled_optimum_is_feasible_and_near_market_without_views():
     assert abs(mean.sum() - 1) < 1e-9
     assert (mean >= lb - 1e-9).all() and (mean <= ub + 1e-9).all() and mean @ a <= 0.4 + 1e-9
     assert np.allclose(mean, w, atol=0.03)
+
+
+def test_risk_aversion_makes_the_market_earn_its_excess_and_anchoring_keeps_it():
+    from lgm.growth import black_litterman as bl
+
+    rng = np.random.default_rng(4)
+    a = rng.standard_normal((6, 6))
+    cov = a @ a.T / 600 + np.eye(6) * 1e-3
+    w = rng.dirichlet(np.ones(6))
+    delta = bl.risk_aversion(cov, w, 0.05)
+    pi = bl.implied_returns(cov, w, delta)
+    assert w @ pi == pytest.approx(0.05)
+    mu = pi + rng.normal(0, 0.01, 6)                  # a posterior that moved the market's return
+    anchored = bl.anchor_to_prior(mu, pi, w)
+    assert w @ anchored == pytest.approx(w @ pi)
+    assert np.allclose(np.diff(anchored), np.diff(mu))   # relative returns, hence fully invested weights, unchanged
+
+
+def test_ar1_recovers_persistence():
+    import pandas as pd
+
+    from lgm.calibrate import ar1
+
+    rng = np.random.default_rng(5)
+    x = np.zeros(20_000)
+    for t in range(1, len(x)):
+        x[t] = 0.3 + 0.9 * x[t - 1] + rng.standard_normal()
+    phi, resid = ar1(pd.Series(x))
+    assert phi == pytest.approx(0.9, abs=0.01)
+    assert resid.std() == pytest.approx(1.0, abs=0.02) and len(resid) == len(x) - 1
