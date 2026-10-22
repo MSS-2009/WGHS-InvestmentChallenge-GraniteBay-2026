@@ -47,3 +47,8 @@ checks. Read `docs/MODEL.md` before you change anything.
 10. **Stop at the budget.** If you run out of time or compute, commit, then report `blocked` with
     partial results and what is left. That beats running into the 4-hour hard timeout, which delivers
     nothing.
+11. **Keep memory low.** The machine runs several workers at once, and the bridge stops every
+    worker if system memory pressure turns yellow. Estimate array sizes before you allocate them
+    (20,000 scenarios x 75 months x 14 assets x 8 bytes is 168 MB per array). Keep peak memory under
+    about 2 GB per script: process grids and inner simulations in chunks, keep summary statistics
+    rather than full paths, and free large arrays you no longer need.
