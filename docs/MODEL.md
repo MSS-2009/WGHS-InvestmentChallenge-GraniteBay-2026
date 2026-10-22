@@ -41,7 +41,10 @@ Market inputs (all keyless):
   index's autocorrelation and the spread of its 1- to 72-month changes, started from the Aug and Sep
   2026 readings, with the 1991-2026 average drift of 2.85% a year. Today's +7.3% annual reading
   barely matters (persistence lasts months); the drift does: 3.78% (the last ten years) would lower
-  the real median by about $9k (`docs/loop/r3_taiwan_findings.md`). Cost growth is correlated -0.25
+  the real median by about $9k (`docs/loop/r3_taiwan_findings.md`). In real time the long-run average
+  has been the better forecast: from each month-end 2001-2020, the average since 1991 missed the next
+  74 months' cost growth by 0.167 (RMSE of the log change) against 0.222 for the trailing ten-year
+  average, and beat it in each of the four five-year blocks of origins (`scripts/taiwan_drift_study.py`). Cost growth is correlated -0.25
   with USD/TWD: in history a weaker Taiwan dollar has come with slower building-cost growth (12- to
   72-month changes, 2000-2026: -0.18 to -0.33, `scripts/taiwan_fx_corr.py`), so the two risks add up
   rather than offset. This widens the real 5th-95th percentile range from $113.2k-$247.3k to

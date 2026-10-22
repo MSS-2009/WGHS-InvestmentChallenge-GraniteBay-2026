@@ -124,6 +124,15 @@ def checks() -> list[tuple[str, str, str]]:
              "Real Estate": "Real estate"}
     for sec, g in sw.groupby("sector"):
         out.append(("MODEL", f"satellite sector {sec}", f"| {names.get(sec, sec)} | {len(g)} | {g.hrp_weight.sum():.1%} |"))
+    td = pd.read_csv(R / "taiwan_drift_study.csv")
+    tdp = td.pivot(index="origins", columns="rule", values="rmse")
+    blocks = tdp.drop(index="all")
+    wins = int((blocks["expanding"] < blocks["trailing_10y"]).sum())
+    words = {4: "each of the four", 3: "three of the four", 2: "two of the four", 1: "one of the four", 0: "none of the four"}
+    out.append(("MODEL", "Taiwan drift forecast",
+                f"missed the next\n  74 months' cost growth by {tdp.loc['all', 'expanding']:.3f} (RMSE of the log change) against "
+                f"{tdp.loc['all', 'trailing_10y']:.3f} for the trailing ten-year\n  average, and beat it in {words[wins]} "
+                f"five-year blocks of origins"))
     sat = pd.read_csv(R / "satellite_scoring.csv")
     piv = sat.pivot_table(index=["beliefs", "commissions"], columns="candidate", values="median_vs_core")
     for beliefs, comm, label in (("Equilibrium (no alpha)", "$25 (WInS)", "Equilibrium (no alpha) | $25 per trade (WInS)"),

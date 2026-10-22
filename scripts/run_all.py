@@ -35,6 +35,7 @@ ORDER = [  # (script, passes --refresh, failure is fatal)
     ("ladder_premium", False, True),
     ("fx_horizon", False, True),
     ("equity_horizon", False, True),
+    ("taiwan_drift_study", False, True),
     ("doc_numbers", False, True),           # last: every quoted figure against its report
 ]
 
