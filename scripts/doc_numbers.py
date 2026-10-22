@@ -59,14 +59,20 @@ def sensitivity_rows() -> list[str]:
     sat = pd.read_csv(R / "satellite_scoring.csv").set_index(["beliefs", "commissions", "candidate"])
     sat20 = sat.loc[("Black-Litterman posterior", "$25 (WInS)", "Core + 20% satellite"), "median_vs_core"]
     eqm = sl["equilibrium|wins_commissions|Black-Litterman core"]["median"] - plan["median"]
+    pr = pd.read_csv(R / "policy_robust.csv")
+    pr = pr[pr.name == "IPS"].set_index("shift")
+    dv = lambda shift, col="median": d(pr.loc[shift, col] - pr.loc["base", col])
     return [
+        f"| Equity forecasts | 13-firm median | lowest / highest firm (-2.8 / +3.1 points) | "
+        f"{dv('eq_cma_lowest')} / {dv('eq_cma_highest')} median |",
+        f"| Equity volatility | history since 2005 | x0.8 / x1.2 | {dv('eq_vol_0.8', 'p5')} / {dv('eq_vol_1.2', 'p5')} 5th pct |",
         f"| Rates at the January 2027 lock | as today | 0.75 points lower / higher | "
         f"{d(st['rates_minus_75bp_at_lock']['median'] - plan['median'])} / {d(st['rates_plus_75bp_at_lock']['median'] - plan['median'])} median |",
         f"| Cash awaiting a ladder payment | earns 3% | earns 0% (WInS pays none) | "
         f"{d(st['reserve_certain_at_0pct_reinvestment']['median_change'])} median |",
         f"| Expected rate path | unchanged | forwards less Kim-Wright term premium | "
         f"{d(rp['kim_wright']['median'] - rp['unchanged']['median'])} median |",
-        f"| Equity expected returns | Black-Litterman posterior | equilibrium (views wrong) | {d(eqm)} median |",
+        f"| Equity views | Black-Litterman posterior | equilibrium (views wrong) | {d(eqm)} median |",
         f"| Stock-rate correlation | -0.17 (2017-2026) | 2000-2021 regime (+0.28) | "
         f"{d(sr.loc['2000..2021', 'median_vs_today'])} median, {d(sr.loc['2000..2021', 'p5_vs_today'])} 5th pct |",
         f"| Ladder premium | constant 1.8% | moves with rates | {d(lp.loc['rate slope', 'median_vs_engine'])} median, "
