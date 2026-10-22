@@ -113,6 +113,14 @@ def checks() -> list[tuple[str, str, str]]:
     cc = pd.read_csv(R / "crash_comovement.csv").iloc[0]
     out.append(("MODEL", "crash months", f"rose {cc.crash_mean_dr:.2f} points on average and fell in "
                                          f"{cc.crash_share_rates_down:.0%} of them"))
+    fh = pd.read_csv(R / "fx_horizon.csv").set_index(["sample", "horizon_m"])
+    a, b = fh.loc[("H.10 2000-2026", 74)], fh.loc[("DEXTAUS 1983-2026", 74)]
+    out.append(("MODEL", "FX variance ratios",
+                f"(variance ratio {a.variance_ratio:.2f}), but a random walk of the same length gives a median of "
+                f"{a.rw_null_median:.2f} and {a.variance_ratio:.2f} or less\n  {a.p_mean_reversion:.0%} of the time; "
+                f"on FRED's copy of the same rate from 1983 the ratio is {b.variance_ratio:.2f}"))
+    out.append(("MODEL", "FX 74-month spread", f"spread (sd {a.model_sd:.1%}) lies between the two samples' "
+                                               f"{a.hist_sd:.1%} and {b.hist_sd:.1%}"))
     return out
 
 

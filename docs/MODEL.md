@@ -31,6 +31,11 @@ Market inputs (all keyless):
   than the forward at 12, 36 and 72 months, and the actual central-bank forward is biased (Fama slope
   -0.09; `docs/loop/r4_fx_findings.md`). Hedging at today's forward (-2.28% a year) would fix the
   Taiwan-dollar value at a real median of $145.6k instead of $167.0k.
+  No mean reversion either: over 2000-2026 the 74-month change spread is half a random walk's
+  (variance ratio 0.34), but a random walk of the same length gives a median of 0.67 and 0.34 or less
+  15% of the time; on FRED's copy of the same rate from 1983 the ratio is 1.55 (the late-1980s
+  appreciation). The model's 74-month spread (sd 14.0%) lies between the two samples' 6.5% and 16.4%
+  (`scripts/fx_horizon.py`).
 - **Taiwan building costs:** the official DGBAS construction cost index, 1991-2026
   (`data/raw/taiwan/`). Monthly log changes follow a fitted AR(2) (0.655, -0.094) that reproduces the
   index's autocorrelation and the spread of its 1- to 72-month changes, started from the Aug and Sep
