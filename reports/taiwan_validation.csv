@@ -1,0 +1,75 @@
+category,item,start_12m_infl,hist_72m_growth,model_72m_p5,model_72m_p50,model_72m_p95,nominal_median,real_median,notes
+unconditional,historical_rolling_72m,,,-0.0026,0.1843,0.4414,,,"All 357 rolling 72m historical windows (1991-2026); min=-6.04%, max=68.80%"
+unconditional,model_fitted_from_mean,,,-0.0523,0.1837,0.4783,,,"Fitted AR(2) (phi1=0.6546, phi2=-0.0939, sig=0.007137) started at stationary distribution"
+conditional_window,1992-03,0.113,0.1058,0.0524,0.3156,0.6446,,,Episode 1: 1992-1993 Post-Boom
+conditional_window,1992-04,0.1491,0.0683,-0.0331,0.2088,0.5111,,,Episode 1: 1992-1993 Post-Boom
+conditional_window,1992-05,0.1552,0.0662,-0.0588,0.1766,0.4709,,,Episode 1: 1992-1993 Post-Boom
+conditional_window,1992-06,0.1651,0.0629,-0.0496,0.1881,0.4852,,,Episode 1: 1992-1993 Post-Boom
+conditional_window,1992-07,0.1807,0.0478,-0.0393,0.201,0.5014,,,Episode 1: 1992-1993 Post-Boom
+conditional_window,1992-08,0.1874,0.0422,-0.0518,0.1853,0.4817,,,Episode 1: 1992-1993 Post-Boom
+conditional_window,1992-09,0.1957,0.0288,-0.0431,0.1962,0.4954,,,Episode 1: 1992-1993 Post-Boom
+conditional_window,1992-10,0.2025,0.0202,-0.0479,0.1902,0.4879,,,Episode 1: 1992-1993 Post-Boom
+conditional_window,1992-11,0.2007,0.0159,-0.0565,0.1795,0.4745,,,Episode 1: 1992-1993 Post-Boom
+conditional_window,1992-12,0.2177,-0.0024,-0.0383,0.2022,0.5029,,,Episode 1: 1992-1993 Post-Boom
+conditional_window,1993-01,0.2112,-0.0074,-0.055,0.1813,0.4768,,,Episode 1: 1992-1993 Post-Boom
+conditional_window,1993-02,0.197,-0.0035,-0.0605,0.1744,0.4681,,,Episode 1: 1992-1993 Post-Boom
+conditional_window,1993-03,0.1036,-0.0072,-0.0489,0.189,0.4863,,,Episode 1: 1992-1993 Post-Boom
+conditional_window,1993-04,0.0725,-0.0089,-0.0513,0.1859,0.4825,,,Episode 1: 1992-1993 Post-Boom
+conditional_window,1993-05,0.0693,-0.0081,-0.0566,0.1794,0.4743,,,Episode 1: 1992-1993 Post-Boom
+conditional_window,1993-06,0.059,-0.0043,-0.0608,0.1741,0.4677,,,Episode 1: 1992-1993 Post-Boom
+conditional_window,2003-02,0.0533,0.424,-0.0375,0.2033,0.5042,,,Episode 2: 2003-2005 Commodity Supercycle
+conditional_window,2003-03,0.0636,0.3851,-0.0434,0.1959,0.495,,,Episode 2: 2003-2005 Commodity Supercycle
+conditional_window,2003-04,0.0557,0.3854,-0.0619,0.1727,0.466,,,Episode 2: 2003-2005 Commodity Supercycle
+conditional_window,2003-11,0.0507,0.3795,-0.0477,0.1905,0.4883,,,Episode 2: 2003-2005 Commodity Supercycle
+conditional_window,2003-12,0.0679,0.3573,-0.0318,0.2104,0.5131,,,Episode 2: 2003-2005 Commodity Supercycle
+conditional_window,2004-01,0.0921,0.3273,-0.0194,0.2258,0.5324,,,Episode 2: 2003-2005 Commodity Supercycle
+conditional_window,2004-02,0.1286,0.2683,-0.0009,0.2489,0.5613,,,Episode 2: 2003-2005 Commodity Supercycle
+conditional_window,2004-03,0.1452,0.2478,-0.0323,0.2098,0.5123,,,Episode 2: 2003-2005 Commodity Supercycle
+conditional_window,2004-04,0.1409,0.2835,-0.0693,0.1635,0.4544,,,Episode 2: 2003-2005 Commodity Supercycle
+conditional_window,2004-05,0.1423,0.288,-0.0618,0.1729,0.4662,,,Episode 2: 2003-2005 Commodity Supercycle
+conditional_window,2004-06,0.1412,0.2749,-0.0595,0.1757,0.4698,,,Episode 2: 2003-2005 Commodity Supercycle
+conditional_window,2004-07,0.1531,0.2483,-0.0328,0.2091,0.5115,,,Episode 2: 2003-2005 Commodity Supercycle
+conditional_window,2004-08,0.1596,0.2383,-0.0463,0.1922,0.4904,,,Episode 2: 2003-2005 Commodity Supercycle
+conditional_window,2004-09,0.1568,0.2406,-0.0584,0.1771,0.4715,,,Episode 2: 2003-2005 Commodity Supercycle
+conditional_window,2004-10,0.1649,0.2311,-0.048,0.1901,0.4877,,,Episode 2: 2003-2005 Commodity Supercycle
+conditional_window,2004-11,0.1496,0.2437,-0.0649,0.1689,0.4613,,,Episode 2: 2003-2005 Commodity Supercycle
+conditional_window,2004-12,0.1203,0.2582,-0.0606,0.1744,0.4681,,,Episode 2: 2003-2005 Commodity Supercycle
+conditional_window,2005-01,0.0797,0.279,-0.0594,0.1758,0.4699,,,Episode 2: 2003-2005 Commodity Supercycle
+conditional_window,2006-05,0.0825,0.2226,-0.0173,0.2284,0.5357,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2006-06,0.1018,0.207,-0.0544,0.182,0.4776,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2006-07,0.1087,0.1948,-0.0514,0.1858,0.4824,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2006-08,0.103,0.1942,-0.0578,0.1779,0.4725,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2006-09,0.0972,0.1819,-0.0517,0.1855,0.4819,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2006-10,0.1017,0.1693,-0.05,0.1876,0.4846,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2006-11,0.1071,0.1694,-0.0525,0.1845,0.4807,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2006-12,0.1046,0.1708,-0.056,0.1801,0.4752,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2007-01,0.1029,0.1722,-0.051,0.1863,0.483,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2007-02,0.108,0.1649,-0.0456,0.1931,0.4916,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2007-03,0.1101,0.1498,-0.0395,0.2007,0.5009,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2007-04,0.1035,0.1272,-0.04,0.2001,0.5002,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2007-05,0.0734,0.1149,-0.0502,0.1873,0.4843,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2007-06,0.076,0.1019,-0.0459,0.1927,0.491,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2007-07,0.0724,0.1011,-0.0559,0.1802,0.4754,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2007-08,0.0763,0.1002,-0.0527,0.1842,0.4803,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2007-09,0.0802,0.0981,-0.0481,0.1899,0.4875,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2007-10,0.0883,0.0843,-0.0416,0.1981,0.4977,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2007-11,0.0874,0.0842,-0.0549,0.1814,0.4769,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2007-12,0.1054,0.0689,-0.0359,0.2052,0.5066,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2008-01,0.1245,0.0506,-0.0333,0.2084,0.5106,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2008-02,0.1391,0.0288,-0.0333,0.2085,0.5107,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2008-03,0.165,-0.0084,-0.0143,0.2322,0.5404,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2008-04,0.1759,-0.0262,-0.0332,0.2086,0.5108,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2008-05,0.1891,-0.0413,-0.0385,0.202,0.5026,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2008-06,0.2077,-0.0604,-0.0291,0.2138,0.5173,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2008-07,0.2079,-0.0595,-0.0589,0.1765,0.4707,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2008-08,0.1894,-0.0462,-0.0712,0.1611,0.4515,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2008-09,0.1424,-0.0147,-0.0929,0.134,0.4176,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2008-10,0.091,0.014,-0.0885,0.1394,0.4244,,,Episode 3: 2006-2008 Pre-GFC Commodity Spike
+conditional_window,2010-04,0.057,-0.0033,-0.0318,0.2103,0.513,,,Episode 4: 2010 Post-GFC Rebound
+conditional_window,2010-05,0.0553,0.0062,-0.0633,0.171,0.4639,,,Episode 4: 2010 Post-GFC Rebound
+drift_sensitivity,fitted_from_mean_full_sample,0.0285,,114060.1,167550.7,246875.6,197910.1,167550.7,35-year full sample (1991-2026) mean annual growth (2.85%) | 72m CostGrowth=18.37%
+drift_sensitivity,fitted_from_today_full_sample,0.0285,,113370.7,167355.2,247964.4,197910.1,167355.2,Started at Aug/Sep 2026 readings | 35-year full sample (1991-2026) mean annual growth (2.85%) | 72m CostGrowth=18.50%
+drift_sensitivity,fitted_from_mean_last_20y,0.0262,,115602.5,169816.6,250214.2,197910.1,169816.6,Last 20 years (2006-2026) mean annual growth (2.62%) | 72m CostGrowth=16.79%
+drift_sensitivity,fitted_from_today_last_20y,0.0262,,114899.0,169611.1,251307.0,197910.1,169611.1,Started at Aug/Sep 2026 readings | Last 20 years (2006-2026) mean annual growth (2.62%) | 72m CostGrowth=16.93%
+drift_sensitivity,fitted_from_mean_last_10y,0.0378,,108063.1,158741.4,233895.5,197910.1,158741.4,Last 10 years (2016-2026) mean annual growth (3.78%) | 72m CostGrowth=24.93%
+drift_sensitivity,fitted_from_today_last_10y,0.0378,,107428.4,158583.3,234967.4,197910.1,158583.3,Started at Aug/Sep 2026 readings | Last 10 years (2016-2026) mean annual growth (3.78%) | 72m CostGrowth=25.06%
