@@ -209,6 +209,21 @@ def checks() -> list[tuple[str, str, str]]:
                 f"resampled weights hold BBJP at {bl.BBJP.min() * 100:.1f}-{bl.BBJP.max():.1%} and BBCA at "
                 f"{bl.BBCA.min() * 100:.1f}-{bl.BBCA.max():.1%}"))
     out.append(("VALIDATION", "BL single optimum", f"and {pc('single_optimum_BBCA')}"))
+    s1r, s2r = pv.loc["S1 Index-first, all equity"], pv.loc["S2 Index-first, static 60/40"]
+    out.append(("VALIDATION", "Plans v2 table: S1",
+                f"| S1 all equity | {s1r.v2_funded:.1%} / {s1r.funded:.1%} | 0 / 0 | {s1r.v2_median_k:.1f} / {s1r.median_k:.1f} | "
+                f"{s1r.v2_p95_k:.1f} / {s1r.p95_k:.1f} | — | — |"))
+    out.append(("VALIDATION", "Plans v2 table: S2",
+                f"| S2 static 60/40 | {s2r.v2_funded:.1%} / {s2r.funded:.1%} | {s2r.v2_p5_k:.1f} / {s2r.p5_k:.1f} | "
+                f"{s2r.v2_median_k:.1f} / {s2r.median_k:.1f} | {s2r.v2_p95_k:.1f} / {s2r.p95_k:.1f} | 0 / 0 | "
+                f"{s2r.v2_r10_k:.1f}-{s2r.v2_r90_k:.1f} / {s2r.range80_lo_k:.1f}-{s2r.range80_hi_k:.1f} |"))
+    blm = pd.read_csv(R / "bl_sensitivity.csv")
+    out.append(("MODEL", "BL stability", f"BBJP between {blm.single_optimum_BBJP.min():.1%} and {blm.single_optimum_BBJP.max():.1%}. "
+                                         f"The weights are the average optimum"))
+    out.append(("MODEL", "BL resampled BBJP", f"Over the same grid BBJP stays\n  at {blm.BBJP.min() * 100:.1f}-{blm.BBJP.max():.1%}"))
+    rs0 = pd.read_csv(R / "satellite_risk_sensitivity.csv").iloc[0]
+    out.append(("MODEL", "satellite vol", f"volatility ({rs0.satellite_vol:.1%}) comes from history back to 2005"))
+    out.append(("MODEL", "satellite beta", f"covariance with the market (beta {rs0.satellite_beta:.2f})"))
     v2 = json.loads((R / "plans_v2_rate_stress.json").read_text())
     out.append(("VALIDATION", "Plans v2 rate stress",
                 f"{k(v2['base_median'])} -> {k(v2['minus_75bp_median'])} "
