@@ -251,3 +251,9 @@ Headline: median $197,244, p5 $146,831, CVaR5 $135,959, real median $166,709; 11
   market earns its prior (`black_litterman.anchor_to_prior`, weights unchanged to 1e-16). Together:
   IPS median -$0.5k, 5th percentile -$0.9k; the views' worth in the median falls from $1.3k to $0.7k.
   Policy conclusions re-checked below.
+- **Policy grid after the three equity-risk corrections** (correlations, short-history vols, BL level):
+  IPS within $1.8k / $2.5k / $8.3k of the best CE at gamma 2 / 4 / 8 (rank 780 of 3,456 at gamma 4;
+  this morning $2.3k / $2.2k / $7.2k). The direction is consistent: more equity risk and a lower equity
+  return favour the lower-equity, full-floor policies (P2305, P2361) a little more. The IPS is still
+  close to the best at moderate risk aversion; at high risk aversion the gap is now $8.3k, which
+  strengthens the case the client should weigh in "Decisions for the client" (growth mix and floor).
