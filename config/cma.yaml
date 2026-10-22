@@ -1,9 +1,10 @@
 # Published 10-year capital market assumptions (nominal, geometric, USD) used to form
 # Black-Litterman views. Relative views are formed from each firm's own numbers, so
 # differences in vintage or methodology between firms largely cancel.
-as_of: 2026-10-21
+as_of: 2026-10-22
 cash_long_run: 0.0375        # long-run T-bill assumption (current 3-month bill ~4.3%)
-# 14-firm table (US equity / international developed / emerging markets / US bonds).
+# 13 firms that publish all three equity numbers (US / international developed / emerging markets);
+# Amundi and Northern Trust publish no international developed figure and are left out.
 # Source: Portfolio Lab, "Capital Market Assumptions 2026: 18 Firms Compared" (compiled from each
 # firm's publication; vintages vary, noted there).
 firms:
@@ -21,8 +22,9 @@ firms:
   Callan:              {us: 0.073, intl_dev: 0.076, em: 0.082}
   BNY Mellon:          {us: 0.076, intl_dev: 0.078, em: 0.081}
   BlackRock:           {us: 0.090, intl_dev: 0.078, em: 0.088}
-  # Vanguard VCMM, run of Jun 30, 2026 (midpoints of published ranges; vanguard.com "Setting realistic expectations")
-  Vanguard:            {us: 0.052, intl_dev: 0.055, em: 0.030}
+  # Vanguard VCMM, run of Sep 30, 2026 (midpoints of published ranges 4.8-6.8%, 5.3-7.3%, 3.7-5.7%;
+  # vanguard.com "Setting realistic expectations", Oct 21, 2026). Jun 30 run: 0.052 / 0.055 / 0.030
+  Vanguard:            {us: 0.058, intl_dev: 0.063, em: 0.047}
 # Style and size views (fewer sources publish these)
 # Sources whose name starts with "History" are long-run averages (scripts/factor_evidence.py). They
 # count toward a view's size (the median) but not its spread: a view with one forecaster keeps the

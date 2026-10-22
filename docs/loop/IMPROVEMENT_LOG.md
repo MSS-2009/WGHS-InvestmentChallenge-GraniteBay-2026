@@ -315,3 +315,11 @@ down from their 2008-era level, which favours the target that pulls them down.
   equity share move the IPS median between $196.6k and $196.9k and its 5th percentile between $145.4k and
   $146.4k; 10% instead of 5% is worth +$0.2k / +$0.4k of certainty equivalent at gamma 4 / 8. Too small to
   change the IPS. No change.
+- **Capital-market assumptions re-checked against sources**: the 12 firms shared with Portfolio Lab's
+  table match it (BlackRock's 9.0% for US equities is its August 2026 workbook, June 30 data; PGIM's 5.2%
+  confirmed on PGIM's site). Vanguard published its September 30, 2026 VCMM run on October 21 (US
+  4.8-6.8%, developed ex-US 5.3-7.3%, EM 3.7-5.7%, against 4.2-6.2%, 4.5-6.5%, 2-4% in June); the config
+  now uses its midpoints. No headline change: every view is a median across firms and the spreads
+  sit at their floor, so one firm's revision does not move them. Only the robustness study's
+  25th-percentile-firm shift moves (IPS median under it $193.9k -> $194.3k). Amundi and Northern Trust
+  publish no developed ex-US figure and stay out.
