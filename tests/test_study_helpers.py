@@ -46,3 +46,17 @@ def test_ledoit_wolf_intensity_toward_a_target():
     assert lw_intensity(x, eye) < 0.05
     # a target equal to the sample correlations: nothing to lose by shrinking
     assert lw_intensity(x, np.corrcoef(x, rowvar=False)) == 1.0
+
+
+def test_volatility_window_forecast_on_constant_volatility():
+    import pandas as pd
+
+    vol_forecast = _load("equity_horizon").vol_forecast
+    rng = np.random.default_rng(2)
+    idx = pd.date_range("1926-07-31", "2026-09-30", freq="ME")
+    d = vol_forecast(pd.Series(rng.standard_normal(len(idx)) * 0.04, index=idx))
+    for (h, period), g in d.groupby(["horizon_m", "period"]):
+        g = g.set_index("window")
+        # constant volatility: longer windows only remove noise, and none is biased
+        assert g.rms["since 1926"] < g.rms["21 years"] < g.rms["9 years"] < g.rms["3 years"]
+        assert (g.bias.abs() < 0.05).all()
