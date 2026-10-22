@@ -75,3 +75,17 @@ def test_plans_without_a_floor_rebalance_in_january_2031():
     s = r["state_2031"]
     share = s.eq.sum(1) / (s.eq.sum(1) + s.vgit + s.cash)
     assert np.allclose(share, 0.6)
+
+
+def test_settlement_sells_each_fund_still_held_once():
+    # 60/40 in three equity slots held as one fund (VTI) plus VGIT: two sale tickets in Jan 2033
+    st = dc.replace(S2, bond_vehicle="VGIT")
+    sc = _flat(0.05)
+    kw = dict(compound_costs=False, fund_groups=((0, 1, 2),))
+    sold = engine.run(st, sc, engine.EngineConfig(**kw))
+    kept = engine.run(st, sc, engine.EngineConfig(**kw, sell_at_settlement=False))
+    assert np.allclose(kept["assets_2033"] - sold["assets_2033"], 2 * engine.COMMISSION_ETF)
+    # a 35-name basket counted as one slot sells its 34 extra names too
+    extra = engine.run(st, sc, engine.EngineConfig(**kw, extra_tickets=34))
+    extra_kept = engine.run(st, sc, engine.EngineConfig(**kw, extra_tickets=34, sell_at_settlement=False))
+    assert np.allclose(extra_kept["assets_2033"] - extra["assets_2033"], (2 + 34) * engine.COMMISSION_ETF)

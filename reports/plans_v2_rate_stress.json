@@ -1,6 +1,6 @@
 {
   "strategy": "S9 Bond-first, 60/40 surplus, 60% floor",
-  "base_median": 195945.8,
-  "minus_75bp_median": 160202.8,
-  "change_pct": -0.1824
+  "base_median": 195845.8,
+  "minus_75bp_median": 160102.8,
+  "change_pct": -0.1825
 }

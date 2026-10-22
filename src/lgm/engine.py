@@ -39,6 +39,7 @@ class EngineConfig:
     annual_cost: float = 0.0      # recurring commissions per year (e.g. basket reconstitution)
     fund_groups: tuple | None = None  # equity slots traded as one fund, e.g. VTI = (0, 1, 2); None = each slot
     compound_costs: bool = True   # commissions owed grow at the invested assets' return, as if paid when incurred
+    sell_at_settlement: bool = True  # Jan 2033: one sale ticket per fund still held (the contribution is paid in cash)
     kappa_rate_slope: float = 0.0  # premium change per unit of the scenario's 5-year rate above `kappa_rate_ref`
     kappa_rate_ref: float | None = None  # 5-year zero rate (cc) the premium kappa0 belongs to; required with a slope
 
@@ -275,6 +276,10 @@ def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: Sta
             break
         _step(s, sc, m, cfg)
     # January 2033 settlement
+    if cfg.commissions and cfg.sell_at_settlement:
+        # IBTM has matured into cash; each equity fund, VGIT and the extra names are sold
+        held = sum((s.eq[:, f].sum(1) > 0).astype(float) for f in _funds(np.array(st.region_weights), cfg))
+        s.costs += COMMISSION_ETF * (held + (s.vgit > 0) + np.where(s.eq.sum(1) > 0, cfg.extra_tickets, 0))
     assets = s.eq.sum(1) + s.vgit + s.ibtm_face + s.floor_face + s.cash - s.costs
     open_cost = ((1 - s.locked) * PMT * sc.df(M_2033, pay_tau(M_2033)) * (1 + kappa(M_2033, cfg, sc))).sum(1)
     funded = assets >= open_cost - 1e-6

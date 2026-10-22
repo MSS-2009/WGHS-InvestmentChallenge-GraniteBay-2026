@@ -57,6 +57,13 @@ def checks() -> list[tuple[str, str, str]]:
                                               f"instead of {k(plan['real_median'])}"),
         ("MODEL", "real median, loop summary", f"(real median $156.8k -> {k(plan['real_median'])})"),
     ]
+    views = sl['bl|no_commissions|Black-Litterman core']['median'] - sl['bl|no_commissions|VTI/VEA/VWO 60/30/10']['median']
+    trail = sl['bl|wins_commissions|VTI/VEA/VWO 60/30/10']['median'] - sl['bl|wins_commissions|Black-Litterman core']['median']
+    out.append(("MODEL", "core vs 3 funds",
+                f"The core's views are worth about {k(views)} before commissions. Its six extra funds cost about "
+                f"{k(views + trail)} in\nWInS commissions, so with $25 trades it trails the 3-fund portfolio by {k(trail)}. "
+                f"So the core is a\nrisk-control choice, not a return engine: it holds technology and China+Taiwan below "
+                f"the market's\nshare for about {trail / plan['median']:.1%} of the median."))
     for row in ps["floor_frontier"]:
         f = row["floor_share"]
         if abs(f - 0.2) < 1e-9:
@@ -76,6 +83,28 @@ def checks() -> list[tuple[str, str, str]]:
         cells = [piv.loc[(beliefs, comm), f"Core + {s}% satellite"] / 1000 for s in (10, 20, 30)]
         txt = " | ".join(("+" if c >= 0 else "−") + f"${abs(c):.1f}k" for c in cells)
         out.append(("MODEL", f"satellite verdict: {label}", f"| {label} | {txt} |"))
+    sv = sat.set_index(["beliefs", "commissions", "candidate"])
+    base_sat = sv.loc[("Black-Litterman posterior", "$25 (WInS)", "BL core only"), "median"]
+    bl20 = -sv.loc[("Black-Litterman posterior", "$25 (WInS)", "Core + 20% satellite"), "median_vs_core"]
+    hoped20 = -sv.loc[("Satellite alpha as hoped (+0.82%)", "$25 (WInS)", "Core + 20% satellite"), "median_vs_core"]
+    per_pp = (bl20 - hoped20) / (0.82 - 0.22)          # the hoped and posterior alphas, in points
+    out.append(("MODEL", "satellite run base", f"The base BL core median in this run is {k(base_sat)}. It is "
+                                               f"{k(plan['median'] - base_sat)} below"))
+    out.append(("MODEL", "satellite alpha sensitivity",
+                f"each extra 1pp of alpha moves the median by about ${per_pp:,.0f}. With $25 commissions\n"
+                f"the satellite needs about {bl20 / per_pp:.1f}pp a year of alpha beyond the posterior to break even"))
+    out.append(("MODEL", "satellite cost share", f"commission it costs about {bl20 / base_sat:.1%} of the median facility"))
+    rs = pd.read_csv(R / "satellite_risk_sensitivity.csv")
+    def rsk(reading, comm, col):
+        return rs[(rs.reading == reading) & (rs.commissions == comm)][col].iloc[0]
+    sk = lambda x: ("+" if x >= 0 else "-") + k(abs(x))
+    out.append(("MODEL", "satellite risk correction",
+                f"and no commissions the median stays positive ({sk(rsk('as_estimated', 'none', 'median_vs_core'))} as estimated, "
+                f"{sk(rsk('risk_only', 'none', 'median_vs_core'))}\n  to {sk(rsk('with_return', 'none', 'median_vs_core'))} "
+                f"corrected), but the 5th percentile goes from {sk(rsk('as_estimated', 'none', 'p5_vs_core'))} to "
+                f"{sk(rsk('with_return', 'none', 'p5_vs_core'))}\n  to {sk(rsk('risk_only', 'none', 'p5_vs_core'))} "
+                f"against the core alone; with $25 commissions from {sk(rsk('as_estimated', '$25 (WInS)', 'p5_vs_core'))} "
+                f"to {sk(rsk('with_return', '$25 (WInS)', 'p5_vs_core'))}\n  to {sk(rsk('risk_only', '$25 (WInS)', 'p5_vs_core'))}."))
     conv = pd.read_csv(R / "validation_convergence.csv")
     se = conv.std() / np.sqrt(len(conv))
     out.append(("VALIDATION", "convergence",
@@ -90,8 +119,11 @@ def checks() -> list[tuple[str, str, str]]:
     for short, full in (("S8 hybrid", "S8 Hybrid, half-hedged"), ("S6 lock, stock surplus", "S6 Bond-first, equity surplus"),
                         ("S9 lock, 60/40, floor", "S9 Bond-first, 60/40 surplus, 60% floor")):
         r = pv.loc[full]
+        floor = "0 / 0" if r.floor_2031_k == 0 else f"{r.v2_floor_k:.1f} / {r.floor_2031_k:.1f}"
         out.append(("VALIDATION", f"Plans v2 table: {short}",
-                    f"/ {r.p5_k:.1f} | {r.v2_median_k:.1f} / {r.median_k:.1f} | {r.v2_p95_k:.1f} / {r.p95_k:.1f} |"))
+                    f"| {short} | {r.v2_funded:.0%} / {r.funded:.0%} | {r.v2_p5_k:.1f} / {r.p5_k:.1f} | "
+                    f"{r.v2_median_k:.1f} / {r.median_k:.1f} | {r.v2_p95_k:.1f} / {r.p95_k:.1f} | {floor} | "
+                    f"{r.v2_r10_k:.1f}-{r.v2_r90_k:.1f} / {r.range80_lo_k:.1f}-{r.range80_hi_k:.1f} |"))
     esg = pd.read_csv(R / "validation_esg.csv").set_index("check")
     lo, hi = (esg.loc[f"10-year yield change to Jan 2033, {p}"] for p in ("p5", "p95"))
     pt = lambda x: f"{x * 100:+.1f}"
@@ -129,7 +161,8 @@ def checks() -> list[tuple[str, str, str]]:
     out.append(("VALIDATION", "BL single optimum", f"and {pc('single_optimum_BBCA')}"))
     v2 = json.loads((R / "plans_v2_rate_stress.json").read_text())
     out.append(("VALIDATION", "Plans v2 rate stress",
-                f"{k(v2['base_median'])} -> {k(v2['minus_75bp_median'])}"))
+                f"{k(v2['base_median'])} -> {k(v2['minus_75bp_median'])} "
+                f"({v2['minus_75bp_median'] / v2['base_median'] - 1:.0%}) (`reports/plans_v2_rate_stress.json`)"))
     sr = pd.read_csv(R / "stock_rate_corr.csv")
     ips_sr = sr[sr.strategy.str.startswith("IPS")].set_index("variant")
     s2_sr = sr[sr.strategy.str.startswith("S2")].set_index("variant")
