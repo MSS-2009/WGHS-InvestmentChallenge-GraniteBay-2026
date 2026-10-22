@@ -117,8 +117,8 @@ def checks() -> list[tuple[str, str, str]]:
         ("MODEL", "calibrated 20-80 contribution range", f"| 20th-80th percentile (historically ~80% of outcomes) | "
                                                         f"{rng(*q['contribution_range_calibrated'])} |"),
         ("MODEL", "reverse stress, worst 1% mean", f"average a {k(ps['reverse_stress']['worst_1pct']['facility_mean'])} facility"),
-        ("MODEL", "real median, hedged vs not", f"real median of {k(fx.loc['forward_latest', 'real_median'])} "
-                                              f"instead of {k(plan['real_median'])}"),
+        ("MODEL", "real median if the forward is right", f"the real median would be {k(fx.loc['forward_latest', 'real_median'])} "
+                                                       f"instead of {k(plan['real_median'])}"),
         ("MODEL", "real median, loop summary", f"(real median $156.8k -> {k(plan['real_median'])})"),
     ]
     views = sl['bl|no_commissions|Black-Litterman core']['median'] - sl['bl|no_commissions|VTI/VEA/VWO 60/30/10']['median']

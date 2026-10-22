@@ -37,11 +37,11 @@ and a monthly scenario generator: Nelson-Siegel rates, K equity assets, inflatio
 building costs. Equity, inflation and USD/TWD shocks are Student-t(5); rate shocks are Gaussian,
 which is what 1994-2026 history shows (worst 0.1% of monthly 5-year moves: -0.80 points in history and
 in the model; with shared t5 tails the model produced 2-5 point jumps in two months,
-`docs/loop/r4_rates_findings.md`). Rate-factor persistence is the OLS estimate corrected for its small-sample bias (Kendall,
-`calibrate.kendall_corrected`: 0.984/0.979/0.954 become 0.994/0.989/0.964), which widens the spread of
-74-month 5-year rate changes from 1.26 to 1.61 points (history 1.84) and leaves the IPS median within
-$0.1k. The engine applies a strategy month by month (lock schedule,
-mix, rebalancing band, 2031 floor, contribution rule). `docs/VALIDATION.md` checks this against the
+`docs/loop/r4_rates_findings.md`). Rate-factor persistence is the OLS estimate corrected for its
+small-sample bias (Kendall, `calibrate.kendall_corrected`: 0.984/0.979/0.954 become 0.994/0.989/0.964),
+which widens the spread of 74-month 5-year rate changes from 1.26 to 1.61 points (history 1.84) and
+leaves the IPS median within $0.1k. The engine applies a strategy month by month (lock schedule, mix,
+rebalancing band, 2031 floor, contribution rule). `docs/VALIDATION.md` checks this against the
 former team's guide and Plans v2.
 
 Market inputs (all keyless):
@@ -55,8 +55,8 @@ Market inputs (all keyless):
 - **USD/TWD:** the Federal Reserve's H.10 noon buying rate, from 2000 (replaces Yahoo's series, which
   needed bad prints filtered out). No drift: on TWD's own history the random walk forecasts better
   than the forward at 12, 36 and 72 months, and the actual central-bank forward is biased (Fama slope
-  -0.09; `docs/loop/r4_fx_findings.md`). Hedging at today's forward (-2.28% a year) would fix the
-  Taiwan-dollar value at a real median of $145.4k instead of $166.7k.
+  -0.09; `docs/loop/r4_fx_findings.md`). If the Taiwan dollar did drift as today's forward implies
+  (-2.28% a year), the real median would be $145.4k instead of $166.7k.
   No mean reversion either: over 2000-2026 the 74-month change spread is half a random walk's
   (variance ratio 0.34), but a random walk of the same length gives a median of 0.66 and 0.34 or less
   14% of the time; on FRED's copy of the same rate from 1983 the ratio is 1.55 (the late-1980s
