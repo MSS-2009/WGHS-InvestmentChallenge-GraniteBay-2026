@@ -127,3 +127,25 @@ model, 12.7% history). Conditional check: 95.5% coverage over 66 high-inflation 
 independent episodes). Today's +7.3% state moves the real median by -$0.2k; the long-run drift moves
 it by up to $11k. Real median: $167.4k at the full-sample drift (2.85%), $169.6k at the 20-year
 drift, $158.6k at the 10-year drift, against $156.8k under the old 4%/1.5% assumption.
+
+## Gemini quota outage (2026-10-21 22:37)
+Both round-4 runs stopped on "Individual quota reached ... Resets in 40h" (the Google account's
+Antigravity limit). At the user's instruction the planner finished round 4 itself and cancelled the
+two queued briefs in the bridge so Gemini does not redo them when the quota resets.
+
+### r4-rates (merged; Tasks 1-3 by Gemini, findings by the planner)
+Opt-in per-block shock tails (`rate_dof`, `rate_shared`, `infl_dof`, `fx_dof`). Gaussian rate shocks
+reproduce history's worst 0.1% of monthly 5-year moves (-0.80 pp both) and remove the 2-5 point
+jumps; t14 matches history's kurtosis. Crash-month stock/rate co-movement (history 0.39) is absent in
+every variant including today's (0.03), so nothing is lost. The worker's MLE degrees of freedom for
+the rate series are pinned at the search bound of 2 and contradict the moment estimates (7-14); not
+used. Headline: median -$64, worst scenario $73.7k -> $83.7k, CE gamma 8 +$1.1k; the t3 stress CE
+artifact disappears. Merge conflict in `ESGParams` (with r3-taiwan's fields) resolved by keeping both.
+
+### r4-fx (merged; data and forecast study by Gemini, forward checks, variants and findings by the planner)
+CBC money-market rates 1987-2026 (planner re-downloaded: 472/472 rows identical) and, added by the
+planner, the CBC's actual USD/TWD forward rates 1991-2026. The forward premium puzzle holds for TWD:
+Fama slopes 0.02 / 0.09 / 0.17 at 12 / 36 / 72 months and -0.09 on the actual 6-month forward, all
+rejecting an unbiased forward; the random walk has the lowest error at 12 and 36 months. Real median
+(AR(2) Taiwan costs, full-sample drift): $167.4k at zero FX drift, $145.9k at the forward (-2.28%/yr).
+The FX assumption moves the real median twice as much as the Taiwan cost drift.
