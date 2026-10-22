@@ -8,7 +8,10 @@ Treasury curve and September 30, 2026 month-end prices.
 ## Part 1 — funding model
 Treasury par curve → zero curve → cheapest WInS-permitted cash-flow-matched ladder (linear program),
 and a monthly scenario generator: Nelson-Siegel rates, K equity assets, inflation, USD/TWD and Taiwan
-building costs, with Student-t shocks. The engine applies a strategy month by month (lock schedule,
+building costs. Equity, inflation and USD/TWD shocks are Student-t(5); rate shocks are Gaussian,
+which is what 1994-2026 history shows (worst 0.1% of monthly 5-year moves: -0.80 points in history and
+in the model; with shared t5 tails the model produced 2-5 point jumps in two months,
+`docs/loop/r4_rates_findings.md`). The engine applies a strategy month by month (lock schedule,
 mix, rebalancing band, 2031 floor, contribution rule). `docs/VALIDATION.md` checks this against the
 former team's guide and Plans v2.
 
@@ -21,9 +24,17 @@ Market inputs (all keyless):
 - **Inflation:** reverts from the latest CPI reading (September: 3.7%) toward 7-year breakeven inflation from Treasury's
   nominal and TIPS par curves (2.37% on October 20, 2026). TIPS are a gauge only; WInS forbids them.
 - **USD/TWD:** the Federal Reserve's H.10 noon buying rate, from 2000 (replaces Yahoo's series, which
-  needed bad prints filtered out).
-- **Taiwan building costs:** still assumed (4% a year, 1.5% volatility); Taiwan's statistics sites
-  were unreachable from this environment.
+  needed bad prints filtered out). No drift: on TWD's own history the random walk forecasts better
+  than the forward at 12, 36 and 72 months, and the actual central-bank forward is biased (Fama slope
+  -0.09; `docs/loop/r4_fx_findings.md`). Hedging at today's forward (-2.28% a year) would fix the
+  Taiwan-dollar value at a real median of $145.9k instead of $167.4k.
+- **Taiwan building costs:** the official DGBAS construction cost index, 1991-2026
+  (`data/raw/taiwan/`). Monthly log changes follow a fitted AR(2) (0.655, -0.094) that reproduces the
+  index's autocorrelation and the spread of its 1- to 72-month changes, started from the Aug and Sep
+  2026 readings, with the 1991-2026 average drift of 2.85% a year. Today's +7.3% annual reading
+  barely matters (persistence lasts months); the drift does: 3.78% (the last ten years) would lower
+  the real median by about $9k (`docs/loop/r3_taiwan_findings.md`). The historical replay uses the
+  index's real paths.
 
 **How certain is "certain"?** A locked payment is treated as certain. That rests on one assumption:
 coupons and fund proceeds that arrive before a payment are reinvested at 3% until it is due (the ladder
@@ -36,7 +47,7 @@ ladder as held is $189 short for the 2034 payment, fixed by 6 more IBTO shares
 
 **Rate stress.** Rates 0.75 points lower before the January 2027 lock, and expected to stay there (the
 long-run level moves with today's, matching the "unchanged" expectation): the IPS median falls from
-$197.9k to $161.9k, and still funds every payment. 0.75 points higher: $233.3k.
+$197.8k to $161.9k, and still funds every payment. 0.75 points higher: $233.4k.
 
 ## Part 2a — ETF core (Black-Litterman)
 Nine equity groups, one ETF each (VUG, VTV, VB, VGK, BBJP, EPP, BBCA, EMXC, MCHI). Bonds in the growth
@@ -83,8 +94,8 @@ Monte Carlo, median facility (IPS rules, 20,000 scenarios, `reports/report_numbe
 
 | Sleeve | Views right, $25 trades | Views right, no commissions | Views wrong (equilibrium), $25 trades |
 |---|---:|---:|---:|
-| VTI/VEA/VWO 60/30/10 (3 funds) | $197.9k | $198.6k | $197.3k |
-| Black-Litterman core (9 funds) | $197.9k | $199.0k | $196.7k |
+| VTI/VEA/VWO 60/30/10 (3 funds) | $197.9k | $198.6k | $197.4k |
+| Black-Litterman core (9 funds) | $197.8k | $199.0k | $196.6k |
 
 The core's views are worth about $0.4k before commissions. Its six extra funds cost the same in
 WInS commissions. So the core is a risk-control choice, not a return engine: it holds technology and
@@ -214,15 +225,19 @@ names get zero shares. Hence the IPS keeps the satellite out of WInS.
 
 | Floor | Median | 5th pct | 95th pct | Secured in 2031 (typical) | 10th-90th pct range (typical) |
 |---|---:|---:|---:|---:|---|
-| 0% | $201.1k | $141.8k | $290.7k | $0 | $145.8k-$203.2k |
-| 40% | $199.0k | $145.9k | $275.7k | $67.1k | $154.0k-$188.5k |
-| 60% (IPS) | $197.9k | $147.4k | $269.8k | $100.7k | $158.3k-$181.2k |
-| 80% | $196.7k | $148.1k | $265.6k | $134.3k | $162.5k-$174.0k |
-| 100% | $195.5k | $147.5k | $262.8k | $167.9k | $167.1k |
+| 0% | $201.1k | $141.7k | $291.1k | $0 | $145.2k-$202.0k |
+| 40% | $199.1k | $146.0k | $275.7k | $66.5k | $152.8k-$187.3k |
+| 60% (IPS) | $197.8k | $147.4k | $270.2k | $99.8k | $156.9k-$179.7k |
+| 80% | $196.6k | $147.7k | $265.9k | $133.0k | $161.2k-$172.5k |
+| 100% | $195.5k | $147.3k | $263.0k | $166.3k | $165.6k |
+
+"Typical" is the median, across 21 scenarios between the 45th and 55th percentile of January 2031
+wealth, of each scenario's own quote (`engine.conditional_2031_band`). A single scenario is noisy:
+within that band the floor the IPS buys varies from $112.5k to $123.6k with that month's rates.
 
 Certainty equivalents (CRRA) favour 0%, 40% and 80% for risk aversion 2, 4 and 8. The IPS's 60% is
-within $1.9k of the best for each, and 60% and 80% differ by under $1.1k; wealth alone does not settle it. What changes sharply is what Laura can promise: for $1.2k of
-median, an 80% floor secures $34k more and halves the range.
+within $2.0k of the best for each, and 60% and 80% differ by under $1.1k; wealth alone does not settle it. What changes sharply is what Laura can promise: for $1.3k of
+median, an 80% floor secures $33k more and halves the range.
 
 **Contribution share.** 75%, 85% and 95% give typical contributions of $148k, $168k and $188k and leave
 Laura $49k, $30k and $10k. This is a preference, not something the model can optimise.
@@ -236,17 +251,29 @@ that matches its label. In the typical world, 85% of the facility gives:
 
 | Quote for co-sponsors (typical 2031 world) | Contribution range |
 |---|---|
-| Model 10th-90th percentile (historically ~98% of outcomes) | $158.3k-$181.2k |
-| 20th-80th percentile (historically ~80% of outcomes) | $161.3k-$176.6k |
+| Model 10th-90th percentile (historically ~98% of outcomes) | $156.9k-$179.7k |
+| 20th-80th percentile (historically ~80% of outcomes) | $159.9k-$175.1k |
 
 Quote the second as the 80% range, and the first as the cautious range. The paths overlap (about four
-independent six-year windows), so the calibration is thin evidence; both quotes sit above the $100.7k
+independent six-year windows), so the calibration is thin evidence; both quotes sit above the $99.8k
 already secured by the floor. `scripts/report_numbers.py` writes both for the bad, typical and good
 worlds (`quotes_2031`).
 
-**Reverse stress test.** The worst 1% of futures average a $119.9k facility, with stocks down 28%
+**Reverse stress test.** The worst 1% of futures average a $121.3k facility, with stocks down 32%
 over 2028-2033 and a worst 12 months of -30%; rates barely move. The chance the facility ends below
-$100k is 0.03%, below $120k 0.4%, below $140k 2.8%.
+$100k is 0.03%, below $120k 0.4%, below $140k 2.7%.
+
+## Changes from the improvement loop (October 2026)
+`docs/loop/IMPROVEMENT_LOG.md` records every round, what was checked and what was rejected. Adopted
+into the headline numbers: Gaussian rate shocks; the DGBAS-based AR(2) Taiwan building-cost process
+(real median $156.8k -> $167.4k); real Taiwan cost paths in the replay; the 2031 quote from a band of
+scenarios. Built but left off, with the evidence for each: expected-return uncertainty (no material
+effect), GARCH volatility clustering (worse calibrated on history), a USD/TWD drift (the forward is
+a biased forecast for TWD). Studies whose decisions belong to the client, not the model: the policy
+search and robustness study (`docs/loop/r1_policy_findings.md`, `r2_policy_findings.md`,
+`r3_robust_findings.md`), a STRIPS reserve outside WInS (`r3_strips_findings.md`) and FX hedging
+(`r4_fx_findings.md`). Study reports in `reports/` written before this integration (for example
+`taiwan_variants.csv`, `rate_tails_impact.csv`, `policy_search.csv`) used the earlier defaults.
 
 ## Caveats
 - The analyst judgments in `qualitative_judgments.csv` rest on the public record to mid-2026, then on
