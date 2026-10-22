@@ -180,3 +180,66 @@ def calibrate_cma_dispersion(cma_path: str | Path | None = None, groups: list | 
         M[i, r] = 1.0
 
     return M @ cma_cov @ M.T
+
+
+def calibrate_equity_garch(ticker: str = "VTI", start: str = "2001-01-01", end: str = DATA_END,
+                           dof: float | None = 5.0) -> dict:
+    """Calibrate GARCH(1,1) volatility process on monthly equity history (VTI 2001-2026).
+
+    Uses variance targeting (omega = var * (1 - alpha - beta)) to strictly pin the unconditional
+    variance to the historical sample variance. Maximizes Student-t (with `dof`) log-likelihood.
+    Returns fitted parameters, unconditional annual volatility, today's estimated state, and
+    autocorrelation of squared monthly returns at lags 1-6.
+    """
+    from scipy.optimize import minimize
+    from scipy.special import gammaln
+
+    ret = yahoo.monthly_returns([ticker], start=start)[ticker].loc[:end].dropna()
+    r = np.log1p(ret).values
+    mu = float(r.mean())
+    eps = r - mu
+    var_uncond = float(np.var(eps))
+
+    def nll(params):
+        alpha, beta = params
+        if alpha <= 0 or beta <= 0 or alpha + beta >= 0.99:
+            return 1e10
+        omega = var_uncond * (1.0 - alpha - beta)
+        T = len(eps)
+        h = np.empty(T)
+        h[0] = var_uncond
+        for t in range(1, T):
+            h[t] = omega + alpha * eps[t - 1] ** 2 + beta * h[t - 1]
+        if dof is not None:
+            s2 = h * (dof - 2.0) / dof
+            return -float(np.sum(gammaln((dof + 1) / 2) - gammaln(dof / 2) - 0.5 * np.log(np.pi * dof * s2)
+                                 - 0.5 * (dof + 1) * np.log(1 + eps ** 2 / (dof * s2))))
+        else:
+            return 0.5 * float(np.sum(np.log(h) + eps ** 2 / h))
+
+    res = minimize(nll, [0.10, 0.75], bounds=[(0.001, 0.40), (0.001, 0.95)])
+    alpha, beta = float(res.x[0]), float(res.x[1])
+    omega = var_uncond * (1.0 - alpha - beta)
+
+    T = len(eps)
+    h = np.empty(T)
+    h[0] = var_uncond
+    for t in range(1, T):
+        h[t] = omega + alpha * eps[t - 1] ** 2 + beta * h[t - 1]
+
+    s_hist = pd.Series(eps ** 2)
+    ac = [float(s_hist.autocorr(lag)) for lag in range(1, 7)]
+
+    return {
+        "alpha": alpha,
+        "beta": beta,
+        "omega": omega,
+        "persistence": alpha + beta,
+        "uncond_vol_ann": float(np.sqrt(var_uncond * 12)),
+        "h0_unconditional": 1.0,
+        "h0_today": float(h[-1] / var_uncond),
+        "autocorr_lags_1_6": ac,
+        "ticker": ticker,
+        "window": (str(ret.index.min().date()), str(ret.index.max().date())),
+        "n_months": len(r),
+    }

@@ -41,6 +41,7 @@ class ESGParams:
     t_dof: float | None = 5.0        # Student-t degrees of freedom; None = Gaussian
     rate_floor: float = -0.005
     eq_mu_cov: np.ndarray | None = None  # (K, K) annual covariance of expected equity returns
+    eq_garch: tuple[float, float] | dict | None = None  # optional (alpha, beta) or dict for GARCH(1,1) vol clustering
 
 
 @dataclass
@@ -54,6 +55,7 @@ class Scenarios:
     rate_floor: float = -0.005
     m0: int = 0            # absolute month of index 0 (non-zero for nested simulations)
     eq_drift_err: np.ndarray | None = None
+    garch_h: np.ndarray | None = None
 
     @property
     def n(self) -> int:
@@ -99,6 +101,38 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
     shocks = z @ chol.T                                       # (n, M, K+5)
     K = len(p.eq_geo)
     shocks[..., :K] *= p.eq_vol_scale
+
+    garch_h = None
+    if p.eq_garch is not None:
+        if isinstance(p.eq_garch, (tuple, list)):
+            alpha, beta = float(p.eq_garch[0]), float(p.eq_garch[1])
+            h0 = float(p.eq_garch[2]) if len(p.eq_garch) > 2 else 1.0
+            factor_idx = 0
+        elif isinstance(p.eq_garch, dict):
+            alpha = float(p.eq_garch["alpha"])
+            beta = float(p.eq_garch["beta"])
+            h0 = float(p.eq_garch.get("h0", 1.0))
+            factor_idx = int(p.eq_garch.get("factor_idx", 0))
+        else:
+            alpha = float(p.eq_garch.alpha)
+            beta = float(p.eq_garch.beta)
+            h0 = float(getattr(p.eq_garch, "h0", 1.0))
+            factor_idx = int(getattr(p.eq_garch, "factor_idx", 0))
+
+        omega = 1.0 - alpha - beta
+        garch_h = np.ones((n, M))
+        if start is not None and "garch_h" in start:
+            start_h = np.asarray(start["garch_h"])
+            garch_h[:, 0] = start_h if start_h.ndim > 0 else np.full(n, float(start_h))
+        else:
+            garch_h[:, 0] = h0
+
+        var0 = p.cov[factor_idx, factor_idx] * (p.eq_vol_scale ** 2)
+        for m in range(M):
+            shocks[:, m, :K] *= np.sqrt(garch_h[:, m, None])
+            if m < M - 1:
+                garch_h[:, m + 1] = omega + alpha * (shocks[:, m, factor_idx] ** 2 / var0) + beta * garch_h[:, m]
+
     eq_mu = np.log1p(p.eq_geo) / 12.0                         # median growth preserved
     eq_drift_err = None
     if start is not None and "eq_drift_err" in start:
@@ -139,4 +173,4 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
     tw = np.log1p(p.tw_cost_growth) / 12 + p.tw_cost_vol / np.sqrt(12) * rng.standard_normal((n, M))
     tw0 = 0.0 if start is None else start["tw_cost_log"][:, None]
     tw_cost_log = np.concatenate([np.zeros((n, 1)), np.cumsum(tw, axis=1)], axis=1) + tw0
-    return Scenarios(beta, eq_log, infl, fx_log, tw_cost_log, p.resid, p.rate_floor, m0, eq_drift_err)
+    return Scenarios(beta, eq_log, infl, fx_log, tw_cost_log, p.resid, p.rate_floor, m0, eq_drift_err, garch_h)

@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 
 from lgm import engine
-from lgm.calibrate import calibrate_cma_dispersion
+from lgm.calibrate import calibrate_cma_dispersion, calibrate_equity_garch
 from lgm.esg import ESGParams, Scenarios, simulate
 from lgm.growth.core import build_core
 from lgm.growth.scoring import esg_params
@@ -105,3 +105,84 @@ def test_conditional_2031_drift_handling():
     cond_redrawn = engine.conditional_2031(st, sc, r, p, i=target_idx, n_inner=200, cfg=cfg, keep_drift=False)
     assert "floor" in cond_kept
     assert "floor" in cond_redrawn
+
+
+def test_eq_garch_none_reproduces_exact():
+    """Setting eq_garch=None reproduces baseline scenarios exactly."""
+    core = build_core()
+    p1 = esg_params(core["cal"], core["table"]["bl_geo_total"].values)
+    p2 = esg_params(core["cal"], core["table"]["bl_geo_total"].values)
+    p2.eq_garch = None
+
+    sc1 = simulate(p1, n=2000, seed=42)
+    sc2 = simulate(p2, n=2000, seed=42)
+
+    assert np.array_equal(sc1.eq_log, sc2.eq_log)
+    assert np.array_equal(sc1.beta, sc2.beta)
+    assert sc1.garch_h is None
+    assert sc2.garch_h is None
+
+
+def test_calibrate_equity_garch():
+    """GARCH calibration on VTI yields stationary parameters and valid historical autocorrelations."""
+    cal = calibrate_equity_garch()
+    assert 0.0 < cal["alpha"] < 0.5
+    assert 0.0 < cal["beta"] < 0.95
+    assert cal["persistence"] < 1.0
+    assert cal["uncond_vol_ann"] > 0.10
+    assert 0.0 < cal["h0_today"] < 2.0
+    assert len(cal["autocorr_lags_1_6"]) == 6
+    # History has positive lag-1 autocorrelation
+    assert cal["autocorr_lags_1_6"][0] > 0.20
+
+
+def test_eq_garch_vol_and_median_invariants():
+    """GARCH(1,1) preserves unconditional annual volatility (within 0.2 pts) and median return (within 0.1%/yr)."""
+    core = build_core()
+    cal = calibrate_equity_garch()
+    p_base = esg_params(core["cal"], core["table"]["bl_geo_total"].values)
+    p_garch = esg_params(core["cal"], core["table"]["bl_geo_total"].values)
+    p_garch.eq_garch = (cal["alpha"], cal["beta"], 1.0)
+
+    n = 20000
+    sc_base = simulate(p_base, n=n, seed=11)
+    sc_garch = simulate(p_garch, n=n, seed=11)
+
+    # 1. Unconditional annual volatility within 0.2 points (0.002) of today's
+    vols_base = sc_base.eq_log.std(axis=(0, 1)) * np.sqrt(12)
+    vols_garch = sc_garch.eq_log.std(axis=(0, 1)) * np.sqrt(12)
+    vol_diff = np.abs(vols_garch - vols_base) * 100
+    assert np.max(vol_diff) < 0.20
+
+    # 2. Median 74-month return within 0.1%/yr of today's
+    meds_base = np.median(np.exp(sc_base.eq_log.sum(axis=1)) ** (12 / p_base.months) - 1, axis=0)
+    meds_garch = np.median(np.exp(sc_garch.eq_log.sum(axis=1)) ** (12 / p_garch.months) - 1, axis=0)
+    med_diff = np.abs(meds_garch - meds_base) * 100
+    assert np.max(med_diff) < 0.10
+
+    # 3. GARCH variance array present and symmetric under antithetic pairing
+    assert sc_garch.garch_h is not None
+    half = n // 2
+    assert np.allclose(sc_garch.garch_h[:half], sc_garch.garch_h[half:])
+
+
+def test_eq_garch_autocorrelation_clustering():
+    """GARCH process generates positive squared-return autocorrelation at lags 1-6."""
+    import pandas as pd
+    core = build_core()
+    cal = calibrate_equity_garch()
+    p_garch = esg_params(core["cal"], core["table"]["bl_geo_total"].values)
+    p_garch.eq_garch = (cal["alpha"], cal["beta"], 1.0)
+
+    sc = simulate(p_garch, n=5000, seed=11)
+    acs = []
+    for i in range(2000):
+        s = pd.Series((sc.eq_log[i, :, 0] - sc.eq_log[i, :, 0].mean()) ** 2)
+        acs.append([s.autocorr(lag) for lag in range(1, 7)])
+    mean_ac = np.nanmean(acs, axis=0)
+
+    # Lag 1 autocorrelation must be significantly positive (clustering)
+    assert mean_ac[0] > 0.05
+    # Positive at lags 1, 2, 3
+    assert mean_ac[1] > 0.03
+    assert mean_ac[2] > 0.02
