@@ -65,23 +65,23 @@ Market inputs (all keyless):
   Partial hedges (`scripts/fx_hedge_frontier.py`, a share of the median facility sold forward in
   January 2027): on the random walk every hedge lowers the real 5th percentile as well as the median
   (fully hedged $94.9k and $144.3k against $110.8k and $166.7k). Only if the forward is an
-  unbiased forecast does hedging pay, and then modestly: the median is unchanged within $0.9k and the 5th
-  percentile rises from $96.6k to at most $100.8k (at 75% hedged). Most of the real risk is the facility's own
-  dollar value, which no currency hedge removes.
+  unbiased forecast does hedging pay, and then modestly: the median is unchanged within $0.9k
+  and the 5th percentile rises from $96.6k to at most $100.8k (at 75% hedged). Most of the
+  real risk is the facility's own dollar value, which no currency hedge removes.
 - **Taiwan building costs:** the official DGBAS construction cost index, 1991-2026
   (`data/raw/taiwan/`). Monthly log changes follow a fitted AR(2) (0.655, -0.094) that reproduces the
   index's autocorrelation and the spread of its 1- to 72-month changes, started from the Aug and Sep
-  2026 readings, with the 1991-2026 average drift of 2.85% a year. Today's +7.3% annual reading
-  barely matters (persistence lasts months); the drift does: 3.78% (the last ten years) would lower
-  the real median by $8.7k (`scripts/fx_variants.py`; `docs/loop/r3_taiwan_findings.md`). In real time the long-run average
-  has been the better forecast: from each month-end 2001-2020, the average since 1991 missed the next
-  74 months' cost growth by 0.167 (RMSE of the log change) against 0.222 for the trailing ten-year
-  average, and beat it in each of the four five-year blocks of origins (`scripts/taiwan_drift_study.py`). Cost growth is correlated -0.25
-  with USD/TWD: in history a weaker Taiwan dollar has come with slower building-cost growth (12- to
-  72-month changes, 2000-2026: -0.18 to -0.33, `scripts/taiwan_fx_corr.py`), so the two risks add up
-  rather than offset. This widens the real 5th-95th percentile range from $113.2k-$247.3k to
-  $110.8k-$251.8k and leaves the real median unchanged. The historical replay uses the index's real
-  paths.
+  2026 readings, with the 1991-2026 average drift of 2.85% a year. Today's +7.3% annual reading barely
+  matters (persistence lasts months); the drift does: 3.78% (the last ten years) would lower the real
+  median by $8.7k (`scripts/fx_variants.py`; `docs/loop/r3_taiwan_findings.md`). In real time the
+  long-run average has been the better forecast: from each month-end 2001-2020, the average since 1991
+  missed the next 74 months' cost growth by 0.167 (RMSE of the log change) against 0.222 for the
+  trailing ten-year average, and beat it in each of the four five-year blocks of origins
+  (`scripts/taiwan_drift_study.py`). Cost growth is correlated -0.25 with USD/TWD: in history a weaker
+  Taiwan dollar has come with slower building-cost growth (12- to 72-month changes, 2000-2026: -0.18
+  to -0.33, `scripts/taiwan_fx_corr.py`), so the two risks add up rather than offset. This widens the
+  real 5th-95th percentile range from $113.2k-$247.3k to $110.8k-$251.8k and leaves the real median
+  unchanged. The historical replay uses the index's real paths.
 
 **How certain is "certain"?** A locked payment is treated as certain. That rests on one assumption:
 coupons and fund proceeds that arrive before a payment are reinvested at 3% until it is due (the ladder
@@ -109,7 +109,8 @@ That window averages two regimes, +0.41 in 2017-2021 and -0.47 since 2022, and o
 sign follows inflation: 1994-1999 -0.30, 2000-2021 +0.36, 1994-2026 +0.09. A positive correlation is
 the bad case for an open ladder (rates fall as stocks fall). Re-scoring with the equity-rate block
 rescaled to each regime (`scripts/stock_rate_corr.py`): the IPS median stays within $0.2k and its 5th
-percentile ranges from $145.3k (the 2000-2021 regime) to $146.8k (today's). The index-first 60/40, which leaves the liabilities open, is exposed: its 5th percentile runs from $51.3k
+percentile ranges from $145.3k (the 2000-2021 regime) to $146.8k (today's). The index-first
+60/40, which leaves the liabilities open, is exposed: its 5th percentile runs from $51.3k
 to $31.6k. Crash months show no flight to quality on average either: in the worst 5% of equity months
 since 2007 the 5-year rate rose 0.05 points on average and fell in 58% of them, and the "crash
 correlation" of 0.39 rests on 12 months (p = 0.11 against no extra tail dependence;
@@ -128,8 +129,8 @@ sleeve are IBTM.
   of +2.2%), US small minus large (+1.00%: J.P. Morgan, Vanguard and the French history). Each view's
   uncertainty is the spread across the firms that publish it, with a floor of 1.5% (2.5% when only
   one firm does). Long-run history counts toward a view's size but not its uncertainty: the value
-  premium was +2.2% a year since 1927 but -3.2% since 2007 (`scripts/factor_evidence.py`). τ = 0.05. Views are converted to arithmetic returns leg by leg, each leg adding half
-  its own basket variance.
+  premium was +2.2% a year since 1927 but -3.2% since 2007 (`scripts/factor_evidence.py`). τ = 0.05.
+  Views are converted to arithmetic returns leg by leg, each leg adding half its own basket variance.
 - **Constraints:** each group within [0.5×, 2×] of market weight (and at most +10pp); no look-through
   overweight in tech/communication or China+Taiwan, the two concentrations the client background
   check flags.
@@ -166,8 +167,8 @@ Monte Carlo, median facility (IPS rules, 20,000 scenarios, `reports/report_numbe
 The core's views are worth about $0.4k before commissions. Its six extra funds cost about $0.7k in
 WInS commissions, so with $25 trades it trails the 3-fund portfolio by $0.4k. So the core is a
 risk-control choice, not a return engine: it holds technology and China+Taiwan below the market's
-share for about 0.2% of the median. Equity selection is second-order for
-Laura; the funding decisions in Part 1 dominate.
+share for about 0.2% of the median. Equity selection is second-order for Laura; the funding
+decisions in Part 1 dominate.
 
 ## Part 2b — stock satellite
 
@@ -275,8 +276,8 @@ credible. The cost is fixed per trade rather than proportional, so at WInS commi
 smaller satellite is no cheaper. Without commissions it is roughly neutral.
 
 Commission assumptions are an upper bound. Every invest or rebalance event trades all 35 names
-(34 more trades than one ETF), except top-ups under $10k, which are not charged (in practice they would wait in the ETFs). The annual review
-replaces three names (six trades, $150).
+(34 more trades than one ETF), except top-ups under $10k, which are not charged (in practice they
+would wait in the ETFs). The annual review replaces three names (six trades, $150).
 
 **Conclusion.** The satellite is a values-alignment and engagement tool, not a return engine. At a
 commission-free broker it is roughly outcome-neutral in the median (slightly negative in the tails once
@@ -310,7 +311,8 @@ wealth, of each scenario's own quote (`engine.conditional_2031_band`). A single 
 within that band the floor the IPS buys varies from $112.2k to $123.8k with that month's rates.
 
 Certainty equivalents (CRRA) favour 0%, 40% and 80% for risk aversion 2, 4 and 8. The IPS's 60% is
-within $1.9k of the best for each, and 60% and 80% differ by under $1.1k; wealth alone does not settle it. What changes sharply is what Laura can promise: for $1.4k of
+within $1.9k of the best for each, and 60% and 80% differ by under $1.1k; wealth alone does not
+settle it. What changes sharply is what Laura can promise: for $1.4k of
 median, an 80% floor secures $33k more and halves the range.
 
 **Contribution share.** 75%, 85% and 95% give typical contributions of $148k, $168k and $187k and leave

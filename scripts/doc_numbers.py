@@ -38,10 +38,10 @@ def hedge_sentence() -> str:
             f"  (fully hedged {k(rw.loc[1.0, 'real_p5'])} and {k(rw.loc[1.0, 'real_median'])} against "
             f"{k(rw.loc[0.0, 'real_p5'])} and {k(rw.loc[0.0, 'real_median'])}). Only if the forward is an\n"
             f"  unbiased forecast does hedging pay, and then modestly: the median is unchanged within "
-            f"{k(fw.real_median.max() - fw.real_median.min())} and the 5th\n"
-            f"  percentile rises from {k(fw.loc[0.0, 'real_p5'])} to at most {k(fw.real_p5.max())} "
-            f"(at {best:.0%} hedged). Most of the real risk is the facility's own\n"
-            f"  dollar value, which no currency hedge removes.")
+            f"{k(fw.real_median.max() - fw.real_median.min())}\n"
+            f"  and the 5th percentile rises from {k(fw.loc[0.0, 'real_p5'])} to at most {k(fw.real_p5.max())} "
+            f"(at {best:.0%} hedged). Most of the\n"
+            f"  real risk is the facility's own dollar value, which no currency hedge removes.")
 
 
 def sensitivity_rows() -> list[str]:
@@ -358,35 +358,55 @@ def checks() -> list[tuple[str, str, str]]:
 NUMBER = r"[−+-]?\$?\d[\d,]*(?:\.\d+)?k?%?"
 
 
-def pattern(text: str) -> re.Pattern:
-    """The expected text with every number generalised, to find the stale version of it."""
+def _flat(text: str) -> str:
+    """Line breaks and indentation do not count: a figure may be rewrapped freely."""
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _literal(text: str) -> str:
+    """Regex for literal text, any run of whitespace matching any other."""
+    return r"\s+".join(re.escape(w) for w in re.split(r"\s+", text))
+
+
+def _split(text: str) -> tuple[str, list[str]]:
+    """(table-row label kept literally, the rest split into literal / number / literal ...)."""
     head = ""
     if text.startswith("| "):                      # a table row: its first cell is the row's label, keep it
         cut = text.index(" | ", 2) + 3
         head, text = text[:cut], text[cut:]
-    parts = re.split(f"({NUMBER})", text)
-    return re.compile(re.escape(head) + "".join(NUMBER if i % 2 else re.escape(x) for i, x in enumerate(parts)))
+    return head, re.split(f"({NUMBER})", text)
+
+
+def pattern(text: str) -> re.Pattern:
+    """The expected text with every number generalised (one group each), to find its stale version."""
+    head, parts = _split(text)
+    return re.compile(_literal(head) + "".join(f"({NUMBER})" if i % 2 else _literal(x) for i, x in enumerate(parts)))
 
 
 def fix() -> list[tuple[str, str, str]]:
-    """Rewrite each stale figure found exactly once; return the ones that could not be placed."""
+    """Rewrite each stale figure found exactly once, number by number, so the doc keeps its own line
+    breaks; return the ones that could not be placed."""
     paths = {"MODEL": ROOT / "docs" / "MODEL.md", "VALIDATION": ROOT / "docs" / "VALIDATION.md"}
     texts = {d: p.read_text() for d, p in paths.items()}
     left = []
     for doc, what, text in missing():
-        hits = pattern(text).findall(texts[doc])
-        if len(hits) == 1:
-            texts[doc] = texts[doc].replace(hits[0], text)
-        else:
+        hits = list(pattern(text).finditer(texts[doc]))
+        if len(hits) != 1:
             left.append((doc, what, text))
+            continue
+        m, new = hits[0], _split(text)[1][1::2]
+        t = texts[doc]
+        for g in range(len(new), 0, -1):            # right to left, so earlier spans stay valid
+            t = t[:m.start(g)] + new[g - 1] + t[m.end(g):]
+        texts[doc] = t
     for d, p in paths.items():
         p.write_text(texts[d])
     return left
 
 
 def missing() -> list[tuple[str, str, str]]:
-    docs = {"MODEL": (ROOT / "docs" / "MODEL.md").read_text(), "VALIDATION": (ROOT / "docs" / "VALIDATION.md").read_text()}
-    return [c for c in checks() if c[2] not in docs[c[0]]]
+    docs = {d: _flat((ROOT / "docs" / f"{d}.md").read_text()) for d in ("MODEL", "VALIDATION")}
+    return [c for c in checks() if _flat(c[2]) not in docs[c[0]]]
 
 
 def main() -> int:
