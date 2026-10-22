@@ -1,0 +1,130 @@
+"""Tests for per-block tail options in ESGParams and rate tail behavior."""
+import dataclasses as dc
+import numpy as np
+import pytest
+from scipy import stats
+
+from lgm import calibrate, esg, profiles, nelson_siegel as ns
+
+
+@pytest.fixture
+def base_params():
+    return profiles.cs_team(t_dof=5.0, months=12)
+
+
+def test_default_rate_tails_bit_for_bit_identical(base_params):
+    """Default ESGParams (rate_dof=None, rate_shared=0.0) must produce identical scenarios."""
+    sc_default = esg.simulate(base_params, n=500, seed=42)
+
+    # Explicitly identical parameters
+    p_same = dc.replace(base_params, rate_dof=None, rate_shared=0.0, infl_dof=None, fx_dof=None)
+    sc_same = esg.simulate(p_same, n=500, seed=42)
+
+    np.testing.assert_array_equal(sc_default.beta, sc_same.beta)
+    np.testing.assert_array_equal(sc_default.eq_log, sc_same.eq_log)
+    np.testing.assert_array_equal(sc_default.infl, sc_same.infl)
+    np.testing.assert_array_equal(sc_default.fx_log, sc_same.fx_log)
+    np.testing.assert_array_equal(sc_default.tw_cost_log, sc_same.tw_cost_log)
+
+
+def test_covariance_preserved_across_options(base_params):
+    """Covariance of shocks must match p.cov for all rate tail variants."""
+    variants = [
+        dc.replace(base_params, rate_dof="gaussian"),
+        dc.replace(base_params, rate_dof=14.0),
+        dc.replace(base_params, rate_dof="gaussian", rate_shared=0.25),
+        dc.replace(base_params, rate_dof=8.0, rate_shared=0.10, infl_dof="gaussian"),
+    ]
+    chol = np.linalg.cholesky(base_params.cov)
+    target_cov = base_params.cov
+
+    # Generate 50,000 draws to verify theoretical covariance preservation
+    for p in variants:
+        sc = esg.simulate(p, n=50000, seed=123)
+        # Extract 1-step shocks directly:
+        # Equities
+        eq_shocks = sc.eq_log[:, 0, :] - np.log1p(p.eq_geo) / 12.0
+        eq_shocks /= p.eq_vol_scale
+        # Rates
+        rate_shocks = sc.beta[:, 1, :] - (p.beta_mu + p.phi * (sc.beta[:, 0, :] - p.beta_mu))
+        # Infl
+        infl_shocks = sc.infl[:, 1] - (p.infl_mu + p.infl_phi * (sc.infl[:, 0] - p.infl_mu))
+        # FX
+        fx_shocks = sc.fx_log[:, 1] - p.fx_drift / 12.0
+
+        all_shocks = np.column_stack([eq_shocks, rate_shocks, infl_shocks, fx_shocks])
+        emp_cov = np.cov(all_shocks, rowvar=False)
+
+        # Max error between empirical and theoretical covariance should be small
+        max_err = np.max(np.abs(emp_cov - target_cov))
+        assert max_err < 0.003, f"Covariance mismatch for variant {p.rate_dof}: max_err={max_err}"
+
+
+def test_rate_kurtosis_separation(base_params):
+    """Rate tails should be thinner under rate_dof='gaussian' while equity tails remain heavy."""
+    # Today's model (t_dof=5 for all)
+    sc_today = esg.simulate(base_params, n=10000, seed=11)
+    eq_kurt_today = stats.kurtosis(sc_today.eq_log[:, 0, 0])
+    r0_today = sc_today.zero_cc(0, 5.0)[:, 0]
+    r1_today = sc_today.zero_cc(1, 5.0)[:, 0]
+    rate_kurt_today = stats.kurtosis(r1_today - r0_today)
+
+    # Option A: Gaussian rates
+    p_gauss = dc.replace(base_params, rate_dof="gaussian")
+    sc_gauss = esg.simulate(p_gauss, n=10000, seed=11)
+    eq_kurt_gauss = stats.kurtosis(sc_gauss.eq_log[:, 0, 0])
+    r0_gauss = sc_gauss.zero_cc(0, 5.0)[:, 0]
+    r1_gauss = sc_gauss.zero_cc(1, 5.0)[:, 0]
+    rate_kurt_gauss = stats.kurtosis(r1_gauss - r0_gauss)
+
+    # Equity kurtosis should remain heavy (> 1.5)
+    assert eq_kurt_today > 1.5
+    assert eq_kurt_gauss > 1.5
+    # Rate kurtosis today is fat (> 2.0), but under Gaussian rates it collapses to near zero (< 0.25)
+    assert rate_kurt_today > 2.0
+    assert rate_kurt_gauss < 0.25
+
+
+def test_independent_t_rate_dof(base_params):
+    """Independent Student-t rate shocks with df=14 produce moderate rate kurtosis."""
+    p_t14 = dc.replace(base_params, rate_dof=14.0)
+    sc_t14 = esg.simulate(p_t14, n=10000, seed=11)
+    r0 = sc_t14.zero_cc(0, 5.0)[:, 0]
+    r1 = sc_t14.zero_cc(1, 5.0)[:, 0]
+    rate_kurt = stats.kurtosis(r1 - r0)
+
+    # Kurtosis of t(14) should be around 6 / (14 - 4) = 0.60
+    assert 0.3 < rate_kurt < 1.0
+
+
+def test_crash_correlation_positive(base_params):
+    """Correlation between equities and 5y rate changes in crash months should remain positive."""
+    for r_dof in [None, "gaussian", 14.0]:
+        p = dc.replace(base_params, rate_dof=r_dof)
+        sc = esg.simulate(p, n=10000, seed=11)
+        eq = sc.eq_log[:, 0, 0]
+        dr = sc.zero_cc(1, 5.0)[:, 0] - sc.zero_cc(0, 5.0)[:, 0]
+        full_corr, crash_corr = calibrate.crash_correlation(eq, dr, q=0.05)
+
+        assert not np.isnan(full_corr)
+        assert not np.isnan(crash_corr)
+        assert full_corr > 0.0
+        assert crash_corr > -0.05, f"Crash correlation was strongly negative ({crash_corr}) for rate_dof={r_dof}"
+
+
+def test_calibrate_block_tails():
+    """Verify that calibrate_block_tails returns expected structure and metrics."""
+    res = calibrate.calibrate_block_tails()
+    assert "d_level" in res
+    assert "d_slope" in res
+    assert "d_curv" in res
+    assert "d_rate5y" in res
+    assert "d_infl" in res
+    assert "fx_TWD" in res
+    assert "rates_3d_joint" in res
+    assert "crash_correlation" in res
+
+    # Check 5y rate change excess kurtosis is near 0.6
+    assert 0.4 < res["d_rate5y"]["excess_kurtosis"] < 0.8
+    # Check df_mom is near 14
+    assert 10.0 < res["d_rate5y"]["df_mom"] < 20.0

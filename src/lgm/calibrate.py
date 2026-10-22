@@ -17,6 +17,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import yaml
+from scipy import stats, optimize, special
 from sklearn.covariance import LedoitWolf
 
 from . import nelson_siegel as ns
@@ -300,3 +301,138 @@ def filter_equity_garch(returns: np.ndarray | pd.Series,
         h[:, m + 1] = omega + alpha * innov_sq + beta * h[:, m]
 
     return h[0] if is_1d else h
+
+
+def calibrate_tail_dof(x: np.ndarray | pd.Series) -> dict:
+    """Calibrate Student-t degrees of freedom for a 1D residual series.
+
+    Returns:
+      n_obs: sample size
+      mean: sample mean
+      std: sample standard deviation (ddof=1)
+      excess_kurtosis: Fisher excess kurtosis (normal = 0)
+      df_mom: moment-matched degrees of freedom: 4 + 6 / kurt (if kurt > 0 else inf)
+      df_mle: maximum-likelihood degrees of freedom from scipy.stats.t.fit
+    """
+    vals = np.asarray(x, dtype=float)
+    vals = vals[~np.isnan(vals)]
+    n = len(vals)
+    if n < 4:
+        return {"n_obs": n, "mean": float("nan"), "std": float("nan"),
+                "excess_kurtosis": float("nan"), "df_mom": float("nan"), "df_mle": float("nan")}
+    mean = float(np.mean(vals))
+    std = float(np.std(vals, ddof=1))
+    kurt = float(stats.kurtosis(vals))
+    df_mom = float(4.0 + 6.0 / kurt) if kurt > 0 else float("inf")
+    try:
+        df_mle, _, _ = stats.t.fit(vals)
+        df_mle = float(df_mle)
+    except Exception:
+        df_mle = float("nan")
+    return {
+        "n_obs": n,
+        "mean": mean,
+        "std": std,
+        "excess_kurtosis": kurt,
+        "df_mom": df_mom,
+        "df_mle": df_mle,
+    }
+
+
+def fit_multivariate_t(data: np.ndarray) -> dict:
+    """Maximum likelihood and Mardia kurtosis fit of multivariate Student-t degrees of freedom."""
+    X = np.asarray(data, dtype=float)
+    N, d = X.shape
+    S = np.cov(X, rowvar=False)
+    invS = np.linalg.inv(S)
+    mahal = np.sum((X @ invS) * X, axis=1)
+
+    def neg_ll(nu):
+        ll = N * (special.gammaln((nu + d) / 2.0) - special.gammaln(nu / 2.0)
+                  - 0.5 * d * np.log((nu - 2.0) * np.pi) - 0.5 * np.linalg.slogdet(S)[1])
+        ll -= 0.5 * (nu + d) * np.sum(np.log(1.0 + mahal / (nu - 2.0)))
+        return -ll
+
+    res = optimize.minimize_scalar(neg_ll, bounds=(2.01, 100.0), method="bounded")
+    r = mahal.var() / (2.0 * d)
+    nu_mardia = float((4.0 * r - 2.0) / (r - 1.0)) if r > 1.0 else float("inf")
+    return {
+        "df_mle": float(res.x),
+        "df_mardia": nu_mardia,
+        "mahal_mean": float(mahal.mean()),
+        "mahal_var": float(mahal.var()),
+    }
+
+
+def crash_correlation(eq_returns: np.ndarray | pd.Series, rate_changes: np.ndarray | pd.Series,
+                      q: float = 0.05) -> tuple[float, float]:
+    """Correlation between equity returns and rate changes: full sample vs worst q (default 5%) of equity returns."""
+    eq = np.asarray(eq_returns, dtype=float).ravel()
+    rc = np.asarray(rate_changes, dtype=float).ravel()
+    mask = ~np.isnan(eq) & ~np.isnan(rc)
+    eq, rc = eq[mask], rc[mask]
+    if len(eq) < 3:
+        return float("nan"), float("nan")
+    full_corr = float(np.corrcoef(eq, rc)[0, 1])
+    q_val = np.percentile(eq, q * 100.0)
+    crash_mask = eq <= q_val
+    if np.sum(crash_mask) < 2 or np.std(eq[crash_mask]) == 0 or np.std(rc[crash_mask]) == 0:
+        crash_corr = float("nan")
+    else:
+        crash_corr = float(np.corrcoef(eq[crash_mask], rc[crash_mask])[0, 1])
+    return full_corr, crash_corr
+
+
+def calibrate_block_tails(end: str = DATA_END) -> dict:
+    """Calibrate tail degrees of freedom across all shock blocks from historical data."""
+    fh = factor_history()
+    resids = {}
+    rate_res_list = []
+    for f, short in zip(FACTOR_NAMES, ["level", "slope", "curv"]):
+        _, res = ar1(fh[f].loc[:end])
+        name = "d_" + short
+        resids[name] = res
+        rate_res_list.append(res)
+
+    # 5y and 10y zero rate changes
+    for tau in [5.0, 10.0]:
+        z = pd.Series(ns.zero(fh.loc[:end].values, np.array([tau]))[:, 0], index=fh.loc[:end].index)
+        resids[f"d_rate{int(tau)}y"] = z.diff().dropna()
+
+    cpi = fred.cpi()["CPIAUCNS"]
+    infl = (cpi / cpi.shift(12) - 1).dropna()
+    infl.index = infl.index + pd.offsets.MonthEnd(0)
+    _, infl_res = ar1(infl.loc["1994-01-01":end])
+    resids["d_infl"] = infl_res
+
+    fx = usd_twd_monthly()
+    fx_diff = np.log(fx).diff().dropna().loc[:end]
+    resids["fx_TWD"] = fx_diff
+
+    eq = yahoo.monthly_returns(["VTI", "VEA", "VWO"], start="2000-01-01")
+    eq = np.log1p(eq).loc["2007-08-31":end]
+    for col in ["VTI", "VEA", "VWO"]:
+        resids[f"eq_{col}"] = eq[col].dropna()
+
+    block_stats = {k: calibrate_tail_dof(v) for k, v in resids.items()}
+
+    # Multivariate t fit on 3 rate factors
+    rate_mat = pd.concat(rate_res_list, axis=1).dropna().values
+    block_stats["rates_3d_joint"] = fit_multivariate_t(rate_mat)
+
+    # Historical crash correlations (VTI vs 5y rate change, and core sleeve vs 5y rate change)
+    dz_5y = resids["d_rate5y"]
+    vti = eq["VTI"]
+    eq_core = 0.6 * eq["VTI"] + 0.3 * eq["VEA"] + 0.1 * eq["VWO"]
+    common_us = pd.concat([vti.rename("eq"), dz_5y.rename("dr")], axis=1, sort=True).dropna()
+    common_core = pd.concat([eq_core.rename("eq"), dz_5y.rename("dr")], axis=1, sort=True).dropna()
+
+    us_full, us_crash = crash_correlation(common_us["eq"], common_us["dr"])
+    core_full, core_crash = crash_correlation(common_core["eq"], common_core["dr"])
+
+    block_stats["crash_correlation"] = {
+        "vti_vs_5y_rate": {"full": us_full, "crash_worst5pct": us_crash, "n_months": len(common_us)},
+        "core_vs_5y_rate": {"full": core_full, "crash_worst5pct": core_crash, "n_months": len(common_core)},
+    }
+    return block_stats
+

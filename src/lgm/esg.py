@@ -45,6 +45,10 @@ class ESGParams:
     tw_cost_phi: float | None = None  # monthly AR(1) persistence; None = legacy i.i.d.
     tw_cost_infl0: float | None = None  # initial inflation rate (annual); None = tw_cost_growth
     tw_cost_corr: float | None = None  # correlation of tw_cost innovations with US CPI shock
+    rate_dof: float | None | str = None  # Student-t dof for rate block; None = legacy (shares t_dof); 'gaussian' or inf = Gaussian
+    rate_shared: float = 0.0             # fraction of equity mixing variable shared with rate block (0 = independent, 1 = fully shared)
+    infl_dof: float | None | str = None  # Student-t dof for inflation; None = legacy (shares t_dof)
+    fx_dof: float | None | str = None    # Student-t dof for USD/TWD; None = legacy (shares t_dof)
 
 
 @dataclass
@@ -96,9 +100,56 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
     M, k = p.months, p.cov.shape[0]
     half = (n + 1) // 2 if antithetic else n
     z = rng.standard_normal((half, M, k))
-    if p.t_dof:
-        w = np.sqrt((p.t_dof - 2) / rng.chisquare(p.t_dof, size=(half, M, 1)))
-        z = z * w
+    if p.rate_dof is None and p.rate_shared == 0.0 and p.infl_dof is None and p.fx_dof is None:
+        if p.t_dof:
+            w = np.sqrt((p.t_dof - 2) / rng.chisquare(p.t_dof, size=(half, M, 1)))
+            z = z * w
+    else:
+        K = len(p.eq_geo)
+        w_eq = np.sqrt((p.t_dof - 2) / rng.chisquare(p.t_dof, size=(half, M, 1))) if p.t_dof else None
+        if w_eq is not None:
+            z[..., :K] *= w_eq
+
+        # Rate block (K to K+3)
+        if p.rate_dof in ("gaussian", float("inf")) or (isinstance(p.rate_dof, str) and p.rate_dof.lower() == "gaussian"):
+            w_r_base = 1.0
+        elif isinstance(p.rate_dof, (int, float)) and p.rate_dof is not None and not np.isinf(p.rate_dof):
+            dof_r = float(p.rate_dof)
+            w_r_base = np.sqrt((dof_r - 2) / rng.chisquare(dof_r, size=(half, M, 1)))
+        else:
+            w_r_base = w_eq if w_eq is not None else 1.0
+
+        if p.rate_shared > 0.0 and w_eq is not None:
+            lam = float(p.rate_shared)
+            base_sq = w_r_base ** 2 if isinstance(w_r_base, np.ndarray) else float(w_r_base) ** 2
+            w_rate = np.sqrt(lam * (w_eq ** 2) + (1.0 - lam) * base_sq)
+        else:
+            w_rate = w_r_base
+
+        if not (isinstance(w_rate, (int, float)) and w_rate == 1.0):
+            z[..., K:K + 3] *= w_rate
+
+        # Inflation block (K+3)
+        if p.infl_dof in ("gaussian", float("inf")) or (isinstance(p.infl_dof, str) and p.infl_dof.lower() == "gaussian"):
+            w_infl = 1.0
+        elif isinstance(p.infl_dof, (int, float)) and p.infl_dof is not None and not np.isinf(p.infl_dof):
+            dof_i = float(p.infl_dof)
+            w_infl = np.sqrt((dof_i - 2) / rng.chisquare(dof_i, size=(half, M, 1)))
+        else:
+            w_infl = w_eq if w_eq is not None else 1.0
+        if not (isinstance(w_infl, (int, float)) and w_infl == 1.0):
+            z[..., K + 3:K + 4] *= w_infl
+
+        # FX block (K+4)
+        if p.fx_dof in ("gaussian", float("inf")) or (isinstance(p.fx_dof, str) and p.fx_dof.lower() == "gaussian"):
+            w_fx = 1.0
+        elif isinstance(p.fx_dof, (int, float)) and p.fx_dof is not None and not np.isinf(p.fx_dof):
+            dof_f = float(p.fx_dof)
+            w_fx = np.sqrt((dof_f - 2) / rng.chisquare(dof_f, size=(half, M, 1)))
+        else:
+            w_fx = w_eq if w_eq is not None else 1.0
+        if not (isinstance(w_fx, (int, float)) and w_fx == 1.0):
+            z[..., K + 4:K + 5] *= w_fx
     if antithetic:
         z = np.concatenate([z, -z], axis=0)[:n]
     chol = np.linalg.cholesky(p.cov)
