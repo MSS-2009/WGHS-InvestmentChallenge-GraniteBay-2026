@@ -22,6 +22,14 @@ def risk_aversion(cov: np.ndarray, w_mkt: np.ndarray, market_excess: float) -> f
     return market_excess / float(w_mkt @ cov @ w_mkt)
 
 
+def anchor_to_prior(mu: np.ndarray, pi: np.ndarray, w_mkt: np.ndarray) -> np.ndarray:
+    """Shift a posterior so the market portfolio earns what the prior gives it. With relative views only,
+    the market's posterior return still moves with the views' covariance with the market (here by +0.15
+    to +0.38 points depending on small risk changes); the level belongs to the consensus that sets delta.
+    A uniform shift leaves fully invested optimal weights unchanged."""
+    return mu + float(w_mkt @ pi - w_mkt @ mu)
+
+
 def posterior(cov, pi, P, Q, omega, tau):
     ts_inv = np.linalg.inv(tau * cov)
     o_inv = np.linalg.inv(omega)

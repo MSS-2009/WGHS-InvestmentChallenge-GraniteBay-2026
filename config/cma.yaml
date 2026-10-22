@@ -37,6 +37,9 @@ us_small_minus_large:
 view_std_floor: 0.015        # minimum uncertainty for any view
 single_source_std: 0.025     # uncertainty when only one firm publishes the view
 tau: 0.05
+# All views are relative; the market's level comes from the firms' consensus (delta). The posterior is
+# shifted so the market earns its prior return (growth.black_litterman.anchor_to_prior).
+anchor_market_to_consensus: true
 
 # Stock-selection view for the satellite, stated as alpha over its CAPM-implied (equilibrium) return
 # relative to its style benchmark. Evidence (scripts/factor_evidence.py, Kenneth French data to Aug

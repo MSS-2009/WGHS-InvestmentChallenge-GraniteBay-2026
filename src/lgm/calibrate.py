@@ -133,9 +133,15 @@ def calibrate(eq_window_start: str = "2007-08-31", end: str = DATA_END) -> Calib
                        (str(joint.index.min().date()), str(joint.index.max().date())), notes)
 
 
+# Funds whose own history starts after `vol_from` (so it misses 2008): a longer-lived fund on the same
+# market scales their volatility by its full-window over same-window ratio. EEM tracks EMXC at 0.92
+# monthly correlation, FXI tracks MCHI at 0.97.
+VOL_PROXIES = {"EMXC": "EEM", "MCHI": "FXI"}
+
+
 def calibrate_assets(history_tickers: list[str], window_start: str = "2017-08-31", end: str = DATA_END,
                      vol_from: str = "2005-01-01", extra_returns: pd.DataFrame | None = None,
-                     equity_shrink_target: str = "mean") -> dict:
+                     equity_shrink_target: str = "mean", vol_proxies: dict[str, str] | None = None) -> dict:
     """Joint monthly shock covariance for K equity assets plus the 5 macro shocks
     (3 rate factors, inflation, USD/TWD), in that order.
 
@@ -163,9 +169,14 @@ def calibrate_assets(history_tickers: list[str], window_start: str = "2017-08-31
     names = assets + ["d_level", "d_slope", "d_curv", "d_infl", "fx_TWD"]
     joint = pd.concat([eq, *resids, infl_res.rename("d_infl"), fx], axis=1, sort=True).loc[window_start:end].dropna()[names]
     sd = joint.std().values.copy()
+    proxies = VOL_PROXIES if vol_proxies is None else vol_proxies
     for i, t in enumerate(assets):              # long-history vols for equities
         r = extra[t] if t in extra else np.log1p(yahoo.monthly_returns([t], start="2000-01-01")[t])
-        sd[i] = float(r.dropna().loc[vol_from:end].std())
+        r = r.dropna().loc[vol_from:end]
+        sd[i] = float(r.std())
+        if t in proxies and r.index[0] > pd.Timestamp(vol_from) + pd.DateOffset(years=1):
+            p = np.log1p(yahoo.monthly_returns([proxies[t]], start="2000-01-01")[proxies[t]]).dropna()
+            sd[i] *= float(p.loc[vol_from:end].std() / p.loc[r.index[0]:end].std())
     # Ledoit-Wolf intensity; target: zero correlation, except that equity pairs shrink toward their own
     # average ("mean", constant-correlation as in Ledoit and Wolf 2004). Shrinking equities toward zero
     # ("zero", the identity target) pulls every pair down and understates a diversified core's volatility

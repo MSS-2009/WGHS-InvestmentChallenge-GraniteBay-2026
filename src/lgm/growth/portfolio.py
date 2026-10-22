@@ -69,7 +69,8 @@ def with_satellite(core: dict, sat_returns: pd.Series, view: dict, groups=CORE) 
         P = np.array([v[1] for v in vs])
         Q = to_arithmetic(P, np.array([v[2] for v in vs]), cov)
         Q[len(core["views"]):] = [v[2] for v in vs[len(core["views"]):]]   # the alpha view is already arithmetic
-        return bl.posterior(cov, pi, P, Q, np.diag([v[3] ** 2 for v in vs]), core["cfg"]["tau"])[0]
+        m = bl.posterior(cov, pi, P, Q, np.diag([v[3] ** 2 for v in vs]), core["cfg"]["tau"])[0]
+        return bl.anchor_to_prior(m, pi, w_mkt) if core["cfg"].get("anchor_market_to_consensus", True) else m
 
     mu, mu_core_views = post(views), post(views[:-1])
     spill = float(p_sat @ (mu_core_views - pi))      # what the style views alone imply (near zero by design)

@@ -105,3 +105,28 @@ def test_equity_correlations_shrink_toward_their_average_not_zero():
     assert mean[:k, :k][off].mean() > zero[:k, :k][off].mean() + 0.03
     assert np.allclose(mean[k:, :], zero[k:, :]) and np.allclose(mean[:k, k:], zero[:k, k:])   # nothing else moves
     assert np.linalg.eigvalsh(mean).min() > 0
+
+
+def test_market_anchoring_moves_the_level_not_the_weights():
+    import numpy as np
+    import yaml
+
+    from lgm.growth import core as C
+
+    cfg = yaml.safe_load(C.CFG.read_text())
+    a = C.build_core()
+    b = C.build_core(cfg=dict(cfg, anchor_market_to_consensus=False))
+    assert np.allclose(a["w_bl"], b["w_bl"], atol=1e-9)
+    assert abs(float(a["w_mkt"] @ (a["table"]["bl_excess"] - a["table"]["pi_excess"]))) < 1e-12
+    assert np.allclose(np.diff(a["table"]["bl_excess"] - b["table"]["bl_excess"]), 0)   # a uniform shift
+
+
+def test_short_history_funds_borrow_a_longer_proxys_volatility():
+    from lgm.calibrate import VOL_PROXIES, calibrate_assets
+    from lgm.growth.universe import CORE
+
+    t = [g.history for g in CORE]
+    on, off = calibrate_assets(t)["ann_vol"], calibrate_assets(t, vol_proxies={})["ann_vol"]
+    for fund in VOL_PROXIES:
+        assert on[fund] > off[fund] * 1.05                   # 2008 raises them
+    assert all(on[x] == off[x] for x in t if x not in VOL_PROXIES)

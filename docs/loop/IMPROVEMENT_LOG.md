@@ -243,3 +243,11 @@ Headline: median $197,244, p5 $146,831, CVaR5 $135,959, real median $166,709; 11
   correlations. Equity pairs now shrink toward their own average (constant-correlation target, same
   intensity). IPS 5th percentile -$1.1k, median +$33, weights within 0.3pp. Crash-month correlation
   already matched history (0.38 model, 0.39 history, worst 5% of months since 2017).
+- **Short-history volatilities**: EMXC (history from 2017) and MCHI (from 2011) missed 2008. Their
+  volatility is now scaled by EEM / FXI's full-window over same-window ratio (19.3% -> 23.1%,
+  23.1% -> 25.7%). This exposed a Black-Litterman artifact: with relative views only, the market's
+  posterior return still drifted above the consensus prior, by +0.15 points before and +0.38 after,
+  because one view's covariance with the market changed sign. The posterior is now shifted so the
+  market earns its prior (`black_litterman.anchor_to_prior`, weights unchanged to 1e-16). Together:
+  IPS median -$0.5k, 5th percentile -$0.9k; the views' worth in the median falls from $1.3k to $0.7k.
+  Policy conclusions re-checked below.
