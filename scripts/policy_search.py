@@ -315,9 +315,10 @@ def run_top_checks(csv_path: Path | None = None) -> pd.DataFrame:
 
         # 6. 2031 conditional range (p20/p80 and p10/p90) at median 2031 scenario
         r_base = engine.run(st, sc_base, cfg, snapshot_2031=True)
-        # Median 2031 scenario by growth sleeve
+        # Median 2031 scenario (rank on assets_2031 if floor moved before 2031, else growth_2031)
         n_sc = sc_base.n
-        typical_idx = int(np.argsort(r_base["growth_2031"])[int(0.5 * (n_sc - 1))])
+        rank_on = r_base["assets_2031"] if (st.floor_year < 2031 and "assets_2031" in r_base) else r_base["growth_2031"]
+        typical_idx = int(np.argsort(rank_on)[int(0.5 * (n_sc - 1))])
         c_2031 = engine.conditional_2031(st, sc_base, r_base, p, i=typical_idx, n_inner=4000, cfg=cfg)
         inner_f = c_2031["inner"]
         cond_metrics = {

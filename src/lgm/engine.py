@@ -209,6 +209,7 @@ def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: Sta
             g = growth_value(s, sc, m)
             if m == M_2031:
                 out["growth_2031"] = g.copy()
+                out["assets_2031"] = (g + s.floor_face * _ibtm_df(sc, m)).copy()
 
             eq_target = target_equity_share(st, m)
             r_move = np.zeros(n)
@@ -263,6 +264,7 @@ def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: Sta
                 "shortfall": np.maximum(open_cost - assets, 0.0), "locked_2033": s.locked.mean(1)})
     out.setdefault("floor_2033", np.zeros(n))
     out.setdefault("growth_2031", np.zeros(n))
+    out.setdefault("assets_2031", np.zeros(n))
     out.setdefault("lock_cost_2027", np.zeros(n))
     return out
 
@@ -294,9 +296,12 @@ def conditional_2031(st: Strategy, sc: Scenarios, res: dict, params, i: int | No
 
     from .esg import simulate
 
-    g = res["growth_2031"]                          # rank on growth assets before the floor move
     if i is None:
-        i = int(np.argsort(g)[len(g) // 2])
+        if st.floor_year < 2031 and "assets_2031" in res:
+            rank_on = res["assets_2031"]
+        else:
+            rank_on = res["growth_2031"]
+        i = int(np.argsort(rank_on)[len(rank_on) // 2])
     start = {"beta": sc.beta[i, M_2031 - sc.m0], "infl": sc.infl[i, M_2031 - sc.m0],
              "fx_log": np.full(n_inner, sc.fx_log[i, M_2031 - sc.m0]),
              "tw_cost_log": np.full(n_inner, sc.tw_cost_log[i, M_2031 - sc.m0])}
