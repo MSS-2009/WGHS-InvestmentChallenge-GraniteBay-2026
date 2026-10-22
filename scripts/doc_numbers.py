@@ -392,6 +392,20 @@ def checks() -> list[tuple[str, str, str]]:
                 f"Look-through\ntech/communication is {c['tech_comm']:.1%} (market {c['tech_comm_market']:.1%}); "
                 f"China+Taiwan is {c['china_taiwan']:.1%} (market {c['china_taiwan_market']:.1%})."))
     out.append(("MODEL", "FX hedge frontier", hedge_sentence()))
+    out.append(("MODEL", "headline in the sensitivity intro",
+                f"The IPS median is {k(plan['median'])} and its 5th percentile {k(plan['p5'])}."))
+    zr = stress["reserve_certain_at_0pct_reinvestment"]
+    out.append(("MODEL", "ladder premiums", f"At 0% the cheapest ladder costs {zr['ladder_premium']:.1%} over zero-coupon "
+                                            f"value instead of {zr['ladder_premium_at_3pct']:.1%}."))
+    v = rn["core"]["views"]
+    out.append(("MODEL", "BL view sizes",
+                f"international developed minus US ({v['International developed minus US']:+.2%}), emerging minus developed "
+                f"({v['Emerging minus international developed']:+.2%}), US value minus growth ({v['US value minus US growth']:+.2%}:"))
+    out.append(("MODEL", "BL small-cap view", f"US small minus large ({v['US small minus US large']:+.2%}:"))
+    srm = pd.read_csv(R / "stock_rate_corr.csv")
+    srm = srm[srm.strategy.str.startswith("IPS")]
+    out.append(("MODEL", "stock-rate IPS median", f"the IPS median stays within "
+                                                  f"{k(np.ceil(srm.median_vs_today.abs().max() / 100) * 100)} and its 5th"))
     so = pd.read_csv(R / "satellite_oos.csv")
     sel, ctrl = so.sel_vol_ratio.mean(), so.ctrl_vol_ratio_median.mean()
     out.append(("MODEL", "satellite out of sample",

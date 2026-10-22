@@ -40,6 +40,12 @@
     "china_taiwan_market": 0.0519,
     "delta": 1.781,
     "market_geometric_prior": 0.0638,
+    "views": {
+      "International developed minus US": 0.008,
+      "Emerging minus international developed": 0.005,
+      "US value minus US growth": 0.0287,
+      "US small minus US large": 0.01
+    },
     "dollars_laura_90k": {
       "VUG": 8300,
       "VTV": 16400,
