@@ -7,8 +7,9 @@ Ledoit-Wolf (`calibrate.calibrate_assets`). This re-estimates them on rolling 10
 error in the market's and the core's volatility and in the core's active risk against the market (each
 using the test window's own volatilities, so only correlations differ), and the realised volatility of
 the minimum-variance portfolio built from them. Two panels: the 7 funds with history from 2005, and all
-9 with EEM and FXI standing in for EMXC and MCHI before they existed. Writes reports/corr_shrink_oos.csv,
-and reports/corr_shrink_ips.csv: the IPS headline (20,000 scenarios, seed 11) under each target.
+9 with EEM and FXI in place of EMXC and MCHI throughout (their own histories are too short). Writes
+reports/corr_shrink_oos.csv, and reports/corr_shrink_ips.csv: the IPS headline (20,000 scenarios,
+seed 11) under each target.
 """
 import dataclasses as dc
 from pathlib import Path
