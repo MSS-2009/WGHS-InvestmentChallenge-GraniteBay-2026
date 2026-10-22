@@ -286,6 +286,9 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
         else:
             z_tw = rng.standard_normal((n, M))
 
+        if p.tw_cost_corr and p.tw_cost_fx_corr:
+            # mixing one after the other would dilute the first correlation; the two need a joint factor
+            raise ValueError("tw_cost_corr and tw_cost_fx_corr cannot both be set")
         if p.tw_cost_corr is not None and p.tw_cost_corr != 0.0:
             rho = float(p.tw_cost_corr)
             cpi_std = np.sqrt(p.cov[K + 3, K + 3])

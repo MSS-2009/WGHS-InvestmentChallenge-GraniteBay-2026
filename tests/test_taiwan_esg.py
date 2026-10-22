@@ -232,6 +232,8 @@ def test_cost_fx_correlation_carries_to_long_horizons():
         assert abs(c - (-0.25)) < 0.03
     off = simulate(dc.replace(p, tw_cost_fx_corr=None), n=20_000, seed=3)
     assert np.array_equal(off.fx_log, sc.fx_log)          # only the cost path changes
+    with pytest.raises(ValueError):                        # a CPI correlation on top would be diluted
+        simulate(dc.replace(p, tw_cost_corr=0.3), n=100, seed=3)
 
 
 def test_variance_ratio_separates_iid_from_mean_reversion():
