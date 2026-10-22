@@ -9,8 +9,13 @@ Evaluates four forecast rules at 12, 36, and 72-month horizons:
 Performs Fama-style regressions of realized k-month log changes on CIP forward differentials
 using Newey-West overlap-robust standard errors.
 
+Then, with the CBC's published USD/TWD forward rates (Table 31.C, 1991-2026):
+(e) how well the interest-differential (CIP) drift matches the actual 180-day forward premium;
+(f) the textbook Fama regression of the realised 6-month change on the actual 180-day forward premium.
+
 Outputs:
 - reports/fx_drift_study.csv
+- reports/fx_forward_check.csv
 """
 from __future__ import annotations
 
@@ -23,6 +28,7 @@ from lgm.data import treasury, twrates
 
 ROOT = Path(__file__).resolve().parents[1]
 REPORT_PATH = ROOT / "reports" / "fx_drift_study.csv"
+FORWARD_PATH = ROOT / "reports" / "fx_forward_check.csv"
 
 HORIZONS = [12, 36, 72]
 
@@ -157,6 +163,48 @@ def main():
     REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
     df_out.to_csv(REPORT_PATH, index=False)
     print(f"\nWrote {REPORT_PATH} with {len(df_out)} rows.")
+    forward_check(df)
+
+
+def forward_check(df: pd.DataFrame) -> None:
+    """The actual forward market: is CIP a good proxy for it, and is it a good forecast?"""
+    fwd = twrates.forward_rates()
+    # Annualised log forward premium from the published curve, 180-day against 10-day (both period
+    # averages, so the averaging cancels). Negative = the dollar is priced to weaken.
+    prem = (np.log(fwd[180] / fwd[10]) * 365.0 / 170.0).rename("fwd_premium").dropna()
+    j = pd.concat([df, prem], axis=1, sort=True).dropna(subset=["cip_drift", "fwd_premium", "log_spot"])
+    gap = j["fwd_premium"] - j["cip_drift"]
+    rows = [{"check": "cip_vs_forward", "n_months": len(j),
+             "first": j.index[0].strftime("%Y-%m"), "last": j.index[-1].strftime("%Y-%m"),
+             "mean_forward_premium": round(float(j["fwd_premium"].mean()), 6),
+             "mean_cip_drift": round(float(j["cip_drift"].mean()), 6),
+             "mean_gap": round(float(gap.mean()), 6), "sd_gap": round(float(gap.std()), 6),
+             "corr": round(float(j["fwd_premium"].corr(j["cip_drift"])), 4),
+             "latest_forward_premium": round(float(j["fwd_premium"].iloc[-1]), 6),
+             "latest_cip_drift": round(float(j["cip_drift"].iloc[-1]), 6)}]
+    print(f"\nCIP vs actual 180-day forward premium, {rows[0]['first']} to {rows[0]['last']} ({len(j)} months):")
+    print(f"  mean forward premium {rows[0]['mean_forward_premium']*100:+.2f}%/yr, mean CIP drift "
+          f"{rows[0]['mean_cip_drift']*100:+.2f}%/yr, gap sd {rows[0]['sd_gap']*100:.2f} pts, corr {rows[0]['corr']:.2f}")
+    print(f"  latest ({j.index[-1]:%Y-%m}): forward {rows[0]['latest_forward_premium']*100:+.2f}%/yr, "
+          f"CIP {rows[0]['latest_cip_drift']*100:+.2f}%/yr")
+    # Fama regression at the forward's own horizon: 6-month realised change on the 6-month premium.
+    k = 6
+    realised = (j["log_spot"].shift(-k) - j["log_spot"]).rename("realised")
+    f = (j["fwd_premium"] * k / 12.0).rename("f")
+    reg = pd.concat([realised, f], axis=1).dropna()
+    beta, se = newey_west_ols(reg["f"].values, reg["realised"].values, max_lag=k)
+    rmse_rw = float(np.sqrt(np.mean(reg["realised"] ** 2)))
+    rmse_fwd = float(np.sqrt(np.mean((reg["f"] - reg["realised"]) ** 2)))
+    rows.append({"check": "fama_actual_forward_6m", "n_months": len(reg),
+                 "first": reg.index[0].strftime("%Y-%m"), "last": reg.index[-1].strftime("%Y-%m"),
+                 "fama_alpha": round(float(beta[0]), 6), "fama_beta": round(float(beta[1]), 4),
+                 "fama_se": round(float(se[1]), 4), "t_beta_0": round(float(beta[1] / se[1]), 2),
+                 "t_beta_1": round(float((beta[1] - 1) / se[1]), 2),
+                 "rmse_random_walk": round(rmse_rw, 6), "rmse_forward": round(rmse_fwd, 6)})
+    print(f"  Fama, 6-month change on actual forward premium: beta {beta[1]:.3f} (NW se {se[1]:.3f}), "
+          f"t(beta=1) {(beta[1]-1)/se[1]:+.2f}; RMSE random walk {rmse_rw*100:.2f}% vs forward {rmse_fwd*100:.2f}%")
+    pd.DataFrame(rows).to_csv(FORWARD_PATH, index=False)
+    print(f"Wrote {FORWARD_PATH}.")
 
 
 if __name__ == "__main__":
