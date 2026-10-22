@@ -243,3 +243,60 @@ def calibrate_equity_garch(ticker: str = "VTI", start: str = "2001-01-01", end: 
         "window": (str(ret.index.min().date()), str(ret.index.max().date())),
         "n_months": len(r),
     }
+
+
+def filter_equity_garch(returns: np.ndarray | pd.Series,
+                        alpha: float | None = None,
+                        beta: float | None = None,
+                        mu: float | np.ndarray | None = None,
+                        var_uncond: float | np.ndarray | None = None,
+                        h0: float | np.ndarray = 1.0) -> np.ndarray:
+    """Run GARCH(1,1) variance recursion over a monthly return series.
+
+    Returns the variance state h at every month, using the same normalisation as esg.simulate
+    (unconditional variance = 1.0, so h is a multiplier).
+
+    Parameters:
+    - returns: 1D array of length M or 2D array of shape (N, M).
+    - alpha, beta: GARCH parameters. If None, uses calibrated parameters from calibrate_equity_garch().
+    - mu: expected monthly log return. If None, uses sample mean of returns.
+    - var_uncond: unconditional monthly variance. If None, uses sample variance of (returns - mu).
+    - h0: initial variance state multiplier (default 1.0).
+
+    Returns:
+    - h: array of shape matching returns (length M or shape (N, M)) with h[..., 0] = h0.
+    """
+    if alpha is None or beta is None:
+        cal = calibrate_equity_garch()
+        alpha = cal["alpha"] if alpha is None else alpha
+        beta = cal["beta"] if beta is None else beta
+        if var_uncond is None:
+            var_uncond = cal["uncond_vol_ann"] ** 2 / 12.0
+
+    arr = np.asarray(returns, dtype=float)
+    is_1d = arr.ndim == 1
+    if is_1d:
+        arr = arr[None, :]
+
+    N, M = arr.shape
+    if mu is None:
+        mu = arr.mean(axis=1, keepdims=True)
+    elif np.ndim(mu) == 0:
+        mu = float(mu)
+
+    if var_uncond is None:
+        var_uncond = np.var(arr - mu, axis=1, keepdims=True)
+    elif np.ndim(var_uncond) == 0:
+        var_uncond = float(var_uncond)
+
+    omega = 1.0 - alpha - beta
+    h = np.empty((N, M), dtype=float)
+    h[:, 0] = h0
+
+    for m in range(M - 1):
+        diff = arr[:, m] - (mu[:, 0] if isinstance(mu, np.ndarray) and mu.ndim == 2 else mu)
+        denom = (var_uncond[:, 0] if isinstance(var_uncond, np.ndarray) and var_uncond.ndim == 2 else var_uncond)
+        innov_sq = diff ** 2 / denom
+        h[:, m + 1] = omega + alpha * innov_sq + beta * h[:, m]
+
+    return h[0] if is_1d else h
