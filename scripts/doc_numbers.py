@@ -416,7 +416,7 @@ def checks() -> list[tuple[str, str, str]]:
     c = rn["core"]
     out.append(("MODEL", "BL risk aversion", f"δ = {c['delta']:.2f} makes the market earn"))
     out.append(("MODEL", "BL market geometric", f"(market geometric {c['market_geometric_prior']:.2%})"))
-    out.append(("VALIDATION", "BL risk aversion", f"It is now {c['delta']:.2f}, up from 1.74."))
+    out.append(("VALIDATION", "BL risk aversion", f"With today's inputs δ is {c['delta']:.2f}."))
     mkt = pd.read_csv(R / "core_bl.csv").set_index("etf").w_mkt
     for etf, w in c["weights"].items():
         out.append(("MODEL", f"core weight {etf}", f"| {etf} | {mkt[etf]:.1%} | {w:.1%} |"))

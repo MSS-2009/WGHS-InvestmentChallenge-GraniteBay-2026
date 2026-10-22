@@ -109,7 +109,8 @@ regression tests in `tests/test_review_fixes.py`:
 | Satellite alpha view converted to arithmetic twice | 0.875% instead of 1.0% (the view at the time; it is now 0.82%); about $30 | No conversion for that view |
 
 The reviewer also suggested deriving risk aversion from the regions' arithmetic returns (each region's
-geometric forecast plus half its own basket variance). It is now 1.74, up from 1.74.
+geometric forecast plus half its own basket variance). Adopted: at the time it raised δ from 1.74 to
+1.80. With today's inputs δ is 1.74.
 
 Checked and found correct: the nested 2031 simulation (matches the outer run to $0.01 with zero
 volatility), deterministic engine growth, generator moments, curve bootstrapping, the ladder LP
