@@ -64,3 +64,9 @@ releases at green. COMMON.md rule 11 asks workers to keep peak memory under abou
   median, p5, CVaR5 and the 2031 secured amount at once, each by under $100. The real choice it
   leaves is a preference: P2361 (40% equity, 100% floor in 2031) gives up $3.9k of median for
   +$8.6k at p5, +$9.9k CVaR5, the same CE at gamma 4, and $195k secured in 2031 instead of $118k.
+
+## Round 3 (dispatched 2026-10-21, while r2-taiwan is still running)
+| Thread | Branch | Brief | Question |
+|---|---|---|---|
+| lgm-esg | r3-strips | `docs/loop/r3_strips.md` | Real-world reserve with no reinvestment assumption: STRIPS and December maturities |
+| lgm-policy | r3-robust | `docs/loop/r3_robust.md` | Does the policy choice survive pessimistic returns, vol, tails and rate shocks? |
