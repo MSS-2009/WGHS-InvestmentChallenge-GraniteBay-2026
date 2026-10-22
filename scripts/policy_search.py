@@ -1,7 +1,7 @@
 """Policy search across dynamic strategy rules (glide path, floor timing, ratchet).
 
 Usage:
-  python scripts/policy_search.py [--dry-run]
+  python scripts/policy_search.py [--grid] [--top-only] [--dry-run]
 """
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 
 from lgm import engine
+from lgm.backtest import history_paths
 from lgm.growth.core import build_core
 from lgm.growth.scoring import esg_params
 from lgm.growth.universe import CORE
@@ -168,11 +169,193 @@ def run_search(n_scenarios: int = 20_000, n_workers: int = 8, limit: int | None 
     return df
 
 
+def run_top_checks(csv_path: Path | None = None) -> pd.DataFrame:
+    """Task 3: evaluate IPS and top 3 policies for each objective across fresh seed, history, and conditional 2031."""
+    csv_path = csv_path or (OUT_DIR / "policy_search.csv")
+    if not csv_path.exists():
+        raise FileNotFoundError(f"Missing {csv_path}. Run grid search first.")
+
+    df = pd.read_csv(csv_path)
+    # A policy that funds less than 100% of scenarios is never ranked
+    valid = df[df["funded"] == 1.0]
+
+    objectives = ["median", "p5", "cvar5", "ce_gamma2", "ce_gamma4", "ce_gamma8"]
+    top_ids = list(df[df["is_ips"]]["policy_id"])
+    obj_winners = {}
+    for obj in objectives:
+        top = valid.sort_values(by=obj, ascending=False).head(3)
+        obj_winners[obj] = list(top["policy_id"])
+        for pid in top["policy_id"]:
+            if pid not in top_ids:
+                top_ids.append(pid)
+
+    top_df = df[df["policy_id"].isin(top_ids)].copy()
+    print(f"Total top policies to evaluate (including IPS): {len(top_df)}")
+
+    core = build_core()
+    p = esg_params(core["cal"], core["table"]["bl_geo_total"].values)
+    cfg = engine.EngineConfig(eq_er=tuple(g.expense_ratio for g in CORE), commissions=True)
+    base = dc.replace(IPS, region_weights=tuple(core["w_bl"]))
+
+    # Baseline scenarios (seed 11) for 2031 conditional range
+    sc_base = simulate(p, n=20_000, seed=11)
+
+    # Fresh seed (seed 42)
+    print("Simulating fresh-seed scenarios (seed 42, 20,000)...")
+    sc_fresh = simulate(p, n=20_000, seed=42)
+
+    # History paths
+    print("Loading history paths (184 paths)...")
+    hs_rec, starts_rec = history_paths([g.history for g in CORE], recentre=core["table"]["bl_geo_total"].values)
+    hs_raw, starts_raw = history_paths([g.history for g in CORE], recentre=None)
+
+    rows = []
+    for _, row in top_df.iterrows():
+        pid = row["policy_id"]
+        name = row["name"]
+        st = dc.replace(
+            base,
+            name=name,
+            lock_2027=row["lock_2027"],
+            lock_2028=row["lock_2028"],
+            lock_2031=row["lock_2031"],
+            equity_share=row["equity_share"],
+            equity_share_end=row["equity_share_end"],
+            floor_share=row["floor_share"],
+            floor_year=int(row["floor_year"]),
+            ratchet_trigger=None if pd.isna(row["ratchet_trigger"]) else float(row["ratchet_trigger"]),
+            ratchet_share=float(row["ratchet_share"]),
+        )
+
+        # 1. Baseline
+        base_metrics = {
+            "policy_id": pid, "name": name, "check": "baseline_seed11",
+            "funded": row["funded"], "p5": row["p5"], "p10": row["p10"], "p20": None,
+            "median": row["median"], "p80": None, "p90": row["p90"], "p95": None,
+            "worst": None, "cvar5": row["cvar5"],
+            "ce_gamma2": row["ce_gamma2"], "ce_gamma4": row["ce_gamma4"], "ce_gamma8": row["ce_gamma8"],
+            "secured_2031": row["secured_2031_median"], "growth_2031": None,
+        }
+        rows.append(base_metrics)
+
+        # 2. Fresh seed
+        r_fresh = engine.run(st, sc_fresh, cfg)
+        f_fresh = r_fresh["facility"]
+        m_fresh = compute_metrics(r_fresh)
+        fresh_metrics = {
+            "policy_id": pid, "name": name, "check": "fresh_seed42",
+            "funded": m_fresh["funded"], "p5": m_fresh["p5"], "p10": m_fresh["p10"], "p20": None,
+            "median": m_fresh["median"], "p80": None, "p90": m_fresh["p90"], "p95": None,
+            "worst": round(float(f_fresh.min()), 1), "cvar5": m_fresh["cvar5"],
+            "ce_gamma2": m_fresh["ce_gamma2"], "ce_gamma4": m_fresh["ce_gamma4"], "ce_gamma8": m_fresh["ce_gamma8"],
+            "secured_2031": m_fresh["secured_2031_median"], "growth_2031": None,
+        }
+        rows.append(fresh_metrics)
+
+        # 3. Change in each objective (fresh - baseline)
+        change_row = {
+            "policy_id": pid, "name": name, "check": "fresh_seed_change",
+            "funded": round(m_fresh["funded"] - row["funded"], 4),
+            "p5": round(m_fresh["p5"] - row["p5"], 1),
+            "p10": round(m_fresh["p10"] - row["p10"], 1),
+            "p20": None,
+            "median": round(m_fresh["median"] - row["median"], 1),
+            "p80": None,
+            "p90": round(m_fresh["p90"] - row["p90"], 1),
+            "p95": None,
+            "worst": None,
+            "cvar5": round(m_fresh["cvar5"] - row["cvar5"], 1),
+            "ce_gamma2": round(m_fresh["ce_gamma2"] - row["ce_gamma2"], 1),
+            "ce_gamma4": round(m_fresh["ce_gamma4"] - row["ce_gamma4"], 1),
+            "ce_gamma8": round(m_fresh["ce_gamma8"] - row["ce_gamma8"], 1),
+            "secured_2031": round(m_fresh["secured_2031_median"] - row["secured_2031_median"], 1),
+            "growth_2031": None,
+        }
+        rows.append(change_row)
+
+        # 4. History re-centred
+        r_rec = engine.run(st, hs_rec, cfg)
+        f_rec = r_rec["facility"]
+        rec_metrics = {
+            "policy_id": pid, "name": name, "check": "history_recentred",
+            "funded": round(float(r_rec["funded"].mean()), 4),
+            "p5": round(float(np.percentile(f_rec, 5)), 1),
+            "p10": round(float(np.percentile(f_rec, 10)), 1),
+            "p20": None,
+            "median": round(float(np.median(f_rec)), 1),
+            "p80": None,
+            "p90": round(float(np.percentile(f_rec, 90)), 1),
+            "p95": round(float(np.percentile(f_rec, 95)), 1),
+            "worst": round(float(f_rec.min()), 1),
+            "cvar5": None, "ce_gamma2": None, "ce_gamma4": None, "ce_gamma8": None,
+            "secured_2031": round(float(np.median(r_rec["floor_2033"])), 1),
+            "growth_2031": None,
+        }
+        rows.append(rec_metrics)
+
+        # 5. History as-happened
+        r_raw = engine.run(st, hs_raw, cfg)
+        f_raw = r_raw["facility"]
+        raw_metrics = {
+            "policy_id": pid, "name": name, "check": "history_as_happened",
+            "funded": round(float(r_raw["funded"].mean()), 4),
+            "p5": round(float(np.percentile(f_raw, 5)), 1),
+            "p10": round(float(np.percentile(f_raw, 10)), 1),
+            "p20": None,
+            "median": round(float(np.median(f_raw)), 1),
+            "p80": None,
+            "p90": round(float(np.percentile(f_raw, 90)), 1),
+            "p95": round(float(np.percentile(f_raw, 95)), 1),
+            "worst": round(float(f_raw.min()), 1),
+            "cvar5": None, "ce_gamma2": None, "ce_gamma4": None, "ce_gamma8": None,
+            "secured_2031": round(float(np.median(r_raw["floor_2033"])), 1),
+            "growth_2031": None,
+        }
+        rows.append(raw_metrics)
+
+        # 6. 2031 conditional range (p20/p80 and p10/p90) at median 2031 scenario
+        r_base = engine.run(st, sc_base, cfg, snapshot_2031=True)
+        # Median 2031 scenario by growth sleeve
+        n_sc = sc_base.n
+        typical_idx = int(np.argsort(r_base["growth_2031"])[int(0.5 * (n_sc - 1))])
+        c_2031 = engine.conditional_2031(st, sc_base, r_base, p, i=typical_idx, n_inner=4000, cfg=cfg)
+        inner_f = c_2031["inner"]
+        cond_metrics = {
+            "policy_id": pid, "name": name, "check": "conditional_2031",
+            "funded": round(float((inner_f > 0).mean()), 4),
+            "p5": round(float(np.percentile(inner_f, 5)), 1),
+            "p10": round(float(np.percentile(inner_f, 10)), 1),
+            "p20": round(float(np.percentile(inner_f, 20)), 1),
+            "median": round(float(np.median(inner_f)), 1),
+            "p80": round(float(np.percentile(inner_f, 80)), 1),
+            "p90": round(float(np.percentile(inner_f, 90)), 1),
+            "p95": round(float(np.percentile(inner_f, 95)), 1),
+            "worst": round(float(inner_f.min()), 1),
+            "cvar5": None, "ce_gamma2": None, "ce_gamma4": None, "ce_gamma8": None,
+            "secured_2031": round(c_2031["floor"], 1),
+            "growth_2031": round(c_2031["growth_2031"], 1),
+        }
+        rows.append(cond_metrics)
+
+    top_res_df = pd.DataFrame(rows)
+    out_csv = OUT_DIR / "policy_search_top.csv"
+    top_res_df.to_csv(out_csv, index=False)
+    print(f"Wrote {len(top_res_df)} rows to {out_csv}")
+    return top_res_df
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--grid", action="store_true", help="Force re-running the full grid search")
+    parser.add_argument("--top-only", action="store_true", help="Only run top checks on existing policy_search.csv")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--workers", type=int, default=8)
     args = parser.parse_args()
 
-    limit = 10 if args.dry_run else None
-    run_search(n_scenarios=20_000, n_workers=args.workers, limit=limit)
+    csv_path = OUT_DIR / "policy_search.csv"
+    if args.grid or (not csv_path.exists() and not args.top_only):
+        limit = 10 if args.dry_run else None
+        run_search(n_scenarios=20_000, n_workers=args.workers, limit=limit)
+
+    if not args.dry_run:
+        run_top_checks(csv_path)
