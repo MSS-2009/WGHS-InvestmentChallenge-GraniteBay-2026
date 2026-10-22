@@ -339,3 +339,9 @@ down from their 2008-era level, which favours the target that pulls them down.
   2 / 4 / 8 (rank 637 of 3,456 at gamma 4).
 - Headline at the end of round 6: median $196,989, 5th percentile $146,102, CVaR5 $135,214, real
   median $166,547.
+
+### Generator input check
+
+The Taiwan-cost correlation controls now reject non-finite coefficients and values outside [-1, 1].
+Previously an invalid FX coefficient could produce NaNs, while the CPI path could silently alter the
+innovation variance. Eight parameterized cases cover both controls; valid headline defaults are unchanged.

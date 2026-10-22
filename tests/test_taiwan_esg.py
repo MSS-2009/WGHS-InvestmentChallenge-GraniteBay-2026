@@ -236,6 +236,15 @@ def test_cost_fx_correlation_carries_to_long_horizons():
         simulate(dc.replace(p, tw_cost_corr=0.3), n=100, seed=3)
 
 
+@pytest.mark.parametrize("field", ["tw_cost_corr", "tw_cost_fx_corr"])
+@pytest.mark.parametrize("rho", [-1.01, 1.01, np.nan, np.inf])
+def test_taiwan_cost_correlation_rejects_invalid_coefficients(base_params, field, rho):
+    params = {"tw_cost_corr": None, "tw_cost_fx_corr": None, field: rho}
+    p = dc.replace(base_params, months=12, tw_cost_phi=(0.65, -0.09), tw_cost_sig_eps=0.007, **params)
+    with pytest.raises(ValueError, match=field):
+        simulate(p, n=20, seed=3)
+
+
 def test_variance_ratio_separates_iid_from_mean_reversion():
     from lgm.calibrate import variance_ratio, variance_ratio_test
 

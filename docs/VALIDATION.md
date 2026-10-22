@@ -203,6 +203,7 @@ is code, tested (`docs/loop/IMPROVEMENT_LOG.md` gives the effects):
 | The 2031 floor move charged 4 ETF tickets on top of the forced rebalance, which already charges one per fund | One ticket per fund; a separate floor ticket only when the sleeve holds VGIT (`tests/test_review_fixes.py`) |
 | `wins_rebalance.py` ignored the ladder check's shortfall | The cheapest top-up (6 IBTO) is ordered first (`tests/test_audit_fixes.py`) |
 | A Taiwan cost correlation with both CPI and USD/TWD would have diluted the first | Refused (`tests/test_taiwan_esg.py`); the headline uses only USD/TWD |
+| A non-finite or out-of-range Taiwan cost correlation could distort variance or produce NaNs | Reject coefficients outside [-1, 1] (`tests/test_taiwan_esg.py`) |
 | `esg_params` took an `infl_phi` argument and ignored it | Removed; the fitted value is used, as before |
 | The equity correlation target was changed on an argument, not a test | Tested out of sample and reverted (`scripts/corr_shrink_oos.py`) |
 | Doc sentences gone stale as figures moved: "up from 1.74" when δ was 1.74, "$-0.2k below" for a base that was above, 99.5% given for both calibration samples | Rewritten, each with a check in `scripts/doc_numbers.py`; negatives now print as -$x |

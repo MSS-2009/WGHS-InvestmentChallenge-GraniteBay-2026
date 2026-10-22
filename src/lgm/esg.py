@@ -110,6 +110,16 @@ def _block_mixing(dof, w_eq, rng: np.random.Generator, shape: tuple):
     return w_eq if w_eq is not None else 1.0
 
 
+def _correlation(value: float | None, name: str) -> float:
+    """Return a finite correlation coefficient or reject an invalid configuration."""
+    if value is None:
+        return 0.0
+    rho = float(value)
+    if not np.isfinite(rho) or not -1.0 <= rho <= 1.0:
+        raise ValueError(f"{name} must be a finite correlation in [-1, 1], got {value}")
+    return rho
+
+
 def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
              start: dict | None = None, m0: int = 0) -> Scenarios:
     """Simulate n scenarios for p.months months. `start` overrides month-0 state
@@ -286,19 +296,19 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
         else:
             z_tw = rng.standard_normal((n, M))
 
-        if p.tw_cost_corr and p.tw_cost_fx_corr:
+        rho_cpi = _correlation(p.tw_cost_corr, "tw_cost_corr")
+        rho_fx = _correlation(p.tw_cost_fx_corr, "tw_cost_fx_corr")
+        if rho_cpi and rho_fx:
             # mixing one after the other would dilute the first correlation; the two need a joint factor
             raise ValueError("tw_cost_corr and tw_cost_fx_corr cannot both be set")
-        if p.tw_cost_corr is not None and p.tw_cost_corr != 0.0:
-            rho = float(p.tw_cost_corr)
+        if rho_cpi:
             cpi_std = np.sqrt(p.cov[K + 3, K + 3])
             z_cpi = shocks[..., K + 3] / (cpi_std if cpi_std > 0 else 1.0)
-            z_tw = rho * z_cpi + np.sqrt(max(1.0 - rho**2, 0.0)) * z_tw
+            z_tw = rho_cpi * z_cpi + np.sqrt(1.0 - rho_cpi**2) * z_tw
 
-        if p.tw_cost_fx_corr:
-            rho = float(p.tw_cost_fx_corr)
+        if rho_fx:
             z_fx = shocks[..., K + 4] / np.sqrt(p.cov[K + 4, K + 4])
-            z_tw = rho * z_fx + np.sqrt(1.0 - rho ** 2) * z_tw
+            z_tw = rho_fx * z_fx + np.sqrt(1.0 - rho_fx ** 2) * z_tw
 
         y = np.empty((n, M))
         for m in range(M):
