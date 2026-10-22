@@ -92,9 +92,12 @@ Market inputs (all keyless):
   trailing ten-year average, and beat it in each of the four five-year blocks of origins
   (`scripts/taiwan_drift_study.py`). Cost growth is correlated -0.25 with USD/TWD: in history a weaker
   Taiwan dollar has come with slower building-cost growth (12- to 72-month changes, 2000-2026: -0.18
-  to -0.33, `scripts/taiwan_fx_corr.py`), so the two risks add up rather than offset. This widens the
-  real 5th-95th percentile range from $113.2k-$247.3k to $110.8k-$251.8k and leaves the real median
-  unchanged. The historical replay uses the index's real paths.
+  to -0.33, `scripts/taiwan_fx_corr.py`), so the two risks add up rather than offset. Against US
+  stocks, cost growth has moved with them over 1 to 24 months (+0.08 to +0.23) and against them over
+  72 months (-0.41), but that last figure rests on 3 independent windows; the model's +0.09 to +0.11
+  sits inside the range. This widens the real 5th-95th percentile range from $113.2k-$247.3k to
+  $110.8k-$251.8k and leaves the real median unchanged. The historical replay uses the index's real
+  paths.
 
 **How certain is "certain"?** A locked payment is treated as certain. That rests on one assumption:
 coupons and fund proceeds that arrive before a payment are reinvested at 3% until it is due (the ladder

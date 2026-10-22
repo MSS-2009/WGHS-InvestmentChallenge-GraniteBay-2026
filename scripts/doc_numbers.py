@@ -44,6 +44,16 @@ def hedge_sentence() -> str:
             f"  real risk is the facility's own dollar value, which no currency hedge removes.")
 
 
+def taiwan_equity_sentence() -> str:
+    """The cost-growth-vs-stocks sentence in docs/MODEL.md's Taiwan bullet, from reports/taiwan_fx_corr.csv."""
+    t = pd.read_csv(R / "taiwan_fx_corr.csv").set_index("horizon_m")
+    short = t.loc[[1, 3, 12, 24], "history_corr_equity"]
+    return (f"Against US stocks, cost growth has moved with them over 1 to 24 months ({short.min():+.2f} to "
+            f"{short.max():+.2f}) and against them over 72 months ({t.loc[72, 'history_corr_equity']:+.2f}), but that "
+            f"last figure rests on {int(t.loc[72, 'independent_windows'])} independent windows; the model's "
+            f"{t.model_corr_equity.min():+.2f} to {t.model_corr_equity.max():+.2f} sits inside the range.")
+
+
 def decision_rows() -> list[str]:
     """The 'Decisions for the client' table in docs/MODEL.md: what the evidence says on each choice the
     model leaves open."""
@@ -392,6 +402,7 @@ def checks() -> list[tuple[str, str, str]]:
                 f"Look-through\ntech/communication is {c['tech_comm']:.1%} (market {c['tech_comm_market']:.1%}); "
                 f"China+Taiwan is {c['china_taiwan']:.1%} (market {c['china_taiwan_market']:.1%})."))
     out.append(("MODEL", "FX hedge frontier", hedge_sentence()))
+    out.append(("MODEL", "Taiwan cost vs stocks", taiwan_equity_sentence()))
     out.append(("MODEL", "headline in the sensitivity intro",
                 f"The IPS median is {k(plan['median'])} and its 5th percentile {k(plan['p5'])}."))
     zr = stress["reserve_certain_at_0pct_reinvestment"]
