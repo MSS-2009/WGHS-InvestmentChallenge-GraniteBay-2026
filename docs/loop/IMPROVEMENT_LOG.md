@@ -311,3 +311,7 @@ down from their 2008-era level, which favours the target that pulls them down.
   truncated to 2011 or 2017, understated their 2005-2026 volatility; scaling each by the other moved it
   closer in 3 of 4 cases. With unrelated proxies the method helps from 2011 (62 of 72 pairs) but not from
   2017 (28 of 72), so it depends on a same-market proxy, which EEM is for EMXC. No change.
+- **Rebalancing band** (scratch run, 20,000 scenarios, seed 11): bands of 2% to 25% around the 60%
+  equity share move the IPS median between $196.6k and $196.9k and its 5th percentile between $145.4k and
+  $146.4k; 10% instead of 5% is worth +$0.2k / +$0.4k of certainty equivalent at gamma 4 / 8. Too small to
+  change the IPS. No change.
