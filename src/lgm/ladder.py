@@ -19,7 +19,7 @@ from scipy.optimize import linprog
 
 from .curve import ZeroCurve
 from .dates import as_date, year_frac
-from .instruments import TermFund, TreasuryBond
+from .instruments import TermFund, TreasuryBond, TreasuryStrip
 
 
 @dataclass
@@ -41,6 +41,8 @@ def _flows(inst, curve: ZeroCurve, settle: dt.date):
         return inst.cashflows(settle), inst.dirty_price(curve) / 100.0, inst.label or inst.cusip, 100.0
     if isinstance(inst, TermFund):
         return inst.cashflows(settle, curve), 1.0, inst.ticker, 1.0
+    if isinstance(inst, TreasuryStrip):
+        return inst.cashflows(settle), inst.dirty_price(curve) / 100.0, inst.label or inst.cusip, 100.0
     raise TypeError(inst)
 
 
@@ -131,3 +133,51 @@ def premium(curve: ZeroCurve, reinvest: float = 0.03, instruments=None) -> float
     pays = payment_schedule()
     lp = solve(instruments or wins_reserve_universe(), pays, curve, reinvest)
     return lp.cost / zero_coupon_cost(curve, pays) - 1.0
+
+
+def idle_cash_days(instruments, units: dict[str, float], payments, curve: ZeroCurve, reinvest: float = 0.0) -> dict[str, float]:
+    """Calculate idle cash dollar-days and dollar-weighted average days for a funded ladder.
+
+    Cash received strictly before payment T_k idles until T_k.
+    Any surplus remaining after T_k idles from T_k to T_{k+1}.
+    """
+    settle = curve.date
+    pay_dates = [as_date(d) for d, _ in payments]
+    K = len(payments)
+    inst_by_label = {}
+    for inst in instruments:
+        _, _, label, _ = _flows(inst, curve, settle)
+        inst_by_label[label] = inst
+
+    total_dollar_days = 0.0
+    surplus = 0.0
+    total_payments = sum(amt for _, amt in payments)
+
+    for k, (pd, amt) in enumerate(payments):
+        prev_d = pay_dates[k - 1] if k > 0 else settle
+        cash_arrived = 0.0
+        for lab, u in units.items():
+            if u <= 0 or lab not in inst_by_label:
+                continue
+            inst = inst_by_label[lab]
+            flows, _, _, unit_scale = _flows(inst, curve, settle)
+            for d, cf in flows:
+                if prev_d < d <= pd:
+                    dollars = u * (cf / unit_scale)
+                    cash_arrived += dollars
+                    idle_d = (pd - d).days
+                    total_dollar_days += dollars * idle_d
+
+        if k > 0:
+            surplus *= (1 + reinvest) ** year_frac(pay_dates[k - 1], pd)
+        avail = cash_arrived + surplus
+        surplus = avail - amt
+        if surplus > 0 and k < K - 1:
+            next_pd = pay_dates[k + 1]
+            total_dollar_days += surplus * (next_pd - pd).days
+
+    weighted_avg_days = total_dollar_days / total_payments if total_payments > 0 else 0.0
+    return {
+        "total_dollar_days": total_dollar_days,
+        "weighted_avg_days": weighted_avg_days,
+    }
