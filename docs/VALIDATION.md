@@ -145,7 +145,10 @@ Run `python scripts/validate_model.py` (reports `validation_esg.csv`, `validatio
 - **Rates:** the 10-year yield's change to January 2033 spans -2.8 to +2.8 points (5th-95th
   percentile), against -2.7 to +2.4 points over every 74-month window since 1994.
 - **Convergence:** across 8 seeds of 20,000 scenarios the median facility is $196,940 with a standard
-  error of $31; the 5th percentile's is $114.
+  error of $31; the 5th percentile's is $114. A single run, like the headline's (seed 11), moves by $87
+  in the median and $323 in the 5th percentile from seed to seed; the headline's 5th percentile is
+  $496 above the 8-seed average. Comparisons between strategies use the same scenarios, so they
+  are far more precise than either level.
 - **Historical replay:** 184 real six-year paths (starts April 2005 to July 2020) applied to today's
   curve. With returns re-centred on our expectations, the IPS median is $195.5k against $196.9k
   simulated; its 5th percentile is $154.7k against $146.0k simulated, so the simulation is the more

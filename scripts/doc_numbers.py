@@ -305,6 +305,11 @@ def checks() -> list[tuple[str, str, str]]:
     out.append(("VALIDATION", "convergence",
                 f"the median facility is ${conv['median'].mean():,.0f} with a standard\n  error of ${se['median']:,.0f}; "
                 f"the 5th percentile's is ${se['p5']:,.0f}."))
+    sd = conv.std()
+    out.append(("VALIDATION", "single-run precision",
+                f"moves by ${sd['median']:,.0f}\n  in the median and ${sd['p5']:,.0f} in the 5th percentile from seed to seed; "
+                f"the headline's 5th percentile is\n  ${plan['p5'] - conv['p5'].mean():,.0f} "
+                f"{'above' if plan['p5'] >= conv['p5'].mean() else 'below'} the 8-seed average"))
     bt = pd.read_csv(R / "backtest.csv")
     ips = bt[(bt.paths.str.startswith("History re-centred")) & (bt.strategy == "IPS, Black-Litterman core")].iloc[0]
     out.append(("VALIDATION", "replay vs simulation",
