@@ -54,6 +54,11 @@ def compute_metrics(r: dict) -> dict:
         "ce_gamma4": round(ce4, 1),
         "ce_gamma8": round(ce8, 1),
         "secured_2031_median": round(secured_2031, 1),
+        "score_lambda_0.00": round(ce4, 1),
+        "score_lambda_0.05": round(ce4 + 0.05 * secured_2031, 1),
+        "score_lambda_0.10": round(ce4 + 0.10 * secured_2031, 1),
+        "score_lambda_0.20": round(ce4 + 0.20 * secured_2031, 1),
+        "score_lambda_0.50": round(ce4 + 0.50 * secured_2031, 1),
     }
 
 
@@ -413,6 +418,35 @@ def print_summary():
         b80 = f"[${c31['p20']:,.0f}, ${c31['p80']:,.0f}]"
         b90 = f"[${c31['p10']:,.0f}, ${c31['p90']:,.0f}]"
         print(f"{tag:<10} | {c31['secured_2031']:>12,.0f} | {c31['median']:>12,.0f} | {b80:>26} | {b90:>26}")
+
+    print("\n" + "=" * 110)
+    print("TABLE 5: TWO-PART OBJECTIVE FOR THE 2031 PROMISE: SCORE(LAMBDA) = CE(gamma=4) + LAMBDA * SECURED_2031")
+    print("=" * 110)
+    print(f"{'Lambda':<8} | {'Best Policy':<38} | {'Best Score':>12} | {'IPS Score':>12} | {'Gap ($)':>10} | {'IPS Rank':>10} | {'CE4':>10} | {'Secured31':>10}")
+    print("-" * 110)
+    for lam in [0.0, 0.05, 0.10, 0.20, 0.50]:
+        col = f"score_lambda_{lam:.2f}"
+        s = valid.sort_values(by=col, ascending=False).reset_index(drop=True)
+        w = s.iloc[0]
+        rank = s[s["is_ips"]].index[0] + 1
+        ips_score = ips_row[col]
+        gap = w[col] - ips_score
+        print(f"{lam:<8.2f} | {w['name']:<38} | {w[col]:>12,.1f} | {ips_score:>12,.1f} | {gap:>+10,.1f} | {rank:>4}/{len(s)} | {w['ce_gamma4']:>10,.0f} | {w['secured_2031_median']:>10,.0f}")
+
+    print("\n" + "=" * 110)
+    print("TABLE 5B: TWO-PART OBJECTIVE AMONG FULLY LOCKED (lock_2027 = 1.0) POLICIES")
+    print("=" * 110)
+    print(f"{'Lambda':<8} | {'Best Locked Policy':<38} | {'Best Score':>12} | {'IPS Score':>12} | {'Gap ($)':>10} | {'IPS Rank':>10} | {'CE4':>10} | {'Secured31':>10}")
+    print("-" * 110)
+    locked_valid = valid[valid["lock_2027"] == 1.0].copy()
+    for lam in [0.0, 0.05, 0.10, 0.20, 0.50]:
+        col = f"score_lambda_{lam:.2f}"
+        s = locked_valid.sort_values(by=col, ascending=False).reset_index(drop=True)
+        w = s.iloc[0]
+        rank = s[s["is_ips"]].index[0] + 1
+        ips_score = ips_row[col]
+        gap = w[col] - ips_score
+        print(f"{lam:<8.2f} | {w['name']:<38} | {w[col]:>12,.1f} | {ips_score:>12,.1f} | {gap:>+10,.1f} | {rank:>4}/{len(s)} | {w['ce_gamma4']:>10,.0f} | {w['secured_2031_median']:>10,.0f}")
 
 
 if __name__ == "__main__":
