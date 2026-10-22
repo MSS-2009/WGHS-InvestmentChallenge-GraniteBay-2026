@@ -434,6 +434,14 @@ def checks() -> list[tuple[str, str, str]]:
                 f"a trailing 21-year volatility missed the next six\n  years' by {vf.rms['21 years']:.2f} in logs (root mean "
                 f"square; bias {vf.bias['21 years']:+.1%}), against {vf.rms['9 years']:.2f} for 9 years, "
                 f"{vf.rms['3 years']:.2f} for 3 years\n  and {vf.rms['since 1926']:.2f} for all history since 1926"))
+    vp = pd.read_csv(R / "vol_proxy_check.csv")
+    em = vp[vp.em_china_pair]
+    by = vp.groupby("start").scaled_closer
+    words = {3: "3 of 4", 4: "all 4"}
+    out.append(("VALIDATION", "vol proxy check",
+                f"scaling each by the other moved it closer in {words.get(int(em.scaled_closer.sum()), int(em.scaled_closer.sum()))} "
+                f"cases. With any fund as the proxy it helped in {by.sum()['2011-04-30']} of {by.size()['2011-04-30']} pairs from\n  "
+                f"2011 but only {by.sum()['2017-08-31']} of {by.size()['2017-08-31']} from 2017"))
     out.append(("MODEL", "headline in the sensitivity intro",
                 f"The IPS median is {k(plan['median'])} and its 5th percentile {k(plan['p5'])}."))
     zr = stress["reserve_certain_at_0pct_reinvestment"]

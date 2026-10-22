@@ -36,6 +36,7 @@ ORDER = [  # (script, passes --refresh, failure is fatal)
     ("ladder_premium", False, True),
     ("fx_horizon", False, True),
     ("equity_horizon", False, True),
+    ("vol_proxy_check", False, True),
     ("taiwan_drift_study", False, True),
     ("fx_hedge_frontier", False, True),
     ("strips_reserve", False, True),        # a reserve outside WInS (STRIPS at mid and ask)

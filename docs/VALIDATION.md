@@ -136,6 +136,12 @@ Run `python scripts/validate_model.py` (reports `validation_esg.csv`, `validatio
   years' by 0.23 in logs (root mean square; bias +3.6%), against 0.27 for 9 years, 0.46 for 3 years
   and 0.31 for all history since 1926 (`reports/equity_vol_forecast.csv`; before 1981 the long windows
   reach into the Depression and overstate it).
+- **Short-history volatilities:** EMXC and MCHI are scaled by EEM and FXI (`docs/MODEL.md`). On funds
+  whose 2005-2026 history is known, pretending they started in 2011 or 2017 (`scripts/vol_proxy_check.py`):
+  EEM's and FXI's short windows understated their full-window volatility from both start years, and
+  scaling each by the other moved it closer in 3 of 4 cases. With any fund as the proxy it helped in 62 of 72 pairs from
+  2011 but only 28 of 72 from 2017, so the method relies on the proxy being the same market, as EEM
+  is for EMXC.
 - **Rates:** the 10-year yield's change to January 2033 spans -2.8 to +2.8 points (5th-95th
   percentile), against -2.7 to +2.4 points over every 74-month window since 1994.
 - **Convergence:** across 8 seeds of 20,000 scenarios the median facility is $196,940 with a standard

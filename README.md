@@ -85,6 +85,7 @@ python scripts/fx_horizon.py             # does USD/TWD mean-revert over six yea
 python scripts/taiwan_fx_corr.py         # building-cost growth vs USD/TWD in history
 python scripts/taiwan_drift_study.py     # which building-cost drift forecasts best in real time
 python scripts/equity_horizon.py         # do US stocks mean-revert over six years? (no)
+python scripts/vol_proxy_check.py        # does scaling a short history's volatility by a longer one work?
 python scripts/stock_rate_corr.py        # results under each historical stock-rate correlation regime
 python scripts/crash_comovement.py       # do rates fall when stocks crash?
 python scripts/corr_shrink_oos.py        # which correlation shrinkage forecasts best out of sample
