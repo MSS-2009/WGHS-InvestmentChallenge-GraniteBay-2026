@@ -150,7 +150,7 @@ rejecting an unbiased forward; the random walk has the lowest error at 12 and 36
 (AR(2) Taiwan costs, full-sample drift): $167.4k at zero FX drift, $145.9k at the forward (-2.28%/yr).
 The FX assumption moves the real median twice as much as the Taiwan cost drift.
 
-## Round 5: integration (planner, branch `r5-integrate`, not yet merged into `improve`)
+## Round 5: integration (planner, branch `r5-integrate`, merged into `improve` on 2026-10-22)
 Data-backed fixes switched on for the headline numbers (`growth.scoring.esg_params`; the former team's
 `cs_team` profile is untouched):
 - Gaussian rate shocks (`rate_dof="gaussian"`); equities, inflation and FX keep Student-t(5).
