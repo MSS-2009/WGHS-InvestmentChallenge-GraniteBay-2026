@@ -303,3 +303,11 @@ down from their 2008-era level, which favours the target that pulls them down.
 - Both targets understate active risk out of sample (the core's tracking error is probably low by a
   tenth or more); MODEL.md says so. Shrinking more toward the average would fix that and would worsen
   everything else, so it is noted, not adopted.
+- **Volatility window, tested as a forecast** (`scripts/equity_horizon.py`, `reports/equity_vol_forecast.csv`):
+  from every half-year since 1981, a trailing 21-year US volatility (the generator's window is about 21
+  years) missed the next six years' by 0.23 in logs, against 0.27 for 9 years and 0.31 for all history.
+  No change.
+- **Volatility proxies, tested on funds with full history** (`scripts/vol_proxy_check.py`): EEM and FXI,
+  truncated to 2011 or 2017, understated their 2005-2026 volatility; scaling each by the other moved it
+  closer in 3 of 4 cases. With unrelated proxies the method helps from 2011 (62 of 72 pairs) but not from
+  2017 (28 of 72), so it depends on a same-market proxy, which EEM is for EMXC. No change.
