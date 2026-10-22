@@ -31,6 +31,18 @@ below). Of the other rows, a 0% cash rate on the ladder, the satellite under WIn
 volatility scale and the Taiwan cost drift move it by a few thousand dollars; every other modelling
 choice tested moves the median by under $1.5k.
 
+## Decisions for the client
+The model leaves these open. Each row gives what the evidence says and where it is.
+
+| Decision | Evidence | Lean | Section |
+|---|---|---|---|
+| Growth mix and 2031 floor | 40% equity with a 100% floor instead of the IPS's 60% and 60%: median -$3.5k, 5th percentile +$8.2k, a 2031 floor worth $77.1k more at maturity; certainty equivalents within $0.5k at risk aversion 4 | How much the co-sponsors need promised in 2031 | Policy study |
+| Contribution share | 75%, 85% and 95% give typical contributions of $148k, $168k, $187k; Laura keeps $49k, $30k, $10k | Preference | Policy study |
+| Hedge USD/TWD | On the random walk every hedge lowers the real 5th percentile and median; if the forward were unbiased, at most +$4.2k on the 5th percentile | Evidence says do not hedge | USD/TWD |
+| Taiwan building-cost drift | The long-run average forecast six-year cost growth better in real time (RMSE 0.167 vs 0.222); the ten-year drift would mean -$8.7k of real median | Evidence supports the long-run average | Taiwan building costs |
+| Stock satellite | -$4.3k median at 20% with WInS commissions, +$0.4k without | A values choice, not a return one | Part 2b |
+| Reserve outside WInS | STRIPS need no reinvestment assumption and, at the retail ask, cost about what the WInS ladder costs assuming 3% (+1.54% vs +1.82% over zero-coupon value): about $6k cheaper than making the WInS ladder certain | Only if WInS rules do not bind | `docs/loop/r3_strips_findings.md` (as corrected in the log) |
+
 ## Part 1 — funding model
 Treasury par curve → zero curve → cheapest WInS-permitted cash-flow-matched ladder (linear program),
 and a monthly scenario generator: Nelson-Siegel rates, K equity assets, inflation, USD/TWD and Taiwan

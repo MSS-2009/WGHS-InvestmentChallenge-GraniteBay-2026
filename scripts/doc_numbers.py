@@ -44,6 +44,45 @@ def hedge_sentence() -> str:
             f"  real risk is the facility's own dollar value, which no currency hedge removes.")
 
 
+def decision_rows() -> list[str]:
+    """The 'Decisions for the client' table in docs/MODEL.md: what the evidence says on each choice the
+    model leaves open."""
+    d = lambda x: ("+" if x >= 0 else "-") + k(abs(x))
+    pr = pd.read_csv(R / "policy_robust.csv")
+    b = pr[pr["shift"] == "base"].set_index("name")
+    ips, alt = b.loc["IPS"], b.loc["P2361"]
+    cs = json.loads((R / "policy_study.json").read_text())["contribution_share"]
+    hf = pd.read_csv(R / "fx_hedge_frontier.csv").set_index(["belief", "hedge_ratio"])
+    fw = hf.loc["forward unbiased"]
+    td = pd.read_csv(R / "taiwan_drift_study.csv").pivot(index="origins", columns="rule", values="rmse")
+    fx = pd.read_csv(R / "fx_variants.csv").set_index("variant")
+    sat = pd.read_csv(R / "satellite_scoring.csv").set_index(["beliefs", "commissions", "candidate"])
+    s20 = sat.loc[("Black-Litterman posterior", "$25 (WInS)", "Core + 20% satellite"), "median_vs_core"]
+    s20f = sat.loc[("Black-Litterman posterior", "none", "Core + 20% satellite"), "median_vs_core"]
+    return [
+        f"| Growth mix and 2031 floor | {alt.equity_share:.0%} equity with a {alt.floor_share:.0%} floor instead of the IPS's "
+        f"{ips.equity_share:.0%} and {ips.floor_share:.0%}: median {d(alt['median'] - ips['median'])}, 5th percentile "
+        f"{d(alt.p5 - ips.p5)}, a 2031 floor worth {k(alt.secured_2031_median - ips.secured_2031_median)} more at maturity; certainty "
+        f"equivalents within {k(abs(alt.ce_gamma4 - ips.ce_gamma4))} at risk aversion 4 | How much the co-sponsors need "
+        f"promised in 2031 | Policy study |",
+        f"| Contribution share | 75%, 85% and 95% give typical contributions of "
+        + ", ".join(f"${c['contribution_median'] / 1000:.0f}k" for c in cs) + "; Laura keeps "
+        + ", ".join(f"${c['kept_median'] / 1000:.0f}k" for c in cs) + " | Preference | Policy study |",
+        f"| Hedge USD/TWD | On the random walk every hedge lowers the real 5th percentile and median; if the forward "
+        f"were unbiased, at most {d(fw.real_p5.max() - fw.loc[0.0, 'real_p5'])} on the 5th percentile | Evidence says do not "
+        f"hedge | USD/TWD |",
+        f"| Taiwan building-cost drift | The long-run average forecast six-year cost growth better in real time "
+        f"(RMSE {td.loc['all', 'expanding']:.3f} vs {td.loc['all', 'trailing_10y']:.3f}); the ten-year drift would mean "
+        f"{d(fx.loc['random_walk_tw_drift_10y', 'real_median'] - fx.loc['random_walk', 'real_median'])} of real median | "
+        f"Evidence supports the long-run average | Taiwan building costs |",
+        f"| Stock satellite | {d(s20)} median at 20% with WInS commissions, {d(s20f)} without | A values choice, "
+        f"not a return one | Part 2b |",
+        "| Reserve outside WInS | STRIPS need no reinvestment assumption and, at the retail ask, cost about what the "
+        "WInS ladder costs assuming 3% (+1.54% vs +1.82% over zero-coupon value): about $6k cheaper than making the WInS "
+        "ladder certain | Only if WInS rules do not bind | `docs/loop/r3_strips_findings.md` (as corrected in the log) |",
+    ]
+
+
 def sensitivity_rows() -> list[str]:
     """The 'What the numbers rest on' table in docs/MODEL.md: each assumption, the alternative tried,
     and what it does to the IPS (headline median, 5th percentile, or real median where that is the point)."""
@@ -359,6 +398,7 @@ def checks() -> list[tuple[str, str, str]]:
     out.append(("MODEL", "ladder slope, loop summary",
                 f"a rate-dependent ladder premium (+${lpm.loc['rate slope', 'median_vs_engine']:,.0f} median"))
     out += [("MODEL", f"sensitivity row {i + 1}", row) for i, row in enumerate(sensitivity_rows())]
+    out += [("MODEL", f"decision row {i + 1}", row) for i, row in enumerate(decision_rows())]
     tw10 = fx.loc["random_walk", "real_median"] - fx.loc["random_walk_tw_drift_10y", "real_median"]
     out.append(("MODEL", "Taiwan drift effect", f"the real median by {k(tw10)} (`scripts/fx_variants.py`"))
     return out
