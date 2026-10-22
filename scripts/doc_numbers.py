@@ -62,8 +62,14 @@ def sensitivity_rows() -> list[str]:
     pr = pd.read_csv(R / "policy_robust.csv")
     pr = pr[pr.name == "IPS"].set_index("shift")
     dv = lambda shift, col="median": d(pr.loc[shift, col] - pr.loc["base", col])
+    import yaml
+
+    us = np.array([f["us"] for f in yaml.safe_load((ROOT / "config" / "cma.yaml").read_text())["firms"].values()])
+    pts = lambda x: f"{x * 100:+.1f}".replace("+-", "-")
+    tw = yaml.safe_load((ROOT / "config" / "taiwan.yaml").read_text())["fitted_monthly"]["drifts"]
+    kappa0 = json.loads((R / "report_numbers.json").read_text())["stress"]["reserve_certain_at_0pct_reinvestment"]["ladder_premium_at_3pct"]
     return [
-        f"| Equity forecasts | 13-firm median | lowest / highest firm (-2.8 / +3.1 points) | "
+        f"| Equity forecasts | 13-firm median | lowest / highest firm ({pts(us.min() - np.median(us))} / {pts(us.max() - np.median(us))} points) | "
         f"{dv('eq_cma_lowest')} / {dv('eq_cma_highest')} median |",
         f"| Equity volatility | history since 2005 | x0.8 / x1.2 | {dv('eq_vol_0.8', 'p5')} / {dv('eq_vol_1.2', 'p5')} 5th pct |",
         f"| Rates at the January 2027 lock | as today | 0.75 points lower / higher | "
@@ -73,14 +79,15 @@ def sensitivity_rows() -> list[str]:
         f"| Expected rate path | unchanged | forwards less Kim-Wright term premium | "
         f"{d(rp['kim_wright']['median'] - rp['unchanged']['median'])} median |",
         f"| Equity views | Black-Litterman posterior | equilibrium (views wrong) | {d(eqm)} median |",
-        f"| Stock-rate correlation | -0.17 (2017-2026) | 2000-2021 regime (+0.28) | "
+        f"| Stock-rate correlation | {sr.loc['today (2017-08..2026)', 'model_corr_month1']:+.2f} (2017-2026) | "
+        f"2000-2021 regime ({sr.loc['2000..2021', 'model_corr_month1']:+.2f}) | "
         f"{d(sr.loc['2000..2021', 'median_vs_today'])} median, {d(sr.loc['2000..2021', 'p5_vs_today'])} 5th pct |",
-        f"| Ladder premium | constant 1.8% | moves with rates | {d(lp.loc['rate slope', 'median_vs_engine'])} median, "
+        f"| Ladder premium | constant {kappa0:.1%} | moves with rates | {d(lp.loc['rate slope', 'median_vs_engine'])} median, "
         f"{d(lp.loc['rate slope', 'p5_vs_engine'])} 5th pct |",
         f"| Stock satellite | none | 20% of equity, $25 trades | {d(sat20)} median |",
-        f"| USD/TWD drift | none (random walk) | today's forward (-2.28% a year) | "
+        f"| USD/TWD drift | none (random walk) | today's forward ({fx.loc['forward_latest', 'fx_drift']:.2%} a year) | "
         f"{d(fx.loc['forward_latest', 'real_median'] - fx.loc['random_walk', 'real_median'])} real median |",
-        f"| Taiwan building-cost drift | 2.85% (1991-2026) | 3.78% (last ten years) | "
+        f"| Taiwan building-cost drift | {tw['full_sample_35y']:.2%} (1991-2026) | {tw['last_10y']:.2%} (last ten years) | "
         f"{d(fx.loc['random_walk_tw_drift_10y', 'real_median'] - fx.loc['random_walk', 'real_median'])} real median |",
     ]
 
