@@ -170,25 +170,37 @@ def evaluate_policy(
     }
 
 
+def us_forecast_shifts() -> dict[str, float]:
+    """Gaps between the firms' US equity forecasts (config/cma.yaml) and their median: the 25th
+    percentile, the lowest and the highest. Applied to every equity asset's expected return."""
+    import yaml
+
+    us = np.array([f["us"] for f in yaml.safe_load((REPORTS_DIR.parent / "config" / "cma.yaml").read_text())["firms"].values()])
+    med = float(np.median(us))
+    return {"p25": round(float(np.percentile(us, 25)) - med, 6), "lowest": round(float(us.min()) - med, 6),
+            "highest": round(float(us.max()) - med, 6)}
+
+
 def define_shifts(base_params, n_scenarios: int):
     """Return list of (shift_name, sim_callable, ibtm_expense_ratio)."""
     p = base_params
     n = n_scenarios
+    gap = us_forecast_shifts()
 
     def sim_base():
         return simulate(p, n=n, seed=11)
 
     def sim_eq_p25():
-        # PGIM / Vanguard forecast 5.2% vs 13-firm median 5.9% -> -0.70%
-        return simulate(dc.replace(p, eq_geo=p.eq_geo - 0.0070), n=n, seed=11)
+        # 25th-percentile firm (5.2% today) vs the median (5.9%): -0.70 points
+        return simulate(dc.replace(p, eq_geo=p.eq_geo + gap["p25"]), n=n, seed=11)
 
     def sim_eq_lowest():
-        # Research Affiliates forecast 3.1% vs 13-firm median 5.9% -> -2.80%
-        return simulate(dc.replace(p, eq_geo=p.eq_geo - 0.0280), n=n, seed=11)
+        # lowest firm (Research Affiliates, 3.1%) vs the median: -2.80 points
+        return simulate(dc.replace(p, eq_geo=p.eq_geo + gap["lowest"]), n=n, seed=11)
 
     def sim_eq_highest():
-        # BlackRock forecast 9.0% vs 13-firm median 5.9% -> +3.10%
-        return simulate(dc.replace(p, eq_geo=p.eq_geo + 0.0310), n=n, seed=11)
+        # highest firm (BlackRock, 9.0%) vs the median: +3.10 points
+        return simulate(dc.replace(p, eq_geo=p.eq_geo + gap["highest"]), n=n, seed=11)
 
     def sim_vol_08():
         return simulate(dc.replace(p, eq_vol_scale=0.8), n=n, seed=11)
