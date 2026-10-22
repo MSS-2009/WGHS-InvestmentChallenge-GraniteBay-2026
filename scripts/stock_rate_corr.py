@@ -41,8 +41,8 @@ def history() -> dict[str, float]:
 
 
 def scaled(cov: np.ndarray, K: int, c: float) -> tuple[np.ndarray, float]:
-    """Cross block times c. Beyond |c| = 1 the result can be slightly indefinite; then negative
-    eigenvalues are clipped and the variances restored. Returns the matrix and the most negative
+    """Cross block times c. Only 0 <= c <= 1 is guaranteed positive semidefinite (a mix of the matrix
+    and its block-diagonal part); otherwise negative eigenvalues are clipped and the variances restored. Returns the matrix and the most negative
     eigenvalue before the repair (0 if none was needed)."""
     out = cov.copy()
     out[:K, K:K + 3] *= c
