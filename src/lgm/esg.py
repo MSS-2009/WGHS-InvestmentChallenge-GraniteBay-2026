@@ -42,6 +42,9 @@ class ESGParams:
     rate_floor: float = -0.005
     eq_mu_cov: np.ndarray | None = None  # (K, K) annual covariance of expected equity returns
     eq_garch: tuple[float, float] | dict | None = None  # optional (alpha, beta) or dict for GARCH(1,1) vol clustering
+    tw_cost_phi: float | None = None  # monthly AR(1) persistence; None = legacy i.i.d.
+    tw_cost_infl0: float | None = None  # initial inflation rate (annual); None = tw_cost_growth
+    tw_cost_corr: float | None = None  # correlation of tw_cost innovations with US CPI shock
 
 
 @dataclass
@@ -56,6 +59,7 @@ class Scenarios:
     m0: int = 0            # absolute month of index 0 (non-zero for nested simulations)
     eq_drift_err: np.ndarray | None = None
     garch_h: np.ndarray | None = None
+    tw_cost_infl: np.ndarray | None = None
 
     @property
     def n(self) -> int:
@@ -170,7 +174,41 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
         infl[:, m + 1] = p.infl_mu + p.infl_phi * (infl[:, m] - p.infl_mu) + shocks[:, m, K + 3]
     fx0 = 0.0 if start is None else start["fx_log"][:, None]
     fx_log = np.concatenate([np.zeros((n, 1)), np.cumsum(p.fx_drift / 12 + shocks[..., K + 4], axis=1)], axis=1) + fx0
-    tw = np.log1p(p.tw_cost_growth) / 12 + p.tw_cost_vol / np.sqrt(12) * rng.standard_normal((n, M))
-    tw0 = 0.0 if start is None else start["tw_cost_log"][:, None]
-    tw_cost_log = np.concatenate([np.zeros((n, 1)), np.cumsum(tw, axis=1)], axis=1) + tw0
-    return Scenarios(beta, eq_log, infl, fx_log, tw_cost_log, p.resid, p.rate_floor, m0, eq_drift_err, garch_h)
+    if p.tw_cost_phi is not None:
+        phi = float(p.tw_cost_phi)
+        mu = float(p.tw_cost_growth)
+        vol = float(p.tw_cost_vol)
+        sig_eps = vol * np.sqrt(max(1.0 - phi**2, 0.0))
+        tw_cost_infl = np.empty((n, M + 1))
+        if start is not None and "tw_cost_infl" in start:
+            s_infl = np.asarray(start["tw_cost_infl"])
+            tw_cost_infl[:, 0] = s_infl if s_infl.ndim > 0 else np.full(n, float(s_infl))
+        elif p.tw_cost_infl0 is not None:
+            tw_cost_infl[:, 0] = float(p.tw_cost_infl0)
+        else:
+            tw_cost_infl[:, 0] = mu
+
+        if antithetic:
+            z_half = rng.standard_normal((half, M))
+            z_tw = np.concatenate([z_half, -z_half], axis=0)[:n]
+        else:
+            z_tw = rng.standard_normal((n, M))
+
+        if p.tw_cost_corr is not None and p.tw_cost_corr != 0.0:
+            rho = float(p.tw_cost_corr)
+            cpi_std = np.sqrt(p.cov[K + 3, K + 3])
+            z_cpi = shocks[..., K + 3] / (cpi_std if cpi_std > 0 else 1.0)
+            z_tw = rho * z_cpi + np.sqrt(max(1.0 - rho**2, 0.0)) * z_tw
+
+        for m in range(M):
+            tw_cost_infl[:, m + 1] = mu + phi * (tw_cost_infl[:, m] - mu) + sig_eps * z_tw[:, m]
+
+        tw = tw_cost_infl[:, 1:] / 12.0
+        tw0 = 0.0 if start is None else start["tw_cost_log"][:, None]
+        tw_cost_log = np.concatenate([np.zeros((n, 1)), np.cumsum(tw, axis=1)], axis=1) + tw0
+    else:
+        tw = np.log1p(p.tw_cost_growth) / 12 + p.tw_cost_vol / np.sqrt(12) * rng.standard_normal((n, M))
+        tw0 = 0.0 if start is None else start["tw_cost_log"][:, None]
+        tw_cost_log = np.concatenate([np.zeros((n, 1)), np.cumsum(tw, axis=1)], axis=1) + tw0
+        tw_cost_infl = None
+    return Scenarios(beta, eq_log, infl, fx_log, tw_cost_log, p.resid, p.rate_floor, m0, eq_drift_err, garch_h, tw_cost_infl)
