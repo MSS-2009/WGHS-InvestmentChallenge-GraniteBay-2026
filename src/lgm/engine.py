@@ -39,6 +39,8 @@ class EngineConfig:
     annual_cost: float = 0.0      # recurring commissions per year (e.g. basket reconstitution)
     fund_groups: tuple | None = None  # equity slots traded as one fund, e.g. VTI = (0, 1, 2); None = each slot
     compound_costs: bool = True   # commissions owed grow at the invested assets' return, as if paid when incurred
+    kappa_rate_slope: float = 0.0  # premium change per unit of the scenario's 5-year rate above `kappa_rate_ref`
+    kappa_rate_ref: float | None = None  # 5-year zero rate (cc) the premium kappa0 belongs to; required with a slope
 
 
 def pay_tau(m: float) -> np.ndarray:
@@ -46,9 +48,17 @@ def pay_tau(m: float) -> np.ndarray:
     return (M_2033 + 12 * np.arange(N_PAY) - m) / 12.0
 
 
-def kappa(m: float, cfg: EngineConfig) -> float:
-    """Premium scales with the ladder's average remaining time (reinvestment and fee drag)."""
-    return cfg.kappa0 * pay_tau(m).clip(0).mean() / pay_tau(M_2027).mean()
+def kappa(m: float, cfg: EngineConfig, sc: Scenarios | None = None) -> float | np.ndarray:
+    """Premium scales with the ladder's average remaining time (reinvestment and fee drag). With
+    `kappa_rate_slope` and scenarios, it also moves with the scenario's 5-year rate, (N, 1): cash awaiting
+    a payment is assumed to earn a fixed 3%, so the LP's premium rises with market rates
+    (`scripts/ladder_premium.py`)."""
+    k = cfg.kappa0 * pay_tau(m).clip(0).mean() / pay_tau(M_2027).mean()
+    if cfg.kappa_rate_slope == 0.0 or sc is None:
+        return k
+    if cfg.kappa_rate_ref is None:
+        raise ValueError("kappa_rate_slope needs kappa_rate_ref (today's 5-year zero rate)")
+    return k + cfg.kappa_rate_slope * (sc.zero_cc(m, 5.0) - cfg.kappa_rate_ref)
 
 
 @dataclass
@@ -132,7 +142,7 @@ def _lock(s: State, sc: Scenarios, m: int, target: float, budget: np.ndarray, cf
     """Raise every payment's matched fraction toward `target`, longest payment first, within budget.
     Returns money spent."""
     tau = pay_tau(m)
-    unit = PMT * sc.df(m, np.maximum(tau, 0)) * (1 + kappa(m, cfg))          # (N, K) cost of a full payment
+    unit = PMT * sc.df(m, np.maximum(tau, 0)) * (1 + kappa(m, cfg, sc))      # (N, K) cost of a full payment
     need = np.clip(target - s.locked, 0, None)                              # (N, K)
     spent = np.zeros(sc.n)
     left = budget.copy()
@@ -214,7 +224,7 @@ def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: Sta
         elif m in REBAL_MONTHS or m == M_2031:
             if m == M_2031 and st.lock_2031 > 0:
                 tau = pay_tau(m)
-                unit = PMT * sc.df(m, tau) * (1 + kappa(m, cfg))
+                unit = PMT * sc.df(m, tau) * (1 + kappa(m, cfg, sc))
                 need_cost = (np.clip(st.lock_2031 - s.locked, 0, None) * unit).sum(1)
                 raised = _liquidate(s, sc, m, need_cost)
                 _lock(s, sc, m, st.lock_2031, raised, cfg)
@@ -266,7 +276,7 @@ def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: Sta
         _step(s, sc, m, cfg)
     # January 2033 settlement
     assets = s.eq.sum(1) + s.vgit + s.ibtm_face + s.floor_face + s.cash - s.costs
-    open_cost = ((1 - s.locked) * PMT * sc.df(M_2033, pay_tau(M_2033)) * (1 + kappa(M_2033, cfg))).sum(1)
+    open_cost = ((1 - s.locked) * PMT * sc.df(M_2033, pay_tau(M_2033)) * (1 + kappa(M_2033, cfg, sc))).sum(1)
     funded = assets >= open_cost - 1e-6
     facility = np.maximum(assets - open_cost, 0.0)
     i33, i27 = M_2033 - sc.m0, max(M_2027 - sc.m0, 0)   # nested runs measure from their start

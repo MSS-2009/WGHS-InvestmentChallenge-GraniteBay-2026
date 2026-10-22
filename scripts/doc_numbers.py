@@ -148,6 +148,15 @@ def checks() -> list[tuple[str, str, str]]:
                 f"on FRED's copy of the same rate from 1983 the ratio is {b.variance_ratio:.2f}"))
     out.append(("MODEL", "FX 74-month spread", f"spread (sd {a.model_sd:.1%}) lies between the two samples' "
                                                f"{a.hist_sd:.1%} and {b.hist_sd:.1%}"))
+    lp = pd.read_csv(R / "ladder_premium.csv")
+    fit = lp[(lp.kind == "fit") & (lp.date == "Jan 2027")].iloc[0]
+    ips_lp = lp[(lp.kind == "score") & lp.strategy.str.startswith("IPS")].set_index("variant")
+    out.append(("MODEL", "ladder premium fit", f"gives {fit.lp_at_today_rate:.2%} at today's 5-year rate plus "
+                                               f"{fit.slope:.2f} points\nper point of rate ({fit.lp_min:.1%} to {fit.lp_max:.1%}"))
+    sl, lv = ips_lp.loc["rate slope"], ips_lp.loc["rate slope, Jan 2027 LP level"]
+    out.append(("MODEL", "ladder premium impact",
+                f"changes the IPS median by +${sl.median_vs_engine:,.0f} and its 5th percentile by +{k(sl.p5_vs_engine)}; "
+                f"with the lower level as well,\n+{k(lv.median_vs_engine)} and +{k(lv.p5_vs_engine)}"))
     return out
 
 

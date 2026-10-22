@@ -57,6 +57,13 @@ about 4.3% today, so 3% is cautious, but the WInS account itself pays no interes
 ladder as held is $189 short for the 2034 payment, fixed by 6 more IBTO shares
 (`scripts/wins_ladder_check.py`).
 
+The 1.8% premium itself moves with rates, because cash awaiting a payment is assumed to earn a fixed 3%:
+re-solving the LP on simulated January 2027 curves gives 1.64% at today's 5-year rate plus 0.57 points
+per point of rate (0.9% to 2.5% across scenarios; `scripts/ladder_premium.py`). Scoring with that
+slope changes the IPS median by +$27 and its 5th percentile by +$0.5k; with the lower level as well,
++$0.7k and +$1.0k. The engine keeps the constant 1.8%: it is slightly cautious, and in low-rate
+scenarios the slope relies on cash earning 3% above market rates, which can make the premium negative.
+
 **Rate stress.** Rates 0.75 points lower before the January 2027 lock, and expected to stay there (the
 long-run level moves with today's, matching the "unchanged" expectation): the IPS median falls from
 $197.6k to $161.5k, and still funds every payment. 0.75 points higher: $233.1k.
