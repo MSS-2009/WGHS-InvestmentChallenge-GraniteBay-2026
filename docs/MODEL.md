@@ -185,7 +185,7 @@ estimation error that breaks mean-variance on 35 names. Largest weights: AIZ 8.3
 Re-estimated each January from 2019 and held for the year (93 months to September 2026,
 `reports/validation_hrp.csv`), single-linkage HRP had realised volatility of 16.1%: level with
 average-linkage HRP (16.2%) and below Ward-linkage HRP (16.7%), inverse-variance (16.9%) and equal
-weights (18.3%). The test uses names selected with overlapping data, so it ranks the rules but flatters
+weights (18.2%). The test uses names selected with overlapping data, so it ranks the rules but flatters
 all of them.
 
 | Sector | Names | Weight |
@@ -285,7 +285,7 @@ Laura $49k, $30k and $10k. This is a preference, not something the model can opt
 the model's 10th-90th percentile range, quoted from that path's own January 2031 position, contained
 the January 2033 result 98.4% of the time; 1.1% fell below it. As history happened: 98.4%, none below.
 So the model's "80% range" behaved like a 98% range: its tails are fatter than history's. The 20th-80th
-percentile band held 80.4% of the re-centred results (74.5% as history happened), so it is the range
+percentile band held 81.0% of the re-centred results (75.5% as history happened), so it is the range
 that matches its label. In the typical world, 85% of the facility gives:
 
 | Quote for co-sponsors (typical 2031 world) | Contribution range |
@@ -300,7 +300,7 @@ worlds (`quotes_2031`).
 
 **Reverse stress test.** The worst 1% of futures average a $120.6k facility, with stocks down 32%
 over 2028-2033 and a worst 12 months of -30%; rates barely move. The chance the facility ends below
-$100k is 0.03%, below $120k 0.4%, below $140k 2.7%.
+$100k is 0.03%, below $120k 0.4%, below $140k 2.8%.
 
 ## Changes from the improvement loop (October 2026)
 `docs/loop/IMPROVEMENT_LOG.md` records every round, what was checked and what was rejected. Adopted

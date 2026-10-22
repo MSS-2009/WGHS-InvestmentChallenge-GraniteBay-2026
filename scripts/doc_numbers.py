@@ -96,6 +96,34 @@ def checks() -> list[tuple[str, str, str]]:
     out.append(("MODEL", "Taiwan cost-FX correlation range",
                 f"range from {rng(fx.loc['random_walk_no_cost_fx_corr', 'real_p5'], fx.loc['random_walk_no_cost_fx_corr', 'real_p95'])} "
                 f"to\n  {rng(fx.loc['random_walk', 'real_p5'], fx.loc['random_walk', 'real_p95'])}"))
+    cb = ps["range_calibration_history"]
+    out.append(("MODEL", "range calibration",
+                f"the January 2033 result {cb['recentred']['inside_80pct_range']:.1%} of the time; "
+                f"{cb['recentred']['below_range']:.1%} fell below it. As history happened: "
+                f"{cb['as_happened']['inside_80pct_range']:.1%}, none below."))
+    out.append(("MODEL", "calibrated band",
+                f"percentile band held {cb['calibrated_band']['inside_recentred']:.1%} of the re-centred results "
+                f"({cb['calibrated_band']['inside_as_happened']:.1%} as history happened)"))
+    w1 = ps["reverse_stress"]["worst_1pct"]
+    pb = ps["reverse_stress"]["prob_facility_below"]
+    out.append(("MODEL", "reverse stress paths", f"with stocks down {-w1['stocks_cum_return_2028_2033']:.0%}\n"
+                                                 f"over 2028-2033 and a worst 12 months of {w1['worst_12_months']:.0%}"))
+    out.append(("MODEL", "reverse stress probabilities",
+                f"$100k is {pb['100000']:.2%}, below $120k {pb['120000']:.1%}, below $140k {pb['140000']:.1%}."))
+    hv = pd.read_csv(R / "validation_hrp.csv").set_index("rule").realised_vol
+    out.append(("MODEL", "HRP linkage vols",
+                f"single-linkage HRP had realised volatility of {hv.iloc[0]:.1%}: level with\naverage-linkage HRP "
+                f"({hv.iloc[1]:.1%}) and below Ward-linkage HRP ({hv.iloc[2]:.1%}), inverse-variance ({hv.iloc[3]:.1%}) "
+                f"and equal\nweights ({hv.iloc[4]:.1%})"))
+    sw = pd.read_csv(R / "satellite_weights.csv", index_col=0)
+    top = sw.hrp_weight.sort_values(ascending=False).head(3)
+    out.append(("MODEL", "satellite top weights",
+                "Largest weights: " + ", ".join(f"{t} {w:.1%}" for t, w in top.items()) + "."))
+    names = {"Health Care": "Health care", "Information Technology": "Information technology",
+             "Consumer Discretionary": "Consumer discretionary", "Communication Services": "Communication",
+             "Real Estate": "Real estate"}
+    for sec, g in sw.groupby("sector"):
+        out.append(("MODEL", f"satellite sector {sec}", f"| {names.get(sec, sec)} | {len(g)} | {g.hrp_weight.sum():.1%} |"))
     sat = pd.read_csv(R / "satellite_scoring.csv")
     piv = sat.pivot_table(index=["beliefs", "commissions"], columns="candidate", values="median_vs_core")
     for beliefs, comm, label in (("Equilibrium (no alpha)", "$25 (WInS)", "Equilibrium (no alpha) | $25 per trade (WInS)"),
