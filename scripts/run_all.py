@@ -37,6 +37,7 @@ ORDER = [  # (script, passes --refresh, failure is fatal)
     ("equity_horizon", False, True),
     ("taiwan_drift_study", False, True),
     ("fx_hedge_frontier", False, True),
+    ("policy_robust", False, True),         # IPS under 11 shifts (the top policies come from the last policy_search)
     ("doc_numbers", False, True),           # last: every quoted figure against its report
 ]
 
