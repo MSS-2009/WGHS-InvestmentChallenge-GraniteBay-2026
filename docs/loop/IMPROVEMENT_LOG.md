@@ -257,3 +257,27 @@ Headline: median $197,244, p5 $146,831, CVaR5 $135,959, real median $166,709; 11
   return favour the lower-equity, full-floor policies (P2305, P2361) a little more. The IPS is still
   close to the best at moderate risk aversion; at high risk aversion the gap is now $8.3k, which
   strengthens the case the client should weigh in "Decisions for the client" (growth mix and floor).
+
+### Round 6: where the day's headline change came from
+`scripts/round6_waterfall.py` rebuilds the IPS headline (20,000 scenarios, seed 11) from this morning's
+model, switching the day's changes on one at a time; the last row matches `report_numbers.json` to the dollar.
+
+| Change | Median | 5th pct | Real median |
+|---|---|---|---|
+| Morning model (round 5 merged) | $197,846 | $147,382 | $167,361 |
+| Commissions compounded | -$272 | -$70 | -$262 |
+| Sale tickets in January 2033 | -$225 | -$225 | -$191 |
+| Taiwan cost growth correlated with USD/TWD | $0 | $0 | -$47 |
+| Rate persistence bias-corrected (Kendall) | +$24 | -$167 | -$65 |
+| J.P. Morgan 2027 assumptions | -$122 | -$94 | -$99 |
+| Equity correlations shrunk toward their average | +$27 | -$1,136 | +$232 |
+| EMXC and MCHI volatility include 2008 | +$1,154 | +$226 | +$1,100 |
+| Black-Litterman market level anchored | -$1,668 | -$1,146 | -$1,453 |
+| **Now** | **$196,764** | **$144,770** | **$166,576** |
+
+The anchoring row is larger than the volatility-proxy row it was added to correct because the morning model
+already had a drift: anchoring the morning model alone moves its median from $197,846 to $197,372 (-$474).
+With anchoring on, the volatility proxies are worth +$121 in the median, not +$1,154. So of the day's
+-$1,082 in the median, about -$0.6k is costs that were real but unmodelled (compounding, the sale tickets),
+-$0.5k is a Black-Litterman artifact removed, and the risk corrections are close to neutral in the median;
+they show up in the 5th percentile (-$1.1k from the correlation target).

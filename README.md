@@ -77,7 +77,7 @@ python scripts/wins_rebalance.py    # orders that bring WInS in line with the IP
 python scripts/wins_ladder_check.py # does the WInS ladder meet every payment at 0% interest on cash?
 ```
 
-Studies behind the assumptions (each writes one report; `run_all.py` reruns all but the policy search):
+Studies behind the assumptions (each writes one report; `run_all.py` reruns all but the policy search and the waterfall):
 ```
 python scripts/fx_variants.py            # USD/TWD drift, cost-FX correlation and cost drift in Taiwan terms
 python scripts/fx_hedge_frontier.py      # hedging 0-100% of the facility, under two beliefs about the forward
@@ -92,6 +92,7 @@ python scripts/satellite_oos.py          # the satellite's selection bias, out o
 python scripts/satellite_risk_sensitivity.py   # the satellite verdict with that bias corrected
 python scripts/policy_search.py --grid --workers 6   # 3,456 policies (about 3.5 min)
 python scripts/policy_robust.py          # the IPS and the search's best policies under 11 assumption shifts
+python scripts/round6_waterfall.py       # what each October 22 change did to the IPS headline (about 3 min)
 ```
 `python scripts/doc_numbers.py --fix` rewrites figures in `docs/` that a model change has moved.
 `docs/loop/IMPROVEMENT_LOG.md` records each round of the October 2026 improvement loop.
