@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 
 from lgm import engine
+from lgm.asof import CURVE_DATE, DATA_END
 from lgm.backtest import history_paths
 from lgm.calibrate import factor_history
 from lgm.data import yahoo
@@ -31,9 +32,8 @@ def esg_checks(core: dict, n: int) -> pd.DataFrame:
     t, cal = core["table"], core["cal"]
     geo = t["bl_geo_total"].values
     sc = simulate(esg_params(cal, geo), n=n, seed=11)
-    K = len(CORE)
     rows = []
-    hist = np.log1p(yahoo.monthly_returns([g.history for g in CORE], start="2000-01-01")).loc["2005-01-01":"2026-09-30"]
+    hist = np.log1p(yahoo.monthly_returns([g.history for g in CORE], start="2000-01-01")).loc["2005-01-01":DATA_END]
     for k, g in enumerate(CORE):
         r = sc.eq_log[:, :, k]
         cum = r.sum(1)
@@ -58,7 +58,7 @@ def esg_checks(core: dict, n: int) -> pd.DataFrame:
     for q in (5, 50, 95):
         rows.append({"check": f"10-year yield change to Jan 2033, p{q}", "target": np.nan,
                      "model": float(np.percentile(d_mod, q)), "history_2005_2026": float(np.percentile(d_hist, q))})
-    rows.append({"check": "10-year yield today (Oct 20, 2026)", "target": y0, "model": y0, "history_2005_2026": np.nan})
+    rows.append({"check": f"10-year yield today ({CURVE_DATE})", "target": y0, "model": y0, "history_2005_2026": np.nan})
     return pd.DataFrame(rows)
 
 
@@ -125,6 +125,30 @@ def bl_sensitivity(core: dict) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def hrp_study(first: int = 2019, months: int = 60) -> pd.DataFrame:
+    """Out-of-sample check of the satellite's weighting rule: each January from `first`, estimate weights on
+    the previous `months` months of the selected names, hold them for the year, and record the realised
+    volatility of the chained returns."""
+    from lgm.growth.portfolio import long_prices
+    from lgm.growth.qualitative import hrp_weights
+
+    tickers = pd.read_csv(OUT / "satellite_selected.csv", index_col=0).index.tolist()
+    r = long_prices(tickers).pct_change().loc[:DATA_END]
+    rules = {"HRP, single linkage (used)": lambda x: hrp_weights(x, "single"),
+             "HRP, average linkage": lambda x: hrp_weights(x, "average"),
+             "HRP, Ward linkage": lambda x: hrp_weights(x, "ward"),
+             "Inverse variance": lambda x: (1 / x.var()) / (1 / x.var()).sum(),
+             "Equal weight": lambda x: pd.Series(1 / x.shape[1], index=x.columns)}
+    held = {k: [] for k in rules}
+    for year in range(first, pd.Timestamp(DATA_END).year + 1):
+        past = r.loc[:f"{year - 1}-12-31"].iloc[-months:].dropna(axis=1)
+        ahead = r.loc[f"{year}-01-01":f"{year}-12-31", past.columns]
+        for k, rule in rules.items():
+            held[k].append(ahead.fillna(0) @ rule(past))
+    return pd.DataFrame([{"rule": k, "first_year": first, "months": int(sum(len(x) for x in v)),
+                          "realised_vol": float(pd.concat(v).std() * np.sqrt(12))} for k, v in held.items()])
+
+
 def main(n: int = 20_000):
     core = build_core()
     e = esg_checks(core, n)
@@ -135,10 +159,13 @@ def main(n: int = 20_000):
     b.round(3).to_csv(OUT / "backtest.csv", index=False)
     s = bl_sensitivity(core)
     s.round(4).to_csv(OUT / "bl_sensitivity.csv", index=False)
+    h = hrp_study()
+    h.round(4).to_csv(OUT / "validation_hrp.csv", index=False)
     with pd.option_context("display.width", 220, "display.max_columns", 30):
         print(e.round(4).to_string(index=False))
         print(b.drop(columns=["first_start", "last_start"]).round(0).to_string(index=False))
         print(s.round(3).to_string(index=False))
+        print(h.round(4).to_string(index=False))
 
 
 if __name__ == "__main__":

@@ -3,6 +3,13 @@
 Liability-driven investment model for the 2026-27 Laura Gao case: fund ten fixed $50,000 payments
 (2033-2042) with certainty, then build the largest responsible facility contribution for 2033.
 
+> **AI use and citation.** This code, its reports and the documents in `docs/` were generated with
+> Claude (Anthropic), an AI assistant; the commit history shows it. Competition rules say AI-generated
+> work cannot be submitted as the team's own, and any AI material that is included must be cited. Use this
+> repository as a reference and checking tool: rebuild the numbers you submit yourselves, and cite it
+> (for example "Laura Gao investment model, generated with Claude (Anthropic), October 2026") wherever its
+> output appears in the IPS or Final Report.
+
 **Part 1 — core funding model (built)**
 - `curve.py` — Treasury par curve to zero-coupon curve (bootstrapping).
 - `instruments.py`, `ladder.py` — WInS-permitted Treasuries and iBonds ETFs; cheapest cash-flow-matched
@@ -32,13 +39,29 @@ See `docs/MODEL.md` for the design and results.
 Treasury nominal and real par curves (home.treasury.gov), Treasury securities (TreasuryDirect), CPI
 (FRED CSV), the Kim-Wright term structure model and H.10 USD/TWD rates (Federal Reserve Board), factor
 and portfolio returns (Kenneth French Data Library), prices (Yahoo Finance chart API), ETF holdings
-(iShares), company financials and analyst ratings (Nasdaq). Raw downloads are cached in `data/raw/`. The October 2026 news check on the selected
+(iShares), company financials and analyst ratings (Nasdaq). Raw downloads are cached in `data/raw/`; each
+downloader checks a response before it replaces a cached file. The raw files are the providers' data: check
+their terms before redistributing the repository. The October 2026 news check on the selected
 stocks used Bigdata.com (https://bigdata.com); its effect is recorded in `config/qualitative_judgments.csv`.
+
+## Configuration
+| File | What it holds |
+|---|---|
+| `config/asof.yaml` | The run dates: Treasury curve date, last month of data, price date. The engine's month timeline follows the curve date |
+| `config/wins_account.yaml` | The WInS account: cash, funds to sell, the reserve ladder held. Update after each trading session |
+| `config/case.yaml`, `wins_rules.yaml` | The case's cash flows; WInS session rules (commissions, 0% interest on cash) |
+| `config/cma.yaml`, `qualitative.yaml`, `qualitative_judgments.csv` | Black-Litterman views; the qualitative model and its judgments |
+
+To refresh before the Final Report: change the dates in `config/asof.yaml`, update
+`config/wins_account.yaml`, then run `python scripts/run_all.py --refresh`. It re-downloads the data that
+moves with the dates, keeps the cached copy of any source that is unreachable (and says so), then reruns
+every script in order.
 
 ## Quick start
 ```
 python -m venv .venv && . .venv/bin/activate && pip install -e . pytest
-python -m pytest
+python -m pytest                    # 61 tests, offline (cached data); also run on every push (.github/workflows)
+python scripts/run_all.py           # every script below, in dependency order (about 30 s)
 python scripts/validate_plans_v2.py
 python scripts/build_core.py
 python scripts/build_satellite.py
@@ -47,6 +70,8 @@ python scripts/report_numbers.py    # headline numbers for the IPS and Final Rep
 python scripts/factor_evidence.py   # long-run evidence for the views (Kenneth French data)
 python scripts/rate_path_study.py   # which expected rate path; Kim-Wright scenario
 python scripts/policy_study.py      # 2031 floor frontier, range calibration, reverse stress test
+python scripts/wins_rebalance.py    # orders that bring WInS in line with the IPS
+python scripts/wins_ladder_check.py # does the WInS ladder meet every payment at 0% interest on cash?
 ```
 
 See `docs/VALIDATION.md` for the check of the former team's numbers.

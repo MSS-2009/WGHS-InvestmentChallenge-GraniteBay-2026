@@ -16,8 +16,11 @@ def fetch(series: list[str], name: str, refresh: bool = False) -> pd.DataFrame:
         import time
         for attempt in range(4):
             try:
-                r = requests.get(URL.format(ids=",".join(series)), timeout=120, headers={"User-Agent": "lgm-research"})
+                # FRED stalls on custom User-Agents and serves an HTML maintenance page with status 200
+                r = requests.get(URL.format(ids=",".join(series)), timeout=60)
                 r.raise_for_status()
+                if not r.text.startswith(("observation_date,", "DATE,")):
+                    raise requests.RequestException("FRED did not return CSV (maintenance page?)")
                 break
             except requests.RequestException:
                 if attempt == 3:

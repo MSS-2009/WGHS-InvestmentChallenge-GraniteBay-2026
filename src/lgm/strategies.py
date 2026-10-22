@@ -6,7 +6,7 @@ risk, so they are the most expensive to leave open.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, replace
 
 
 @dataclass(frozen=True)

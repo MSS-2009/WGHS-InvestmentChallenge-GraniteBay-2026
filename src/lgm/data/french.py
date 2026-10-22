@@ -1,4 +1,4 @@
-"""Kenneth R. French Data Library (Tuck/Dartmouth), keyless CSV zips cached in data/raw/french/."""
+"""Kenneth R. French Data Library (Tuck/Dartmouth), keyless CSV zips; the extracted CSV is cached in data/raw/french/."""
 from __future__ import annotations
 
 import io

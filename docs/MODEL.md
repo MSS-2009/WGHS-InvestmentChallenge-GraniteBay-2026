@@ -18,12 +18,25 @@ Market inputs (all keyless):
   forwards minus the Kim-Wright term premium 7.5%, pure forwards 10.0%. Unchanged also has the
   smallest bias, so it stays. Run today with the Kim-Wright path instead, the median facility is
   $0.7k lower (`reports/rate_path_scenario.json`).
-- **Inflation:** reverts from September's 3.7% toward 7-year breakeven inflation from Treasury's
+- **Inflation:** reverts from the latest CPI reading (September: 3.7%) toward 7-year breakeven inflation from Treasury's
   nominal and TIPS par curves (2.37% on October 20, 2026). TIPS are a gauge only; WInS forbids them.
 - **USD/TWD:** the Federal Reserve's H.10 noon buying rate, from 2000 (replaces Yahoo's series, which
   needed bad prints filtered out).
 - **Taiwan building costs:** still assumed (4% a year, 1.5% volatility); Taiwan's statistics sites
   were unreachable from this environment.
+
+**How certain is "certain"?** A locked payment is treated as certain. That rests on one assumption:
+coupons and fund proceeds that arrive before a payment are reinvested at 3% until it is due (the ladder
+LP and the engine's 1.8% ladder premium, `kappa0`, which a test pins to the LP). At 0% the cheapest
+ladder costs 3.7% over zero-coupon value instead of 1.8%. Pricing the reserve so it is certain even
+then lowers the median facility by $7.8k (`reports/report_numbers.json`, `stress`). Cash rates are
+about 4.3% today, so 3% is cautious, but the WInS account itself pays no interest on cash: there the
+ladder as held is $189 short for the 2034 payment, fixed by 6 more IBTO shares
+(`scripts/wins_ladder_check.py`).
+
+**Rate stress.** Rates 0.75 points lower before the January 2027 lock, and expected to stay there (the
+long-run level moves with today's, matching the "unchanged" expectation): the IPS median falls from
+$197.9k to $161.9k, and still funds every payment. 0.75 points higher: $233.3k.
 
 ## Part 2a — ETF core (Black-Litterman)
 Nine equity groups, one ETF each (VUG, VTV, VB, VGK, BBJP, EPP, BBCA, EMXC, MCHI). Bonds in the growth
@@ -103,6 +116,10 @@ grouped into five values dimensions and six strength dimensions (each scored 1-5
 
 **Yes/no gates:** reject tobacco, gambling, controversial weapons and adult entertainment; a values
 average below 3.0 or any values dimension scored 1; financial quality ≤ 2; risk flags ≤ 1.
+**Negative book equity** (HLT, CAH: profitable, but buybacks exceed equity) makes ROE meaningless and
+debt/equity undefined. Their ROE is not scored and their leverage scores 1, the worst band. HLT's
+financial quality falls from 4.0 to 3.5; the selection does not change.
+
 **Score:** 0.35 × values + 0.65 × strength, then combined 50/50 (z-scores) with the quant
 return-quality score. 14 names were rejected: PM and MO (tobacco); KO, CASY, VLO, TRGP, MPC, PSX, GS,
 CAH, RTX and FCX (values average below 3); CFG and VTRS (financial quality).
@@ -122,8 +139,11 @@ ECL, VTR, EME, APH, GWW, HLT, BNY, JPM, SPG, C, WAB, HWM, EBAY, BAC, KEYS, STT, 
 ### Weights inside the satellite
 Hierarchical risk parity (López de Prado 2016) on 60 months of returns. HRP is robust to the
 estimation error that breaks mean-variance on 35 names. Largest weights: AIZ 8.3%, JNJ 8.2%, GILD 6.6%.
-Re-estimated every year from 2019 to 2026, it had lower realised volatility (16.3%) than average- or
-Ward-linkage HRP (16.3%, 16.9%), inverse-variance (17.0%) or equal weights (18.5%).
+Re-estimated each January from 2019 and held for the year (93 months to September 2026,
+`reports/validation_hrp.csv`), single-linkage HRP had realised volatility of 16.1%: level with
+average-linkage HRP (16.2%) and below Ward-linkage HRP (16.7%), inverse-variance (16.9%) and equal
+weights (18.3%). The test uses names selected with overlapping data, so it ranks the rules but flatters
+all of them.
 
 | Sector | Names | Weight |
 |---|---:|---:|
@@ -192,7 +212,7 @@ names get zero shares. Hence the IPS keeps the satellite out of WInS.
 
 **The 2031 floor.** The IPS moves 60% of the growth sleeve into IBTM in January 2031.
 
-| Floor | Median | 5th pct | 95th pct | Secured in 2031 (typical) | 80% range (typical) |
+| Floor | Median | 5th pct | 95th pct | Secured in 2031 (typical) | 10th-90th pct range (typical) |
 |---|---:|---:|---:|---:|---|
 | 0% | $201.1k | $141.8k | $290.7k | $0 | $145.8k-$203.2k |
 | 40% | $199.0k | $145.9k | $275.7k | $67.1k | $154.0k-$188.5k |
@@ -208,10 +228,21 @@ median, an 80% floor secures $34k more and halves the range.
 Laura $49k, $30k and $10k. This is a preference, not something the model can optimise.
 
 **Range calibration on history.** On each of 184 real six-year paths (re-centred, starts 2005-2020),
-the 80% range quoted from that path's own January 2031 position contained the January 2033 result
-98.4% of the time; 1.1% fell below it. As history happened: 97.8%, none below. The range is
-conservative (the model's tails are fatter than history), but the paths overlap, so the evidence is
-thin.
+the model's 10th-90th percentile range, quoted from that path's own January 2031 position, contained
+the January 2033 result 98.4% of the time; 1.1% fell below it. As history happened: 98.4%, none below.
+So the model's "80% range" behaved like a 98% range: its tails are fatter than history's. The 20th-80th
+percentile band held 80.4% of the re-centred results (74.5% as history happened), so it is the range
+that matches its label. In the typical world, 85% of the facility gives:
+
+| Quote for co-sponsors (typical 2031 world) | Contribution range |
+|---|---|
+| Model 10th-90th percentile (historically ~98% of outcomes) | $158.3k-$181.2k |
+| 20th-80th percentile (historically ~80% of outcomes) | $161.3k-$176.6k |
+
+Quote the second as the 80% range, and the first as the cautious range. The paths overlap (about four
+independent six-year windows), so the calibration is thin evidence; both quotes sit above the $100.7k
+already secured by the floor. `scripts/report_numbers.py` writes both for the bad, typical and good
+worlds (`quotes_2031`).
 
 **Reverse stress test.** The worst 1% of futures average a $119.9k facility, with stocks down 28%
 over 2028-2033 and a worst 12 months of -30%; rates barely move. The chance the facility ends below
@@ -227,15 +258,21 @@ $100k is 0.03%, below $120k 0.4%, below $140k 2.8%.
 - The satellite's risk is probably understated: names were picked for low past volatility and
   drawdown, and the correlation window overlaps the screening window, so its beta (0.89) and
   volatility (15.1%) are likely biased low.
+- Locked payments are certain only if cash awaiting a payment earns at least 3% (see "How certain is
+  'certain'?"); the Monte Carlo does not simulate that reinvestment rate.
 
 ## Reproduce
+Every run is anchored to the dates in `config/asof.yaml` (curve date, last month of data, price date);
+the WInS account's cash and holdings are in `config/wins_account.yaml`. To refresh before the Final
+Report, change the dates and run `python scripts/run_all.py --refresh`.
 ```
+python scripts/run_all.py              # every script below, in dependency order (about 30 s)
 python scripts/build_core.py           # ETF core: reports/core_bl.csv, core_scoring.csv
 python scripts/build_satellite.py      # satellite: reports/satellite_*.csv (add --rescreen to refetch)
 python scripts/validate_model.py       # how good is it: generator checks, convergence, replay, BL sensitivity
 python scripts/report_numbers.py       # headline numbers for the IPS and Final Report
 python scripts/wins_rebalance.py       # orders that bring WInS in line with the IPS
-python scripts/wins_ladder_check.py    # matching test for the ladder held in WInS
+python scripts/wins_ladder_check.py    # matching test for the ladder held in WInS (0% cash rate; exit 1 if short)
 python scripts/factor_evidence.py      # Kenneth French evidence for the views
 python scripts/rate_path_study.py      # which expected rate path; Kim-Wright scenario
 python scripts/policy_study.py         # floor frontier, range calibration, reverse stress test

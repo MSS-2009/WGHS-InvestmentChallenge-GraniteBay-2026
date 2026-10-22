@@ -20,6 +20,7 @@ import numpy as np
 import pandas as pd
 
 from lgm import engine
+from lgm.asof import CURVE_DATE, DATA_END
 from lgm.calibrate import factor_history
 from lgm.curve import bootstrap
 from lgm.data import fed
@@ -92,7 +93,7 @@ def main():
         print(era, sub.groupby("method")["cost_err_pct"].agg(lambda x: float(np.sqrt((x ** 2).mean()))).round(4).to_dict())
 
 
-def scenario(curve_date: str = "2026-10-20", kw_month: str = "2026-09-30", n: int = 20_000):
+def scenario(curve_date: str = CURVE_DATE, kw_month: str = DATA_END, n: int = 20_000):
     """The plan under today's Kim-Wright expected path: shift the factors' long-run target so the
     expected January 2033 curve matches it, given each factor's mean reversion."""
     kw = fed.kim_wright().resample("ME").last()

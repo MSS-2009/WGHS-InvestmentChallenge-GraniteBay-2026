@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import datetime as dt
-import json
 import time
 from pathlib import Path
 
@@ -13,11 +12,15 @@ URL = "https://query1.finance.yahoo.com/v8/finance/chart/{sym}?period1={p1}&peri
 RAW = Path(__file__).resolve().parents[3] / "data" / "raw" / "yahoo"
 
 
+def _path(sym: str, interval: str) -> Path:
+    return RAW / f"{sym.replace('^', '_').replace('=', '_')}_{interval}.csv"
+
+
 def history(sym: str, start: str = "1990-01-01", end: str | None = None, interval: str = "1mo",
             refresh: bool = False) -> pd.DataFrame:
     """Columns: close, adjclose (total-return price). Cached as CSV."""
     end = end or dt.date.today().isoformat()
-    path = RAW / f"{sym.replace('^', '_').replace('=', '_')}_{interval}.csv"
+    path = _path(sym, interval)
     if path.exists() and not refresh:
         return pd.read_csv(path, index_col=0, parse_dates=True)
     p1 = int(dt.datetime.fromisoformat(start).replace(tzinfo=dt.timezone.utc).timestamp())
@@ -44,8 +47,24 @@ def monthly_returns(symbols: list[str], start: str = "2000-01-01") -> pd.DataFra
     """Simple monthly total returns, aligned on common months."""
     cols = {}
     for s in symbols:
+        cached = _path(s, "1mo").exists()
         h = history(s, start=start, interval="1mo")
         px = h["adjclose"].resample("ME").last()
         cols[s] = px.pct_change()
-        time.sleep(0.3)
+        if not cached:
+            time.sleep(0.3)
     return pd.DataFrame(cols).dropna()
+
+
+def close_on(sym: str, date: str, refresh: bool = False) -> float:
+    """Closing price on `date` from the daily cache; downloads only when the cache lacks that date."""
+    day = pd.Timestamp(date)
+    if not refresh and _path(sym, "1d").exists():
+        h = pd.read_csv(_path(sym, "1d"), index_col=0, parse_dates=True)
+        if day in h.index:
+            return float(h.loc[day, "close"])
+    start = (day - pd.Timedelta(days=30)).date().isoformat()
+    h = history(sym, start=start, end=day.date().isoformat(), interval="1d", refresh=True)
+    if day not in h.index:
+        raise KeyError(f"no {sym} close on {date} (market holiday or not yet published?)")
+    return float(h.loc[day, "close"])

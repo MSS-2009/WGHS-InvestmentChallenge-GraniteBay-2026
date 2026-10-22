@@ -30,4 +30,4 @@ def fit(tau: np.ndarray, z: np.ndarray, lam: float = LAMBDA) -> np.ndarray:
 
 def zero(beta: np.ndarray, tau: np.ndarray, lam: float = LAMBDA) -> np.ndarray:
     """beta (..., 3) and tau (k,) -> zero rates (..., k)."""
-    return np.asarray(beta)[..., None, :] @ loadings(tau, lam).T[None, ...] if False else np.einsum("...f,kf->...k", beta, loadings(tau, lam))
+    return np.einsum("...f,kf->...k", beta, loadings(tau, lam))

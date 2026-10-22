@@ -3,21 +3,21 @@
   "floor_frontier": [
     {
       "floor_share": 0.0,
-      "median": 201063,
-      "p5": 141773,
+      "median": 201056,
+      "p5": 141782,
       "p95": 290745,
       "secured_2031_typical": 0,
       "range_2031_typical": [
         145800.0,
         203200.0
       ],
-      "ce_gamma2": 197000,
-      "ce_gamma4": 187867,
-      "ce_gamma8": 170297
+      "ce_gamma2": 196999,
+      "ce_gamma4": 187866,
+      "ce_gamma8": 170298
     },
     {
       "floor_share": 0.2,
-      "median": 199956,
+      "median": 199974,
       "p5": 143980,
       "p95": 283143,
       "secured_2031_typical": 33572,
@@ -25,65 +25,65 @@
         149700.0,
         195700.0
       ],
-      "ce_gamma2": 196435,
-      "ce_gamma4": 188366,
-      "ce_gamma8": 172492
+      "ce_gamma2": 196434,
+      "ce_gamma4": 188365,
+      "ce_gamma8": 172493
     },
     {
       "floor_share": 0.4,
-      "median": 198955,
-      "p5": 145860,
-      "p95": 275672,
+      "median": 198957,
+      "p5": 145873,
+      "p95": 275617,
       "secured_2031_typical": 67144,
       "range_2031_typical": [
         154000.0,
         188500.0
       ],
-      "ce_gamma2": 195873,
-      "ce_gamma4": 188663,
-      "ce_gamma8": 174188
+      "ce_gamma2": 195872,
+      "ce_gamma4": 188662,
+      "ce_gamma8": 174189
     },
     {
       "floor_share": 0.6,
       "median": 197910,
       "p5": 147374,
-      "p95": 269834,
+      "p95": 269822,
       "secured_2031_typical": 100716,
       "range_2031_typical": [
         158300.0,
         181200.0
       ],
       "ce_gamma2": 195059,
-      "ce_gamma4": 188489,
-      "ce_gamma8": 175075
+      "ce_gamma4": 188488,
+      "ce_gamma8": 175076
     },
     {
       "floor_share": 0.8,
       "median": 196706,
-      "p5": 148062,
-      "p95": 265605,
+      "p5": 148129,
+      "p95": 265545,
       "secured_2031_typical": 134288,
       "range_2031_typical": [
         162500.0,
         174000.0
       ],
-      "ce_gamma2": 193988,
+      "ce_gamma2": 193987,
       "ce_gamma4": 187832,
-      "ce_gamma8": 175147
+      "ce_gamma8": 175149
     },
     {
       "floor_share": 1.0,
-      "median": 195515,
-      "p5": 147494,
+      "median": 195508,
+      "p5": 147512,
       "p95": 262754,
       "secured_2031_typical": 167860,
       "range_2031_typical": [
         167100.0,
         167100.0
       ],
-      "ce_gamma2": 192947,
-      "ce_gamma4": 186977,
-      "ce_gamma8": 174688
+      "ce_gamma2": 192946,
+      "ce_gamma4": 186976,
+      "ce_gamma8": 174691
     }
   ],
   "best_floor_by_gamma": {
@@ -95,9 +95,9 @@
     {
       "share": 0.75,
       "contribution_median": 148433,
-      "contribution_p5": 110530,
+      "contribution_p5": 110531,
       "kept_median": 49478,
-      "kept_p5": 36843
+      "kept_p5": 36844
     },
     {
       "share": 0.85,
@@ -109,7 +109,7 @@
     {
       "share": 0.95,
       "contribution_median": 188015,
-      "contribution_p5": 140005,
+      "contribution_p5": 140006,
       "kept_median": 9896,
       "kept_p5": 7369
     }
@@ -125,26 +125,35 @@
     },
     "as_happened": {
       "paths": 184,
-      "inside_80pct_range": 0.978,
+      "inside_80pct_range": 0.984,
       "below_range": 0.0,
-      "above_range": 0.022,
+      "above_range": 0.016,
       "first_start": "2005-04-30",
       "last_start": "2020-07-31"
+    },
+    "calibrated_band": {
+      "percentiles": [
+        20.0,
+        80.0
+      ],
+      "inside_recentred": 0.81,
+      "inside_as_happened": 0.755,
+      "note": "paths overlap (184 starts, about four independent six-year windows), so this is thin evidence"
     }
   },
   "reverse_stress": {
     "worst_1pct": {
-      "facility_mean": 119930,
+      "facility_mean": 119932,
       "stocks_cum_return_2028_2033": -0.282,
       "worst_12_months": -0.296,
       "five_year_yield_change_by_2031": -0.0014,
       "five_year_yield_change_by_2033": -0.0002
     },
     "worst_5pct": {
-      "facility_mean": 136216,
+      "facility_mean": 136215,
       "stocks_cum_return_2028_2033": -0.194,
       "worst_12_months": -0.265,
-      "five_year_yield_change_by_2031": 0.0005,
+      "five_year_yield_change_by_2031": 0.0004,
       "five_year_yield_change_by_2033": 0.001
     },
     "all": {

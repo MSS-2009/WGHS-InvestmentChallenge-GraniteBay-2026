@@ -1,6 +1,7 @@
 """Monthly simulation of Laura's portfolio under a strategy, across many scenarios.
 
-Timeline (month 0 = Nov 1, 2026, starting from the latest Treasury curve):
+Timeline (month 0 = first of the month after the curve date, `asof.START`; months shown for the
+Oct 20, 2026 curve):
   m=2  Jan 2027  +$300,000; lock per rule; invest the rest
   m=14 Jan 2028  +$150,000; complete any lock shortfall first; invest
   m=26, 38, 62   January rebalancing checks
@@ -10,17 +11,18 @@ Everything is vectorised over scenarios.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy as np
 
+from .asof import month_of
 from .esg import Scenarios
 from .strategies import Strategy
 
-M_2027, M_2028, M_2031, M_2033 = 2, 14, 50, 74
-REBAL_MONTHS = (26, 38, 62)
+M_2027, M_2028, M_2031, M_2033 = (month_of(y) for y in (2027, 2028, 2031, 2033))
+REBAL_MONTHS = tuple(month_of(y) for y in (2029, 2030, 2032))
 N_PAY, PMT = 10, 50_000.0
-IBTM_MATURITY_M = 73.5          # Dec 15, 2032
+IBTM_MATURITY_M = month_of(2032, 12) + 0.5      # Dec 15, 2032
 ER = {"eq": np.array([0.0003, 0.0003, 0.0006]), "VGIT": 0.0003, "IBTM": 0.0007}
 VGIT_TAU, VGIT_DUR, VGIT_CONV = 5.5, 5.1, 31.0
 COMMISSION_ETF, COMMISSION_BOND = 25.0, 10.0
@@ -245,7 +247,7 @@ def conditional_2031(st: Strategy, sc: Scenarios, res: dict, params, i: int | No
 
     from .esg import simulate
 
-    g = res["growth_2031"] + res["floor_2033"] * 0  # rank on growth assets before the floor move
+    g = res["growth_2031"]                          # rank on growth assets before the floor move
     if i is None:
         i = int(np.argsort(g)[len(g) // 2])
     start = {"beta": sc.beta[i, M_2031 - sc.m0], "infl": sc.infl[i, M_2031 - sc.m0],
@@ -257,4 +259,4 @@ def conditional_2031(st: Strategy, sc: Scenarios, res: dict, params, i: int | No
     f = r["facility"]
     return {"scenario": i, "floor": float(res["floor_2033"][i]), "growth_2031": float(res["growth_2031"][i]),
             "p10": float(np.percentile(f, 10)), "median": float(np.median(f)), "p90": float(np.percentile(f, 90)),
-            "p5": float(np.percentile(f, 5)), "p95": float(np.percentile(f, 95))}
+            "p5": float(np.percentile(f, 5)), "p95": float(np.percentile(f, 95)), "inner": f}

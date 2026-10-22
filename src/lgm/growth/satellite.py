@@ -12,11 +12,11 @@ Quantitative screen (documented choices, in order):
 from __future__ import annotations
 
 import time
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
+from ..asof import DATA_END
 from ..data import yahoo
 from .lookthrough import holdings
 
@@ -44,11 +44,11 @@ def prices(tickers: list[str], start: str = "2018-01-01", pause: float = 0.25) -
     return pd.DataFrame(cols)
 
 
-def metrics(px: pd.DataFrame, market: pd.Series, end: str = "2026-09-30", rf: float = 0.04) -> pd.DataFrame:
+def metrics(px: pd.DataFrame, market: pd.Series, end: str = DATA_END, rf: float = 0.04) -> pd.DataFrame:
     px = px.loc[:end]
     r = px.pct_change().iloc[1:]
     m = market.loc[:end].pct_change().iloc[1:]
-    last36, last60 = r.iloc[-36:], r.iloc[-60:]
+    last36 = r.iloc[-36:]
     vol3 = last36.std() * np.sqrt(12)
     beta = last36.apply(lambda s: np.cov(s.fillna(0), m.iloc[-36:].fillna(0))[0, 1] / m.iloc[-36:].var())
     p60 = px.iloc[-61:]

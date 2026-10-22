@@ -11,6 +11,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from ..asof import DATA_END
 from ..calibrate import calibrate_assets
 from ..data import yahoo
 from . import black_litterman as bl
@@ -34,12 +35,12 @@ def long_prices(tickers: list[str], start: str = "2000-01-01") -> pd.DataFrame:
     return pd.DataFrame(cols)
 
 
-def satellite_weights(tickers: list[str], end: str = "2026-09-30", months: int = 60) -> pd.Series:
+def satellite_weights(tickers: list[str], end: str = DATA_END, months: int = 60) -> pd.Series:
     r = long_prices(tickers).pct_change().loc[:end].iloc[-months:]
     return hrp_weights(r)
 
 
-def basket_returns(w: pd.Series, end: str = "2026-09-30") -> pd.Series:
+def basket_returns(w: pd.Series, end: str = DATA_END) -> pd.Series:
     """Fixed-weight basket, renormalised over the names trading in each month. Before every name
     existed this has survivorship bias in its mean, so only its volatility and correlations are used."""
     r = long_prices(list(w.index)).pct_change().loc[:end].iloc[1:]

@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-import yaml
 
 VALUES = ["innovation_creativity", "societal_utility", "people_inclusion", "trust_integrity", "access_education_creators"]
 JUDGED_STRENGTH = ["management_capital_allocation", "moat_position", "risk_flags"]
@@ -30,6 +29,11 @@ def financial_quality(r) -> float:
     sector, ind = r["sector"], str(r["industry"])
     roe = r["roe"]
     de = r["debt_to_equity"]
+    # Profitable but negative ROE means negative book equity (e.g. buybacks beyond equity): ROE is then
+    # meaningless and debt/equity is undefined, but leverage is effectively unbounded, so it scores 1.
+    negative_equity = de is None and roe is not None and roe < 0 and (r["net_margin"] or 0) > 0
+    if negative_equity:
+        roe, de = None, float("inf")
     parts = []
     if sector == "Financials":
         parts.append(band(roe, [15, 12, 9, 6], [5, 4, 3, 2]))
@@ -38,7 +42,8 @@ def financial_quality(r) -> float:
         low = any(k.lower() in ind.lower() for k in LOW_MARGIN)
         if not low:
             parts.append(band(r["op_margin_avg4"], [25, 15, 8, 3], [5, 4, 3, 2]))
-        parts.append(band(roe, [20, 15, 10, 5], [5, 4, 3, 2]) if roe is not None and roe > 0 else (3 if de is None else 1))
+        if not negative_equity:
+            parts.append(band(roe, [20, 15, 10, 5], [5, 4, 3, 2]) if roe is not None and roe > 0 else (3 if de is None else 1))
         if sector in ("Utilities", "Real Estate"):
             parts.append(band(-de if de is not None else None, [-1.0, -1.5, -2.0, -4.0], [5, 4, 3, 2]))
         else:
@@ -113,15 +118,15 @@ def select(df: pd.DataFrame, n: int, max_sector_share: float) -> pd.DataFrame:
     return df.loc[picks]
 
 
-def hrp_weights(returns: pd.DataFrame) -> pd.Series:
-    """Hierarchical risk parity (Lopez de Prado, 2016): cluster by correlation, then split risk
-    top-down by inverse variance. Robust to the estimation error that breaks mean-variance."""
+def hrp_weights(returns: pd.DataFrame, method: str = "single") -> pd.Series:
+    """Hierarchical risk parity (Lopez de Prado, 2016): cluster by correlation (`method` is the linkage),
+    then split risk top-down by inverse variance. Robust to the estimation error that breaks mean-variance."""
     from scipy.cluster.hierarchy import leaves_list, linkage
     from scipy.spatial.distance import squareform
 
     cov, corr = returns.cov().values, returns.corr().values
     dist = np.sqrt(np.clip((1 - corr) / 2, 0, 1))
-    order = leaves_list(linkage(squareform(dist, checks=False), "single"))
+    order = leaves_list(linkage(squareform(dist, checks=False), method))
     w = np.ones(len(order))
 
     def cvar(idx):

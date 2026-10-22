@@ -22,9 +22,11 @@ def fetch(symbol: str, kind: str, refresh: bool = False) -> dict:
         try:
             r = requests.get("https://api.nasdaq.com/api/" + ENDPOINTS[kind].format(s=symbol), headers=H, timeout=30)
             data = r.json().get("data") or {}
+            time.sleep(0.3)
+            if not data:
+                continue                     # empty answer: retry, and never cache it over real data
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(json.dumps(data))
-            time.sleep(0.3)
             return data
         except (requests.RequestException, ValueError):
             time.sleep(2 * (attempt + 1))

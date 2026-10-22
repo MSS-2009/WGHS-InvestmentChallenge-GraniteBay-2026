@@ -19,6 +19,7 @@ from sklearn.covariance import LedoitWolf
 
 from . import nelson_siegel as ns
 from .curve import ParCurve, bootstrap
+from .asof import DATA_END
 from .data import fed, fred, treasury, yahoo
 
 TAU_FIT = np.array([0.25, 0.5, 1, 2, 3, 5, 7, 10, 15, 20, 25, 30], dtype=float)
@@ -70,7 +71,7 @@ def ar1(x: pd.Series) -> tuple[float, pd.Series]:
     return float(phi), resid
 
 
-def calibrate(eq_window_start: str = "2007-08-31", end: str = "2026-09-30") -> Calibration:
+def calibrate(eq_window_start: str = "2007-08-31", end: str = DATA_END) -> Calibration:
     fh = factor_history()
     phis, resids = [], []
     for f in FACTOR_NAMES:
@@ -103,7 +104,7 @@ def calibrate(eq_window_start: str = "2007-08-31", end: str = "2026-09-30") -> C
                        (str(joint.index.min().date()), str(joint.index.max().date())), notes)
 
 
-def calibrate_assets(history_tickers: list[str], window_start: str = "2017-08-31", end: str = "2026-09-30",
+def calibrate_assets(history_tickers: list[str], window_start: str = "2017-08-31", end: str = DATA_END,
                      vol_from: str = "2005-01-01", extra_returns: pd.DataFrame | None = None) -> dict:
     """Joint monthly shock covariance for K equity assets plus the 5 macro shocks
     (3 rate factors, inflation, USD/TWD), in that order.
