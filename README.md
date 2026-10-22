@@ -60,7 +60,7 @@ every script in order.
 ## Quick start
 ```
 python -m venv .venv && . .venv/bin/activate && pip install -e . pytest
-python -m pytest                    # 61 tests, offline (cached data); also run on every push (.github/workflows)
+python -m pytest                    # 113 tests, offline (cached data); also run on every push (.github/workflows)
 python scripts/run_all.py           # every script below and the studies the docs quote, then the doc check (about 75 s)
 python scripts/validate_plans_v2.py
 python scripts/build_core.py
