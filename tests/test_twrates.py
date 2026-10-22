@@ -55,3 +55,15 @@ def test_interbank_call_cross_checks():
     # 3. January 2016: 0.233%
     assert abs(call_pct.loc["2016-01-31"] - 0.233) < 1e-4
     assert abs(call_dec.loc["2016-01-31"] - 0.00233) < 1e-6
+
+
+def test_forward_rates_offline():
+    from lgm.data import twrates
+
+    f = twrates.forward_rates()
+    assert list(f.columns) == [10, 30, 60, 90, 120, 150, 180]
+    assert f.index[0] == pd.Timestamp("1991-11-30") and f.index[-1] >= pd.Timestamp("2026-08-31")
+    # Aug 2026: 180-day buying 31.243, selling 31.403 (CBC Table 31.C)
+    assert abs(f.loc["2026-08-31", 180] - 31.323) < 1e-9
+    # Oct 2008: the 150-day quote is missing in the source, the others are not
+    assert np.isnan(f.loc["2008-10-31", 150]) and abs(f.loc["2008-10-31", 10] - 32.977) < 1e-9

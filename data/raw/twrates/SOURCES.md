@@ -50,3 +50,22 @@ The dataset values were independently verified across the CBC Statistical Databa
 - **Exchange Sources:** The Taiwan Futures Exchange (TAIFEX) launched USD/TWD FX Futures (contract code RTF) only in July 2015. Exchange-traded forwards/futures do not exist with historical depth prior to 2015.
 - **OTC Forwards/NDF:** Interbank non-deliverable forwards (NDF) in USD/TWD trade predominantly offshore in Hong Kong/Singapore and are not published as a historical time series by CBC or Taiwan government agencies.
 - **Covered Interest Parity (CIP):** Per the brief's instruction, the theoretical forward price is computed directly via Covered Interest Parity (CIP) using the official Taiwan 90-day commercial paper rate and the US 3-month Treasury par curve yield.
+
+---
+
+## 4. Forward exchange rates of the NT dollar against the US dollar (Table 31.C)
+Added by the planner (Claude) after the Gemini worker's run hit its quota.
+- **Publisher:** Central Bank of the Republic of China (Taiwan), Financial Statistics Monthly, Table 31.C
+  ("Forward Exchange Rates of the N.T. Dollar against the U.S. Dollar By Period").
+- **Endpoint:** `https://cpx.cbc.gov.tw/API/DataAPI/Get?FileName=EG55M01en`
+- **Local Path:** `data/raw/twrates/cbc_forward_rates.json`
+- **Download Date:** 2026-10-22
+- **File Size:** 55,962 bytes
+- **SHA-256:** `a1679dc8e2f25a7481e34244335311bcadd73bd58d6148f940b1f1caabaedbbc`
+- **Content:** monthly period averages, buying and selling quotes, tenors 10/30/60/90/120/150/180 days,
+  1991-01 to 2026-08 (418 months with data, first 1991-11). Some tenors are missing in some months.
+- **Checks:** Aug 2026 180-day 31.243 / 31.403 and 10-day 31.595 / 31.721; Oct 2008 150-day missing (in
+  `tests/test_twrates.py`). The annualised 180-day premium correlates 0.89 with the CIP drift computed
+  from the CP and Treasury rates (2000-2026), with the gap explained mostly by CP being a credit rate.
+- **Planner's re-check of the worker's file:** `cbc_money_market_rates.json` was re-downloaded from the
+  same endpoint on 2026-10-22: all 472 monthly rows identical.
