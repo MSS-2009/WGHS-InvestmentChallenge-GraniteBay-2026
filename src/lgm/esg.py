@@ -42,9 +42,11 @@ class ESGParams:
     rate_floor: float = -0.005
     eq_mu_cov: np.ndarray | None = None  # (K, K) annual covariance of expected equity returns
     eq_garch: tuple[float, float] | dict | None = None  # optional (alpha, beta) or dict for GARCH(1,1) vol clustering
-    tw_cost_phi: float | None = None  # monthly AR(1) persistence; None = legacy i.i.d.
-    tw_cost_infl0: float | None = None  # initial inflation rate (annual); None = tw_cost_growth
+    tw_cost_phi: float | tuple[float, ...] | None = None  # monthly AR(1) scalar or AR(2) tuple; None = legacy i.i.d.
+    tw_cost_infl0: float | tuple[float, ...] | None = None  # initial monthly log changes (Aug, Sep 2026); None = stationary
     tw_cost_corr: float | None = None  # correlation of tw_cost innovations with US CPI shock
+    tw_cost_sig_eps: float | None = None  # monthly innovation standard deviation; None = derived from tw_cost_vol
+    tw_cost_state0: float | tuple[float, ...] | None = None  # alias for tw_cost_infl0
 
 
 @dataclass
@@ -175,18 +177,69 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
     fx0 = 0.0 if start is None else start["fx_log"][:, None]
     fx_log = np.concatenate([np.zeros((n, 1)), np.cumsum(p.fx_drift / 12 + shocks[..., K + 4], axis=1)], axis=1) + fx0
     if p.tw_cost_phi is not None:
-        phi = float(p.tw_cost_phi)
-        mu = float(p.tw_cost_growth)
-        vol = float(p.tw_cost_vol)
-        sig_eps = vol * np.sqrt(max(1.0 - phi**2, 0.0))
-        tw_cost_infl = np.empty((n, M + 1))
-        if start is not None and "tw_cost_infl" in start:
-            s_infl = np.asarray(start["tw_cost_infl"])
-            tw_cost_infl[:, 0] = s_infl if s_infl.ndim > 0 else np.full(n, float(s_infl))
-        elif p.tw_cost_infl0 is not None:
-            tw_cost_infl[:, 0] = float(p.tw_cost_infl0)
+        if isinstance(p.tw_cost_phi, (int, float)):
+            phi1, phi2 = float(p.tw_cost_phi), 0.0
+        elif len(p.tw_cost_phi) == 1:
+            phi1, phi2 = float(p.tw_cost_phi[0]), 0.0
+        elif len(p.tw_cost_phi) == 2:
+            phi1, phi2 = float(p.tw_cost_phi[0]), float(p.tw_cost_phi[1])
         else:
-            tw_cost_infl[:, 0] = mu
+            raise ValueError(f"tw_cost_phi must be scalar or 2-tuple, got {p.tw_cost_phi}")
+
+        mu = float(np.log1p(p.tw_cost_growth) / 12.0)
+
+        # Innovation standard deviation:
+        if p.tw_cost_sig_eps is not None:
+            sig_eps = float(p.tw_cost_sig_eps)
+        else:
+            sig_1m = float(p.tw_cost_vol) / np.sqrt(12.0)
+            if phi2 == 0.0:
+                sig_eps = sig_1m * np.sqrt(max(1.0 - phi1**2, 0.0))
+            else:
+                ratio = (1.0 + phi2) * ((1.0 - phi2)**2 - phi1**2) / max(1.0 - phi2, 1e-12)
+                sig_eps = sig_1m * np.sqrt(max(ratio, 0.0))
+
+        # Stationary covariance of (y_prev2, y_prev1)
+        if phi2 == 0.0:
+            var_y = sig_eps**2 / max(1.0 - phi1**2, 1e-12)
+            cov_y = phi1 * var_y
+        else:
+            denom = (1.0 + phi2) * ((1.0 - phi2)**2 - phi1**2)
+            var_y = ((1.0 - phi2) / max(denom, 1e-12)) * (sig_eps**2)
+            rho1 = phi1 / max(1.0 - phi2, 1e-12)
+            cov_y = rho1 * var_y
+
+        state_in = None
+        if start is not None:
+            if "tw_cost_state" in start:
+                state_in = start["tw_cost_state"]
+            elif "tw_cost_infl" in start:
+                state_in = start["tw_cost_infl"]
+        elif p.tw_cost_state0 is not None:
+            state_in = p.tw_cost_state0
+        elif p.tw_cost_infl0 is not None:
+            state_in = p.tw_cost_infl0
+
+        if state_in is None:
+            cov_mat = np.array([[var_y, cov_y], [cov_y, var_y]])
+            chol_init = np.linalg.cholesky(cov_mat)
+            if antithetic:
+                z_init_half = rng.standard_normal((half, 2))
+                z_init = np.concatenate([z_init_half, -z_init_half], axis=0)[:n]
+            else:
+                z_init = rng.standard_normal((n, 2))
+            init_shocks = z_init @ chol_init.T
+            y_prev2 = mu + init_shocks[:, 0]
+            y_prev1 = mu + init_shocks[:, 1]
+        elif isinstance(state_in, (tuple, list)) and len(state_in) == 2:
+            s0 = np.asarray(state_in[0], dtype=float)
+            s1 = np.asarray(state_in[1], dtype=float)
+            y_prev2 = s0 if s0.ndim > 0 else np.full(n, float(s0))
+            y_prev1 = s1 if s1.ndim > 0 else np.full(n, float(s1))
+        else:
+            s1 = np.asarray(state_in, dtype=float)
+            y_prev1 = s1 if s1.ndim > 0 else np.full(n, float(s1))
+            y_prev2 = np.full(n, mu)
 
         if antithetic:
             z_half = rng.standard_normal((half, M))
@@ -200,12 +253,17 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
             z_cpi = shocks[..., K + 3] / (cpi_std if cpi_std > 0 else 1.0)
             z_tw = rho * z_cpi + np.sqrt(max(1.0 - rho**2, 0.0)) * z_tw
 
+        y = np.empty((n, M))
         for m in range(M):
-            tw_cost_infl[:, m + 1] = mu + phi * (tw_cost_infl[:, m] - mu) + sig_eps * z_tw[:, m]
+            p1 = y_prev1 if m == 0 else y[:, m - 1]
+            p2 = y_prev2 if m == 0 else (y_prev1 if m == 1 else y[:, m - 2])
+            y[:, m] = mu + phi1 * (p1 - mu) + phi2 * (p2 - mu) + sig_eps * z_tw[:, m]
 
-        tw = tw_cost_infl[:, 1:] / 12.0
         tw0 = 0.0 if start is None else start["tw_cost_log"][:, None]
-        tw_cost_log = np.concatenate([np.zeros((n, 1)), np.cumsum(tw, axis=1)], axis=1) + tw0
+        tw_cost_log = np.concatenate([np.zeros((n, 1)), np.cumsum(y, axis=1)], axis=1) + tw0
+        tw_cost_infl = np.empty((n, M + 1))
+        tw_cost_infl[:, 0] = y_prev1
+        tw_cost_infl[:, 1:] = y
     else:
         tw = np.log1p(p.tw_cost_growth) / 12 + p.tw_cost_vol / np.sqrt(12) * rng.standard_normal((n, M))
         tw0 = 0.0 if start is None else start["tw_cost_log"][:, None]
