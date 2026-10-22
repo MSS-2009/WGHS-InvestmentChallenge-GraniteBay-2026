@@ -425,7 +425,7 @@ Every run is anchored to the dates in `config/asof.yaml` (curve date, last month
 the WInS account's cash and holdings are in `config/wins_account.yaml`. To refresh before the Final
 Report, change the dates and run `python scripts/run_all.py --refresh`.
 ```
-python scripts/run_all.py              # every script, the studies the docs quote, then the doc check (~90 s)
+python scripts/run_all.py              # every script, the studies the docs quote, then the doc check (~100 s)
 python scripts/build_core.py           # ETF core: reports/core_bl.csv, core_scoring.csv
 python scripts/build_satellite.py      # satellite: reports/satellite_*.csv (add --rescreen to refetch)
 python scripts/validate_model.py       # how good is it: generator checks, convergence, replay, BL sensitivity
