@@ -40,6 +40,7 @@ class ESGParams:
     tw_cost_vol: float = 0.015
     t_dof: float | None = 5.0        # Student-t degrees of freedom; None = Gaussian
     rate_floor: float = -0.005
+    eq_mu_cov: np.ndarray | None = None  # (K, K) annual covariance of expected equity returns
 
 
 @dataclass
@@ -52,6 +53,7 @@ class Scenarios:
     resid: np.ndarray
     rate_floor: float = -0.005
     m0: int = 0            # absolute month of index 0 (non-zero for nested simulations)
+    eq_drift_err: np.ndarray | None = None
 
     @property
     def n(self) -> int:
@@ -98,7 +100,28 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
     K = len(p.eq_geo)
     shocks[..., :K] *= p.eq_vol_scale
     eq_mu = np.log1p(p.eq_geo) / 12.0                         # median growth preserved
-    eq_log = eq_mu[None, None, :] + shocks[..., :K]
+    eq_drift_err = None
+    if start is not None and "eq_drift_err" in start:
+        err = np.asarray(start["eq_drift_err"])
+        if err.ndim == 1:
+            eq_drift_err = np.tile(err, (n, 1))
+        else:
+            eq_drift_err = err
+    elif p.eq_mu_cov is not None:
+        vals, vecs = np.linalg.eigh(p.eq_mu_cov)
+        vals = np.maximum(vals, 0.0)
+        chol_mu = vecs @ np.diag(np.sqrt(vals))
+        z_mu = rng.standard_normal((half, K))
+        err_half = z_mu @ chol_mu.T
+        if antithetic:
+            eq_drift_err = np.concatenate([err_half, -err_half], axis=0)[:n]
+        else:
+            eq_drift_err = err_half[:n]
+
+    if eq_drift_err is not None:
+        eq_log = eq_mu[None, None, :] + (eq_drift_err / 12.0)[:, None, :] + shocks[..., :K]
+    else:
+        eq_log = eq_mu[None, None, :] + shocks[..., :K]
 
     beta = np.empty((n, M + 1, 3))
     infl = np.empty((n, M + 1))
@@ -116,4 +139,4 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
     tw = np.log1p(p.tw_cost_growth) / 12 + p.tw_cost_vol / np.sqrt(12) * rng.standard_normal((n, M))
     tw0 = 0.0 if start is None else start["tw_cost_log"][:, None]
     tw_cost_log = np.concatenate([np.zeros((n, 1)), np.cumsum(tw, axis=1)], axis=1) + tw0
-    return Scenarios(beta, eq_log, infl, fx_log, tw_cost_log, p.resid, p.rate_floor, m0)
+    return Scenarios(beta, eq_log, infl, fx_log, tw_cost_log, p.resid, p.rate_floor, m0, eq_drift_err)

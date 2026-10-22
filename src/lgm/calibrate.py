@@ -12,9 +12,11 @@ Windows
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import yaml
 from sklearn.covariance import LedoitWolf
 
 from . import nelson_siegel as ns
@@ -142,3 +144,39 @@ def calibrate_assets(history_tickers: list[str], window_start: str = "2017-08-31
             "names": names, "months": int(joint.shape[0]), "shrinkage": float(lw.shrinkage_),
             "window": (str(joint.index.min().date()), str(joint.index.max().date())),
             "ann_vol": dict(zip(names, sd * np.sqrt(12)))}
+
+
+def calibrate_cma_dispersion(cma_path: str | Path | None = None, groups: list | None = None) -> np.ndarray:
+    """Calibrate (K, K) annual expected-return covariance from cross-firm dispersion in config/cma.yaml.
+
+    Maps firms' US, intl_dev, and EM forecasts to the K assets by region as defined in
+    src/lgm/growth/universe.py.
+    """
+    from .growth.universe import CORE
+
+    if cma_path is None:
+        cma_path = Path(__file__).resolve().parents[2] / "config" / "cma.yaml"
+    with open(cma_path) as f:
+        cfg = yaml.safe_load(f)
+
+    df = pd.DataFrame(cfg["firms"]).T[["us", "intl_dev", "em"]].astype(float)
+    cma_cov = df.cov().values  # (3, 3) sample covariance, ddof=1
+
+    groups = CORE if groups is None else groups
+    # Map each group/asset to one of the 3 CMA regions: 0 -> us, 1 -> intl_dev, 2 -> em
+    region_idx = []
+    for g in groups:
+        reg = g.region if hasattr(g, "region") else str(g)
+        if reg in ("US", "us", "eq_US"):
+            region_idx.append(0)
+        elif reg in ("EMxChina", "China", "em", "EM", "eq_EM"):
+            region_idx.append(2)
+        else:  # Europe, Japan, PacificXJ, Canada, intl_dev, DEV, eq_DEV
+            region_idx.append(1)
+
+    K = len(groups)
+    M = np.zeros((K, 3))
+    for i, r in enumerate(region_idx):
+        M[i, r] = 1.0
+
+    return M @ cma_cov @ M.T
