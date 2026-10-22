@@ -309,6 +309,8 @@ def conditional_2031(st: Strategy, sc: Scenarios, res: dict, params, i: int | No
         start["eq_drift_err"] = sc.eq_drift_err[i]
     if getattr(sc, "garch_h", None) is not None:
         start["garch_h"] = sc.garch_h[i, M_2031 - sc.m0]
+    if getattr(sc, "tw_cost_infl", None) is not None:
+        start["tw_cost_infl"] = sc.tw_cost_infl[i, M_2031 - sc.m0]
     p = dc_replace(params, months=M_2033 - M_2031)
     inner = simulate(p, n_inner, seed=seed, start=start, m0=M_2031)
     r = run(st, inner, cfg, state=state_for(res["state_2031"], i, n_inner))
