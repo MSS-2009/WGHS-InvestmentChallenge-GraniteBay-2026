@@ -123,7 +123,7 @@ Run `python scripts/validate_model.py` (reports `validation_esg.csv`, `validatio
 
 - **Generator reproduces its inputs:** each fund's median return exactly, its volatility within 0.05
   points, and the one correlation checked (VTV-VGK, 0.793).
-- **Tails are fatter than history:** monthly excess kurtosis 3.9-6.0 against 0.1-3.4 in 2005-2026
+- **Tails are fatter than history:** monthly excess kurtosis 3.9-6.0 against 0.1-3.4 in 2005-2026,
   so crash risk is, if anything, overstated.
 - **No long-horizon mean reversion to leave out:** US stocks' 74-month variance ratio since 1926 is 0.75
   against 0.91 for i.i.d. returns of the same length (p = 0.26; every start date and horizon tested,
@@ -140,9 +140,9 @@ Run `python scripts/validate_model.py` (reports `validation_esg.csv`, `validatio
 - **Short-history volatilities:** EMXC and MCHI are scaled by EEM and FXI (`docs/MODEL.md`). On funds
   whose 2005-2026 history is known, pretending they started in 2011 or 2017 (`scripts/vol_proxy_check.py`):
   EEM's and FXI's short windows understated their full-window volatility from both start years, and
-  scaling each by the other moved it closer in 3 of 4 cases. With any fund as the proxy it helped in 62 of 72 pairs from
-  2011 but only 28 of 72 from 2017, so the method relies on the proxy being the same market, as EEM
-  is for EMXC.
+  scaling each by the other moved it closer in 3 of 4 cases. With any fund as the proxy it helped in
+  62 of 72 pairs from 2011 but only 28 of 72 from 2017, so the method relies on the proxy being the
+  same market, as EEM is for EMXC.
 - **Rates:** the 10-year yield's change to January 2033 spans -2.8 to +2.8 points (5th-95th
   percentile), against -2.7 to +2.4 points over every 74-month window since 1994.
 - **Convergence:** across 8 seeds of 20,000 scenarios the median facility is $196,940 with a standard
@@ -158,8 +158,8 @@ Run `python scripts/validate_model.py` (reports `validation_esg.csv`, `validatio
   error in the cost of ten payments is 7.7% for "unchanged", 7.5% for forwards minus the Kim-Wright term
   premium and 10.0% for pure forwards. "Unchanged" stays: it ties on accuracy and has the least bias.
 - **2031 range calibration:** on the same 184 paths, the model's 10th-90th percentile range quoted from
-  each path's own January 2031 position contained the January 2033 result 99.5% of the time (re-centred
-  and as it happened): it behaves like a 98% range. The 20th-80th percentile band held 82.1% (75.5% as
+  each path's own January 2031 position contained the January 2033 result 99.5% of the time re-centred
+  (98.4% as it happened): it behaves like a 98% range. The 20th-80th percentile band held 82.1% (75.5% as
   it happened), so that is the range to quote as "80%" (`reports/policy_study.json`).
 - **Satellite weighting:** re-estimated each January since 2019, single-linkage HRP's realised
   volatility (16.1%) is level with average-linkage HRP (16.2%) and below Ward (16.7%), inverse-variance

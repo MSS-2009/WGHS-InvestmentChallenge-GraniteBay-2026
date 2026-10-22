@@ -344,7 +344,8 @@ def checks() -> list[tuple[str, str, str]]:
                 f"{pd.Timestamp(ips.first_start):%B %Y} to {pd.Timestamp(ips.last_start):%B %Y})"))
     rc = ps["range_calibration_history"]
     out.append(("VALIDATION", "2031 range calibration",
-                f"contained the January 2033 result {rc['recentred']['inside_80pct_range']:.1%} of the time"))
+                f"contained the January 2033 result {rc['recentred']['inside_80pct_range']:.1%} of the time re-centred\n  "
+                f"({rc['as_happened']['inside_80pct_range']:.1%} as it happened)"))
     out.append(("VALIDATION", "2031 calibrated band",
                 f"band held {rc['calibrated_band']['inside_recentred']:.1%} ({rc['calibrated_band']['inside_as_happened']:.1%} as\n  it happened)"))
     esg_v = pd.read_csv(R / "validation_esg.csv").set_index("check")
