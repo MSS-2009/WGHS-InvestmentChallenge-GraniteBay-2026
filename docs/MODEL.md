@@ -58,9 +58,9 @@ former team's guide and Plans v2.
 
 Shock correlations come from Aug 2017-Sep 2026 (the youngest fund's history), shrunk with Ledoit-Wolf
 intensity (8%). Equity pairs shrink toward their own average correlation rather than toward zero
-(constant-correlation target, Ledoit and Wolf 2004; `calibrate_assets`): the zero target had
-lowered the average equity correlation from 0.69 to 0.64 and the core's volatility from 15.4% to
-14.9%. The fix lowers the IPS 5th percentile by $1.1k and leaves the median and weights almost unchanged.
+(constant-correlation target, Ledoit and Wolf 2004; `calibrate_assets`): the zero target had lowered
+the average equity correlation from 0.69 to 0.64 and the core's volatility from 15.4% to 14.9%. The
+fix lowers the IPS 5th percentile by $1.1k and leaves the median and weights almost unchanged.
 
 Market inputs (all keyless):
 - **Expected rates: unchanged on average.** A 1994-2020 test (`scripts/rate_path_study.py`) forecast
@@ -367,15 +367,15 @@ into the headline numbers: Gaussian rate shocks; the DGBAS-based AR(2) Taiwan bu
 correlated with USD/TWD as history shows (real median $156.8k -> $166.9k); commissions compounded as
 if paid when incurred (median -$0.3k), plus the sale tickets in January 2033 (-$0.2k); rate-factor
 persistence bias-corrected (wider long-horizon rate spread, median unchanged); J.P. Morgan's 2027
-assumptions in place of its 2026 ones (median -$0.1k); equity correlations shrunk toward their average instead of zero (5th
-percentile -$1.1k); real Taiwan cost paths in the replay; the 2031
-quote from a band of scenarios. Built but left off, with the evidence for each: expected-return
-uncertainty (no material effect), GARCH volatility clustering (worse calibrated on history), a USD/TWD
-drift (the forward is a biased forecast for TWD), a rate-dependent ladder premium (+$72 median, and it
-relies on 3% cash in low-rate scenarios). Checked and found not to need a change: the stock-rate
-correlation regime (the IPS barely moves), crash-month co-movement (not significant), and long-horizon
-mean reversion in stocks or USD/TWD (neither significant). Studies whose decisions belong to the
-client, not the model: the policy search and robustness study (`docs/loop/r1_policy_findings.md`,
+assumptions in place of its 2026 ones (median -$0.1k); equity correlations shrunk toward their average
+instead of zero (5th percentile -$1.1k); real Taiwan cost paths in the replay; the 2031 quote from a
+band of scenarios. Built but left off, with the evidence for each: expected-return uncertainty (no
+material effect), GARCH volatility clustering (worse calibrated on history), a USD/TWD drift (the
+forward is a biased forecast for TWD), a rate-dependent ladder premium (+$72 median, and it relies on
+3% cash in low-rate scenarios). Checked and found not to need a change: the stock-rate correlation
+regime (the IPS barely moves), crash-month co-movement (not significant), and long-horizon mean
+reversion in stocks or USD/TWD (neither significant). Studies whose decisions belong to the client,
+not the model: the policy search and robustness study (`docs/loop/r1_policy_findings.md`,
 `r2_policy_findings.md`, `r3_robust_findings.md`), a STRIPS reserve outside WInS
 (`r3_strips_findings.md`) and FX hedging (`r4_fx_findings.md`). Study reports in `reports/` that
 `scripts/run_all.py` does not regenerate (for example `taiwan_variants.csv`, `rate_tails_impact.csv`)
