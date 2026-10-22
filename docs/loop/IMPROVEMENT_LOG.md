@@ -273,11 +273,33 @@ model, switching the day's changes on one at a time; the last row matches `repor
 | Equity correlations shrunk toward their average | +$27 | -$1,136 | +$232 |
 | EMXC and MCHI volatility include 2008 | +$1,154 | +$226 | +$1,100 |
 | Black-Litterman market level anchored | -$1,668 | -$1,146 | -$1,453 |
-| **Now** | **$196,764** | **$144,770** | **$166,576** |
+| Correlation target back to zero (below) | +$115 | +$1,223 | -$112 |
+| **Now** | **$196,879** | **$145,992** | **$166,464** |
 
 The anchoring row is larger than the volatility-proxy row it was added to correct because the morning model
 already had a drift: anchoring the morning model alone moves its median from $197,846 to $197,372 (-$474).
 With anchoring on, the volatility proxies are worth +$121 in the median, not +$1,154. So of the day's
--$1,082 in the median, about -$0.6k is costs that were real but unmodelled (compounding, the sale tickets),
--$0.5k is a Black-Litterman artifact removed, and the risk corrections are close to neutral in the median;
-they show up in the 5th percentile (-$1.1k from the correlation target).
+-$967 in the median, about -$0.5k is costs that were real but unmodelled (compounding, the sale tickets) and
+-$0.5k a Black-Litterman artifact removed; the risk corrections are close to neutral in the median. The
+5th percentile falls $1.4k, mostly from the same costs, the rate-persistence correction and the anchoring.
+
+### Round 6, evening: the correlation target, tested out of sample and reverted
+The afternoon's switch to a constant-correlation target (equity pairs shrunk toward their 0.69 average
+instead of zero) rested on an argument, not a test: the zero target lowers the sample's average
+correlation. `scripts/corr_shrink_oos.py` tests it: correlations re-estimated on rolling 109-month windows
+from 2005 (every 6 months), scored on the next 36 or 72 months, on 7 funds with full history and on all 9
+(EEM and FXI standing in for EMXC and MCHI). Against the target as adopted, the zero target misjudged
+the market's volatility less in all four tests (+1.1% against +3.3% on average for 9 funds over three
+years), understated the core's active risk less in all four (11% against 26%), and gave a calmer
+minimum-variance portfolio in all four; correlation error split two-two. Ledoit-Wolf's own optimal
+intensity toward the average is about 1 (every pair set to the average), and that forecast worst on
+correlation error and minimum-variance risk. So the zero target is the default again (`"mean"` stays an
+option, tested). Caveats: about four independent periods, and correlations since 2005 have mostly drifted
+down from their 2008-era level, which favours the target that pulls them down.
+- Headline: median $196,879, 5th percentile $145,992 (+$1.2k), real median $166,464.
+- Policy grid rerun: IPS within $1.9k / $2.3k / $7.6k of the best CE at gamma 2 / 4 / 8 (rank 634 of
+  3,456 at gamma 4), against $1.8k / $2.5k / $8.3k with the average target and $2.3k / $2.2k / $7.2k this
+  morning.
+- Both targets understate active risk out of sample (the core's tracking error is probably low by a
+  tenth or more); MODEL.md says so. Shrinking more toward the average would fix that and would worsen
+  everything else, so it is noted, not adopted.

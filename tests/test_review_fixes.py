@@ -100,7 +100,7 @@ def test_equity_correlations_shrink_toward_their_average_not_zero():
     k = len(tickers)
     off = ~np.eye(k, dtype=bool)
     zero = calibrate_assets(tickers, equity_shrink_target="zero")["corr"].values
-    mean = calibrate_assets(tickers)["corr"].values
+    mean = calibrate_assets(tickers, equity_shrink_target="mean")["corr"].values
     # the zero target pulls the average equity correlation down by the shrinkage; the mean target keeps it
     assert mean[:k, :k][off].mean() > zero[:k, :k][off].mean() + 0.03
     assert np.allclose(mean[k:, :], zero[k:, :]) and np.allclose(mean[:k, k:], zero[:k, k:])   # nothing else moves

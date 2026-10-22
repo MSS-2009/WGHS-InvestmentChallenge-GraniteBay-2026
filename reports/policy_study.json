@@ -3,87 +3,87 @@
   "floor_frontier": [
     {
       "floor_share": 0.0,
-      "median": 199810,
-      "p5": 139078,
-      "p95": 293528,
+      "median": 199953,
+      "p5": 140314,
+      "p95": 290982,
       "secured_2031_typical": 0,
       "range_2031_typical": [
-        143900.0,
-        203100.0
+        144800.0,
+        201600.0
       ],
-      "ce_gamma2": 195513,
-      "ce_gamma4": 185796,
-      "ce_gamma8": 167871
+      "ce_gamma2": 195814,
+      "ce_gamma4": 186541,
+      "ce_gamma8": 169365
     },
     {
       "floor_share": 0.2,
-      "median": 198921,
-      "p5": 141572,
-      "p95": 285307,
-      "secured_2031_typical": 33307,
+      "median": 199080,
+      "p5": 142626,
+      "p95": 282260,
+      "secured_2031_typical": 33479,
       "range_2031_typical": [
-        147700.0,
-        195300.0
+        148300.0,
+        194500.0
       ],
-      "ce_gamma2": 195032,
-      "ce_gamma4": 186464,
-      "ce_gamma8": 170460
+      "ce_gamma2": 195286,
+      "ce_gamma4": 187104,
+      "ce_gamma8": 171752
     },
     {
       "floor_share": 0.4,
-      "median": 197868,
-      "p5": 143460,
-      "p95": 277693,
-      "secured_2031_typical": 66614,
+      "median": 198027,
+      "p5": 144535,
+      "p95": 275914,
+      "secured_2031_typical": 66958,
       "range_2031_typical": [
-        152500.0,
-        187700.0
+        153000.0,
+        187300.0
       ],
-      "ce_gamma2": 194571,
-      "ce_gamma4": 186919,
-      "ce_gamma8": 172462
+      "ce_gamma2": 194785,
+      "ce_gamma4": 187473,
+      "ce_gamma8": 173591
     },
     {
       "floor_share": 0.6,
-      "median": 196764,
-      "p5": 144770,
-      "p95": 272520,
-      "secured_2031_typical": 99921,
+      "median": 196879,
+      "p5": 145992,
+      "p95": 270148,
+      "secured_2031_typical": 100437,
       "range_2031_typical": [
-        156600.0,
+        157200.0,
         180600.0
       ],
-      "ce_gamma2": 193838,
-      "ce_gamma4": 186865,
-      "ce_gamma8": 173563
+      "ce_gamma2": 194027,
+      "ce_gamma4": 187359,
+      "ce_gamma8": 174575
     },
     {
       "floor_share": 0.8,
-      "median": 195536,
-      "p5": 145394,
-      "p95": 267740,
-      "secured_2031_typical": 133228,
+      "median": 195645,
+      "p5": 146217,
+      "p95": 266088,
+      "secured_2031_typical": 133916,
       "range_2031_typical": [
-        160800.0,
-        172700.0
+        161700.0,
+        173200.0
       ],
-      "ce_gamma2": 192826,
-      "ce_gamma4": 186291,
-      "ce_gamma8": 173760
+      "ce_gamma2": 193004,
+      "ce_gamma4": 186751,
+      "ce_gamma8": 174700
     },
     {
       "floor_share": 1.0,
-      "median": 194759,
-      "p5": 145106,
-      "p95": 265732,
-      "secured_2031_typical": 166535,
+      "median": 194906,
+      "p5": 146147,
+      "p95": 263653,
+      "secured_2031_typical": 167395,
       "range_2031_typical": [
-        165600.0,
-        165600.0
+        166600.0,
+        166600.0
       ],
-      "ce_gamma2": 192084,
-      "ce_gamma4": 185747,
-      "ce_gamma8": 173615
+      "ce_gamma2": 192266,
+      "ce_gamma4": 186199,
+      "ce_gamma8": 174526
     }
   ],
   "best_floor_by_gamma": {
@@ -94,24 +94,24 @@
   "contribution_share": [
     {
       "share": 0.75,
-      "contribution_median": 147573,
-      "contribution_p5": 108577,
-      "kept_median": 49191,
-      "kept_p5": 36192
+      "contribution_median": 147659,
+      "contribution_p5": 109494,
+      "kept_median": 49220,
+      "kept_p5": 36498
     },
     {
       "share": 0.85,
-      "contribution_median": 167249,
-      "contribution_p5": 123054,
-      "kept_median": 29515,
-      "kept_p5": 21715
+      "contribution_median": 167347,
+      "contribution_p5": 124094,
+      "kept_median": 29532,
+      "kept_p5": 21899
     },
     {
       "share": 0.95,
-      "contribution_median": 186926,
-      "contribution_p5": 137531,
-      "kept_median": 9838,
-      "kept_p5": 7238
+      "contribution_median": 187035,
+      "contribution_p5": 138693,
+      "kept_median": 9844,
+      "kept_p5": 7300
     }
   ],
   "range_calibration_history": {
@@ -136,37 +136,37 @@
         20.0,
         80.0
       ],
-      "inside_recentred": 0.826,
-      "inside_as_happened": 0.777,
+      "inside_recentred": 0.821,
+      "inside_as_happened": 0.755,
       "note": "paths overlap (184 starts, about four independent six-year windows), so this is thin evidence"
     }
   },
   "reverse_stress": {
     "worst_1pct": {
-      "facility_mean": 118450,
-      "stocks_cum_return_2028_2033": -0.347,
-      "worst_12_months": -0.318,
-      "five_year_yield_change_by_2031": -0.0013,
-      "five_year_yield_change_by_2033": -0.0002
+      "facility_mean": 119724,
+      "stocks_cum_return_2028_2033": -0.331,
+      "worst_12_months": -0.309,
+      "five_year_yield_change_by_2031": -0.0019,
+      "five_year_yield_change_by_2033": -0.0003
     },
     "worst_5pct": {
-      "facility_mean": 133883,
-      "stocks_cum_return_2028_2033": -0.233,
-      "worst_12_months": -0.281,
-      "five_year_yield_change_by_2031": -0.0003,
-      "five_year_yield_change_by_2033": 0.0007
+      "facility_mean": 135106,
+      "stocks_cum_return_2028_2033": -0.217,
+      "worst_12_months": -0.272,
+      "five_year_yield_change_by_2031": -0.0006,
+      "five_year_yield_change_by_2033": 0.0003
     },
     "all": {
-      "facility_mean": 201194,
-      "stocks_cum_return_2028_2033": 0.445,
-      "worst_12_months": -0.174,
+      "facility_mean": 201036,
+      "stocks_cum_return_2028_2033": 0.437,
+      "worst_12_months": -0.168,
       "five_year_yield_change_by_2031": 0.0001,
       "five_year_yield_change_by_2033": 0.0001
     },
     "prob_facility_below": {
       "100000": 0.0003,
-      "120000": 0.0046,
-      "140000": 0.0335
+      "120000": 0.0043,
+      "140000": 0.0303
     }
   }
 }

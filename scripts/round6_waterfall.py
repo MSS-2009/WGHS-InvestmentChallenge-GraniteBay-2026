@@ -35,6 +35,7 @@ STEPS = [
     ("Equity correlations shrunk toward their average", {"shrink_mean": True}),
     ("EMXC and MCHI volatility include 2008", {"vol_proxies": True}),
     ("Black-Litterman market level anchored to the consensus", {"anchor": True}),
+    ("Correlation target back to zero (out-of-sample test)", {"shrink_mean": False}),
 ]
 
 

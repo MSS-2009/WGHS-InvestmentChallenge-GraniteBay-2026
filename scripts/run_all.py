@@ -32,6 +32,7 @@ ORDER = [  # (script, passes --refresh, failure is fatal)
     ("satellite_risk_sensitivity", False, True),
     ("stock_rate_corr", False, True),
     ("crash_comovement", False, True),
+    ("corr_shrink_oos", False, True),
     ("ladder_premium", False, True),
     ("fx_horizon", False, True),
     ("equity_horizon", False, True),

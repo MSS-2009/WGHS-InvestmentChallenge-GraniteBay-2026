@@ -141,7 +141,7 @@ VOL_PROXIES = {"EMXC": "EEM", "MCHI": "FXI"}
 
 def calibrate_assets(history_tickers: list[str], window_start: str = "2017-08-31", end: str = DATA_END,
                      vol_from: str = "2005-01-01", extra_returns: pd.DataFrame | None = None,
-                     equity_shrink_target: str = "mean", vol_proxies: dict[str, str] | None = None) -> dict:
+                     equity_shrink_target: str = "zero", vol_proxies: dict[str, str] | None = None) -> dict:
     """Joint monthly shock covariance for K equity assets plus the 5 macro shocks
     (3 rate factors, inflation, USD/TWD), in that order.
 
@@ -177,10 +177,11 @@ def calibrate_assets(history_tickers: list[str], window_start: str = "2017-08-31
         if t in proxies and r.index[0] > pd.Timestamp(vol_from) + pd.DateOffset(years=1):
             p = np.log1p(yahoo.monthly_returns([proxies[t]], start="2000-01-01")[proxies[t]]).dropna()
             sd[i] *= float(p.loc[vol_from:end].std() / p.loc[r.index[0]:end].std())
-    # Ledoit-Wolf intensity; target: zero correlation, except that equity pairs shrink toward their own
-    # average ("mean", constant-correlation as in Ledoit and Wolf 2004). Shrinking equities toward zero
-    # ("zero", the identity target) pulls every pair down and understates a diversified core's volatility
-    # (14.9% against 15.4% with the sample correlations, which the "mean" target keeps on average).
+    # Ledoit-Wolf intensity toward zero correlation. "mean" shrinks equity pairs toward their own average
+    # instead (constant-correlation, Ledoit and Wolf 2004), which keeps the sample's average equity
+    # correlation (0.69, against 0.64 shrunk to zero). Out of sample it forecast the market's volatility
+    # worse, not better: since 2005 the sample average overstated later correlations
+    # (`scripts/corr_shrink_oos.py`), so the zero target stays the default.
     lw = LedoitWolf().fit((joint.values - joint.values.mean(0)) / joint.std().values)
     R = np.corrcoef(joint.values, rowvar=False)
     target = np.eye(len(names))

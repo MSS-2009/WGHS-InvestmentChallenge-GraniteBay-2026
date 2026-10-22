@@ -44,6 +44,25 @@ def hedge_sentence() -> str:
             f"  real risk is the facility's own dollar value, which no currency hedge removes.")
 
 
+def corr_shrink_sentence() -> str:
+    """The out-of-sample shrinkage sentence in docs/MODEL.md's calibration notes, from reports/corr_shrink_oos.csv."""
+    d = pd.read_csv(R / "corr_shrink_oos.csv")
+    z, m = (d[d.candidate == c].set_index(["funds", "horizon_m"]) for c in
+            ("zero target, LW intensity", "mean target, LW intensity for zero"))
+    n = len(z)
+    def count(better) -> str:
+        hits = int(better.sum())
+        return "all " + ("four" if n == 4 else str(n)) if hits == n else f"{hits} of {n}"
+    a, b = z.loc[(9, 36)], m.loc[(9, 36)]
+    return (f"scored on the next three years, the zero target misjudged the market's volatility by "
+            f"{a.market_vol_bias:+.1%} on average against {b.market_vol_bias:+.1%} for the average target, and "
+            f"understated the core's active risk by {-a.active_risk_bias:.0%} against {-b.active_risk_bias:.0%}. "
+            f"It was closer on the market's volatility in {count(z.market_vol_bias.abs() < m.market_vol_bias.abs())} "
+            f"tests (7 or 9 funds, 3 or 6 years), on active risk in "
+            f"{count(z.active_risk_bias.abs() < m.active_risk_bias.abs())}, and its minimum-variance portfolio was "
+            f"calmer in {count(z.min_variance_vol < m.min_variance_vol)}")
+
+
 def taiwan_equity_sentence() -> str:
     """The cost-growth-vs-stocks sentence in docs/MODEL.md's Taiwan bullet, from reports/taiwan_fx_corr.csv."""
     t = pd.read_csv(R / "taiwan_fx_corr.csv").set_index("horizon_m")
@@ -403,6 +422,7 @@ def checks() -> list[tuple[str, str, str]]:
                 f"China+Taiwan is {c['china_taiwan']:.1%} (market {c['china_taiwan_market']:.1%})."))
     out.append(("MODEL", "FX hedge frontier", hedge_sentence()))
     out.append(("MODEL", "Taiwan cost vs stocks", taiwan_equity_sentence()))
+    out.append(("MODEL", "correlation shrinkage out of sample", corr_shrink_sentence()))
     ev = pd.read_csv(R / "equity_vol_history.csv").set_index("period").annual_vol
     out.append(("VALIDATION", "equity vol history",
                 f"volatility was {ev['2005-2026']:.1%} a year in 2005-2026, the window the equity volatilities come from, "

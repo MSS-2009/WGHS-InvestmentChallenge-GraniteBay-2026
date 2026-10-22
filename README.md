@@ -87,6 +87,7 @@ python scripts/taiwan_drift_study.py     # which building-cost drift forecasts b
 python scripts/equity_horizon.py         # do US stocks mean-revert over six years? (no)
 python scripts/stock_rate_corr.py        # results under each historical stock-rate correlation regime
 python scripts/crash_comovement.py       # do rates fall when stocks crash?
+python scripts/corr_shrink_oos.py        # which correlation shrinkage forecasts best out of sample
 python scripts/ladder_premium.py         # does the ladder's premium hold when rates move?
 python scripts/satellite_oos.py          # the satellite's selection bias, out of sample
 python scripts/satellite_risk_sensitivity.py   # the satellite verdict with that bias corrected
