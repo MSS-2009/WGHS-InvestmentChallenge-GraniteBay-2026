@@ -11,6 +11,8 @@ config/taiwan.yaml (full-sample drift 2.85%, started from the Aug and Sep 2026 r
   forward_latest   the latest actual 180-day forward premium (CBC Table 31.C)
   random_walk_no_cost_fx_corr  as random_walk, with building-cost growth independent of USD/TWD
                    (the headline uses -0.25, scripts/taiwan_fx_corr.py)
+  random_walk_tw_drift_10y     as random_walk, with the last ten years' building-cost drift (3.78%)
+                   instead of 1991-2026's (2.85%; scripts/taiwan_drift_study.py)
 Writes reports/fx_variants.csv.
 """
 import dataclasses as dc
@@ -45,7 +47,8 @@ def main(n: int = 20_000, seed: int = 11):
                       tw_cost_growth=tw["drifts"]["full_sample_35y"], tw_cost_phi=tuple(tw["tw_cost_phi"]),
                       tw_cost_sig_eps=tw["tw_cost_sig_eps"], tw_cost_state0=tuple(tw["tw_cost_state0_today"]))
     variants = {"random_walk": (0.0, {}), "half_forward": (forward_latest / 2, {}), "cip_latest": (cip_latest, {}),
-                "forward_latest": (forward_latest, {}), "random_walk_no_cost_fx_corr": (0.0, {"tw_cost_fx_corr": 0.0})}
+                "forward_latest": (forward_latest, {}), "random_walk_no_cost_fx_corr": (0.0, {"tw_cost_fx_corr": 0.0}),
+                "random_walk_tw_drift_10y": (0.0, {"tw_cost_growth": tw["drifts"]["last_10y"]})}
     rows = []
     for name, (drift, kw) in variants.items():
         sc = simulate(dc.replace(base, fx_drift=drift, **kw), n=n, seed=seed)

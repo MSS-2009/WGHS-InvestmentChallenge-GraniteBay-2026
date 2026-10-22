@@ -19,7 +19,7 @@ reruns the same 20,000 scenarios; the sections below give the evidence for each 
 | Ladder premium | constant 1.8% | moves with rates | +$29 median, +$481 5th pct |
 | Stock satellite | none | 20% of equity, $25 trades | -$4.3k median |
 | USD/TWD drift | none (random walk) | today's forward (-2.28% a year) | -$21.4k real median |
-| Taiwan building-cost drift | 2.85% (1991-2026) | 3.78% (last ten years) | about -$9k real median |
+| Taiwan building-cost drift | 2.85% (1991-2026) | 3.78% (last ten years) | -$8.7k real median |
 
 Two things move the outcome by tens of thousands of dollars. The rate level when the payments are
 locked: lower rates make the ladder dearer, and the IPS carries this only until January 2027 and
@@ -64,7 +64,7 @@ Market inputs (all keyless):
   index's autocorrelation and the spread of its 1- to 72-month changes, started from the Aug and Sep
   2026 readings, with the 1991-2026 average drift of 2.85% a year. Today's +7.3% annual reading
   barely matters (persistence lasts months); the drift does: 3.78% (the last ten years) would lower
-  the real median by about $9k (`docs/loop/r3_taiwan_findings.md`). In real time the long-run average
+  the real median by $8.7k (`scripts/fx_variants.py`; `docs/loop/r3_taiwan_findings.md`). In real time the long-run average
   has been the better forecast: from each month-end 2001-2020, the average since 1991 missed the next
   74 months' cost growth by 0.167 (RMSE of the log change) against 0.222 for the trailing ten-year
   average, and beat it in each of the four five-year blocks of origins (`scripts/taiwan_drift_study.py`). Cost growth is correlated -0.25

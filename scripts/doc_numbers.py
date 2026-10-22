@@ -58,7 +58,8 @@ def sensitivity_rows() -> list[str]:
         f"| Stock satellite | none | 20% of equity, $25 trades | {d(sat20)} median |",
         f"| USD/TWD drift | none (random walk) | today's forward (-2.28% a year) | "
         f"{d(fx.loc['forward_latest', 'real_median'] - fx.loc['random_walk', 'real_median'])} real median |",
-        f"| Taiwan building-cost drift | 2.85% (1991-2026) | 3.78% (last ten years) | about -$9k real median |",
+        f"| Taiwan building-cost drift | 2.85% (1991-2026) | 3.78% (last ten years) | "
+        f"{d(fx.loc['random_walk_tw_drift_10y', 'real_median'] - fx.loc['random_walk', 'real_median'])} real median |",
     ]
 
 
@@ -319,6 +320,8 @@ def checks() -> list[tuple[str, str, str]]:
                 f"Look-through\ntech/communication is {c['tech_comm']:.1%} (market {c['tech_comm_market']:.1%}); "
                 f"China+Taiwan is {c['china_taiwan']:.1%} (market {c['china_taiwan_market']:.1%})."))
     out += [("MODEL", f"sensitivity row {i + 1}", row) for i, row in enumerate(sensitivity_rows())]
+    tw10 = fx.loc["random_walk", "real_median"] - fx.loc["random_walk_tw_drift_10y", "real_median"]
+    out.append(("MODEL", "Taiwan drift effect", f"the real median by {k(tw10)} (`scripts/fx_variants.py`"))
     return out
 
 
