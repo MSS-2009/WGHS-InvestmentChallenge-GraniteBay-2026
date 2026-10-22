@@ -153,7 +153,7 @@ Run `python scripts/validate_model.py` (reports `validation_esg.csv`, `validatio
 ## 8. Reproduce
 
 ```
-python -m pytest                      # 61 tests, includes every guide figure and the audit fixes
+python -m pytest                      # includes every guide figure and the audit fixes
 python scripts/validate_plans_v2.py   # section 3 table -> reports/plans_v2_validation.csv, plans_v2_rate_stress.json
 python scripts/validate_model.py      # section 7 -> reports/validation_*.csv, backtest.csv, bl_sensitivity.csv
 ```
