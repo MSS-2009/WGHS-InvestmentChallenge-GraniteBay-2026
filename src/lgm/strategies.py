@@ -22,6 +22,16 @@ class Strategy:
     floor_share_2031: float = 0.0       # share of growth assets moved into IBTM in Jan 2031
     contribution_share: float = 1.0     # share of the facility fund committed in Jan 2033
     note: str = ""
+    # Dynamic rules (opt-in; defaults reproduce legacy behavior exactly)
+    equity_share_end: float | None = None
+    floor_year: int = 2031
+    floor_share: float | None = None
+    ratchet_trigger: float | None = None
+    ratchet_share: float = 0.0
+
+    @property
+    def effective_floor_share(self) -> float:
+        return self.floor_share if self.floor_share is not None else self.floor_share_2031
 
 
 # The former CS team's five plans (Plans v2), as their rules describe them.
