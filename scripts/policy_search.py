@@ -344,18 +344,92 @@ def run_top_checks(csv_path: Path | None = None) -> pd.DataFrame:
     return top_res_df
 
 
+def print_summary():
+    """Print formatted findings and trade-offs comparing IPS to winners across all objectives."""
+    csv_grid = OUT_DIR / "policy_search.csv"
+    csv_top = OUT_DIR / "policy_search_top.csv"
+    if not csv_grid.exists() or not csv_top.exists():
+        print("Run search and top checks first.")
+        return
+
+    grid = pd.read_csv(csv_grid)
+    top = pd.read_csv(csv_top)
+    valid = grid[grid["funded"] == 1.0].copy()
+    ips_row = grid[grid["is_ips"]].iloc[0]
+
+    objectives = ["median", "p5", "cvar5", "ce_gamma2", "ce_gamma4", "ce_gamma8"]
+
+    print("=" * 110)
+    print("TABLE 1: PER-OBJECTIVE COMPARISON (IPS VS WINNERS IN 3,456-POLICY GRID)")
+    print("=" * 110)
+    print(f"{'Objective':<12} | {'Best Policy':<38} | {'Best Val ($)':>12} | {'IPS Val ($)':>12} | {'Gap ($)':>10} | {'Gap (%)':>8} | {'IPS Rank':>10}")
+    print("-" * 110)
+
+    winner_pids = {"IPS": ips_row["policy_id"]}
+    for obj in objectives:
+        s = valid.sort_values(by=obj, ascending=False).reset_index(drop=True)
+        w = s.iloc[0]
+        winner_pids[obj] = w["policy_id"]
+        rank = s[s["is_ips"]].index[0] + 1
+        gap = w[obj] - ips_row[obj]
+        pct = gap / ips_row[obj] * 100
+        print(f"{obj:<12} | {w['name']:<38} | {w[obj]:>12,.1f} | {ips_row[obj]:>12,.1f} | {gap:>+10,.1f} | {pct:>+7.2f}% | {rank:>4}/{len(s)}")
+
+    print("\n" + "=" * 110)
+    print("TABLE 2: WHAT EACH WINNER TRADES AWAY (TRADE-OFF AUDIT VS IPS)")
+    print("=" * 110)
+    print(f"{'Objective':<10} | {'Policy':<36} | {'Median ($)':>10} | {'p5 ($)':>10} | {'CVaR5 ($)':>10} | {'CE4 ($)':>10} | {'Secured31':>10} | {'80% Width':>10}")
+    print("-" * 110)
+
+    for tag, pid in winner_pids.items():
+        p_row = grid[grid["policy_id"] == pid].iloc[0]
+        p_top = top[top["policy_id"] == pid]
+        base = p_top[p_top["check"] == "baseline_seed11"].iloc[0]
+        c31 = p_top[p_top["check"] == "conditional_2031"].iloc[0]
+        r80_w = c31["p80"] - c31["p20"]
+        print(f"{tag:<10} | {p_row['name']:<36} | {base['median']:>10,.0f} | {base['p5']:>10,.0f} | {base['cvar5']:>10,.0f} | {base['ce_gamma4']:>10,.0f} | {base['secured_2031']:>10,.0f} | {r80_w:>10,.0f}")
+
+    print("\n" + "=" * 110)
+    print("TABLE 3: ROBUSTNESS CHECKS ACROSS FRESH SEED AND HISTORY")
+    print("=" * 110)
+    print(f"{'Policy':<10} | {'Fresh Med d':>11} | {'Fresh p5 d':>10} | {'Rec Med ($)':>11} | {'Rec p5 ($)':>10} | {'Rec Worst':>10} | {'Raw Med ($)':>11} | {'Raw Worst':>10}")
+    print("-" * 110)
+    for tag, pid in winner_pids.items():
+        p_top = top[top["policy_id"] == pid]
+        chg = p_top[p_top["check"] == "fresh_seed_change"].iloc[0]
+        rec = p_top[p_top["check"] == "history_recentred"].iloc[0]
+        raw = p_top[p_top["check"] == "history_as_happened"].iloc[0]
+        print(f"{tag:<10} | {chg['median']:>+11,.1f} | {chg['p5']:>+10,.1f} | {rec['median']:>11,.0f} | {rec['p5']:>10,.0f} | {rec['worst']:>10,.0f} | {raw['median']:>11,.0f} | {raw['worst']:>10,.0f}")
+
+    print("\n" + "=" * 110)
+    print("TABLE 4: 2031 CONDITIONAL PROMISES (TYPICAL 2031 WORLD)")
+    print("=" * 110)
+    print(f"{'Policy':<10} | {'Secured 2031':>12} | {'Cond Median':>12} | {'Cond 80% Band [p20, p80]':>26} | {'Cond Cautious [p10, p90]':>26}")
+    print("-" * 110)
+    for tag, pid in winner_pids.items():
+        p_top = top[top["policy_id"] == pid]
+        c31 = p_top[p_top["check"] == "conditional_2031"].iloc[0]
+        b80 = f"[${c31['p20']:,.0f}, ${c31['p80']:,.0f}]"
+        b90 = f"[${c31['p10']:,.0f}, ${c31['p90']:,.0f}]"
+        print(f"{tag:<10} | {c31['secured_2031']:>12,.0f} | {c31['median']:>12,.0f} | {b80:>26} | {b90:>26}")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--grid", action="store_true", help="Force re-running the full grid search")
     parser.add_argument("--top-only", action="store_true", help="Only run top checks on existing policy_search.csv")
+    parser.add_argument("--summary", action="store_true", help="Print formatted findings summary")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--workers", type=int, default=8)
     args = parser.parse_args()
 
     csv_path = OUT_DIR / "policy_search.csv"
-    if args.grid or (not csv_path.exists() and not args.top_only):
-        limit = 10 if args.dry_run else None
-        run_search(n_scenarios=20_000, n_workers=args.workers, limit=limit)
+    if args.summary:
+        print_summary()
+    else:
+        if args.grid or (not csv_path.exists() and not args.top_only):
+            limit = 10 if args.dry_run else None
+            run_search(n_scenarios=20_000, n_workers=args.workers, limit=limit)
 
-    if not args.dry_run:
-        run_top_checks(csv_path)
+        if not args.dry_run:
+            run_top_checks(csv_path)
