@@ -348,7 +348,8 @@ def print_summary(df: pd.DataFrame | None = None):
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate policy robustness across 11 assumption shifts.")
-    parser.add_argument("--summary", action="store_true", help="Print summary of winners and max-regret table.")
+    parser.add_argument("--summary", action="store_true",
+                        help="Print the summary from the existing policy_robust.csv without recomputing it.")
     parser.add_argument("--n-scenarios", type=int, default=20_000, help="Number of scenarios per shift.")
     args = parser.parse_args()
 
@@ -356,6 +357,10 @@ def main():
         if not OUTPUT_CSV.exists():
             df = run_robustness(args.n_scenarios)
         else:
+            import datetime as dt
+            written = dt.datetime.fromtimestamp(OUTPUT_CSV.stat().st_mtime)
+            print(f"(summary of the existing {OUTPUT_CSV.name}, written {written:%Y-%m-%d %H:%M}; run without "
+                  f"--summary to recompute)")
             df = pd.read_csv(OUTPUT_CSV)
         print_summary(df)
     else:
