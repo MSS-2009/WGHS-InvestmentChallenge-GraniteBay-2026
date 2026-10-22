@@ -1,0 +1,104 @@
+{
+  "series": "DGBAS Construction Cost Index (Total Index, 2021=100)",
+  "frequency": "monthly",
+  "data_start": "1991-01-31",
+  "data_end": "2026-09-30",
+  "n_obs": 429,
+  "growth_and_volatility": {
+    "full_sample": {
+      "annual_log_mean": 0.028248,
+      "annual_log_median": 0.016862,
+      "annual_simple_mean": 0.028651,
+      "annual_simple_median": 0.017005,
+      "rolling_12m_log_mean": 0.028047,
+      "rolling_12m_log_median": 0.018945,
+      "rolling_12m_simple_mean": 0.029949,
+      "rolling_12m_simple_median": 0.019126,
+      "monthly_ann_vol": 0.030897,
+      "std_12m": 0.053817,
+      "vol_ratio_12m_to_monthly": 1.7418
+    },
+    "last_20_years": {
+      "annual_log_mean": 0.026225,
+      "annual_log_median": 0.024234,
+      "annual_simple_mean": 0.026572,
+      "annual_simple_median": 0.02453,
+      "rolling_12m_log_mean": 0.027231,
+      "rolling_12m_log_median": 0.022232,
+      "rolling_12m_simple_mean": 0.029001,
+      "rolling_12m_simple_median": 0.022481,
+      "monthly_ann_vol": 0.028192,
+      "std_12m": 0.052223,
+      "vol_ratio_12m_to_monthly": 1.8524
+    },
+    "last_10_years": {
+      "annual_log_mean": 0.03782,
+      "annual_log_median": 0.030727,
+      "annual_simple_mean": 0.038544,
+      "annual_simple_median": 0.031204,
+      "rolling_12m_log_mean": 0.034522,
+      "rolling_12m_log_median": 0.024698,
+      "rolling_12m_simple_mean": 0.035689,
+      "rolling_12m_simple_median": 0.025006,
+      "monthly_ann_vol": 0.019305,
+      "std_12m": 0.032877,
+      "vol_ratio_12m_to_monthly": 1.7031
+    }
+  },
+  "persistence": {
+    "ar1_monthly_log_change": 0.5983,
+    "ar2_monthly_log_change": 0.2979,
+    "ar1_12m_inflation": 0.9728,
+    "ar12_12m_inflation": -0.0375
+  },
+  "correlations": {
+    "with_usd_twd": -0.1256,
+    "with_us_cpi": 0.4783,
+    "with_tw_cpi": 0.0754,
+    "overlapping_months": 318,
+    "overlap_start": "2000-02",
+    "overlap_end": "2026-09"
+  },
+  "cumulative_72m_comparison": {
+    "historical_empirical": {
+      "p5": -0.00258,
+      "p10": 0.011446,
+      "p25": 0.042197,
+      "p50": 0.184304,
+      "p75": 0.284557,
+      "p90": 0.357515,
+      "p95": 0.441386,
+      "min": -0.060448,
+      "max": 0.688016,
+      "mean": 0.176777,
+      "spread_95_5": 0.443966
+    },
+    "current_assumption_iid_4pct_growth_1_5pct_vol": {
+      "p5": 0.190999,
+      "p10": 0.207155,
+      "p50": 0.265641,
+      "p90": 0.326333,
+      "p95": 0.34425,
+      "mean": 0.266338,
+      "spread_95_5": 0.15325
+    },
+    "proposed_iid_dropin_2_85pct_growth_5_38pct_vol": {
+      "p5": -0.047341,
+      "p10": -0.000172,
+      "p50": 0.184739,
+      "p90": 0.401463,
+      "p95": 0.470561,
+      "mean": 0.194535,
+      "spread_95_5": 0.517902
+    },
+    "proposed_persistent_ar1_2_85pct_growth_3_09pct_vol_phi_0_60": {
+      "p5": -0.073001,
+      "p10": -0.02125,
+      "p50": 0.183968,
+      "p90": 0.43372,
+      "p95": 0.513516,
+      "mean": 0.197423,
+      "spread_95_5": 0.586517
+    }
+  }
+}
