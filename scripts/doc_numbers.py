@@ -162,6 +162,21 @@ def checks() -> list[tuple[str, str, str]]:
     out.append(("VALIDATION", "equity variance ratio", f"74-month variance ratio since 1926 is {e74.variance_ratio:.2f}\n  "
                 f"against {e74.null_median:.2f} for i.i.d. returns of the same length (p = {e74.p_mean_reversion:.2f}; "
                 f"every start date and horizon tested,\n  nominal or excess, has p of {eh.p_mean_reversion.min():.2f} or more)"))
+    c = rn["core"]
+    out.append(("MODEL", "BL risk aversion", f"δ = {c['delta']:.2f} makes the market earn"))
+    out.append(("MODEL", "BL market geometric", f"(market geometric {c['market_geometric_prior']:.2%})"))
+    out.append(("VALIDATION", "BL risk aversion", f"It is now {c['delta']:.2f}, up from 1.74."))
+    mkt = pd.read_csv(R / "core_bl.csv").set_index("etf").w_mkt
+    for etf, w in c["weights"].items():
+        out.append(("MODEL", f"core weight {etf}", f"| {etf} | {mkt[etf]:.1%} | {w:.1%} |"))
+    g = c["regions"]
+    out.append(("MODEL", "core regions", f"The core holds {g['US']:.0%} US, {g['developed']:.0%} developed and "
+                                         f"{g['emerging']:.0%} emerging stocks"))
+    out.append(("MODEL", "core summary",
+                f"It expects {c['expected_geometric_net']:.1%} a year after fees\n(market {c['market_expected_geometric_net']:.1%}), "
+                f"with {c['volatility']:.1%} volatility, a {c['fee']:.2%} average fee and a {c['tracking_error']:.2%} tracking error. "
+                f"Look-through\ntech/communication is {c['tech_comm']:.1%} (market {c['tech_comm_market']:.1%}); "
+                f"China+Taiwan is {c['china_taiwan']:.1%} (market {c['china_taiwan_market']:.1%})."))
     return out
 
 

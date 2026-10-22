@@ -30,7 +30,7 @@ Market inputs (all keyless):
   needed bad prints filtered out). No drift: on TWD's own history the random walk forecasts better
   than the forward at 12, 36 and 72 months, and the actual central-bank forward is biased (Fama slope
   -0.09; `docs/loop/r4_fx_findings.md`). Hedging at today's forward (-2.28% a year) would fix the
-  Taiwan-dollar value at a real median of $145.6k instead of $167.0k.
+  Taiwan-dollar value at a real median of $145.5k instead of $166.9k.
   No mean reversion either: over 2000-2026 the 74-month change spread is half a random walk's
   (variance ratio 0.34), but a random walk of the same length gives a median of 0.66 and 0.34 or less
   14% of the time; on FRED's copy of the same rate from 1983 the ratio is 1.55 (the late-1980s
@@ -60,13 +60,13 @@ ladder as held is $189 short for the 2034 payment, fixed by 6 more IBTO shares
 The 1.8% premium itself moves with rates, because cash awaiting a payment is assumed to earn a fixed 3%:
 re-solving the LP on simulated January 2027 curves gives 1.64% at today's 5-year rate plus 0.57 points
 per point of rate (0.9% to 2.5% across scenarios; `scripts/ladder_premium.py`). Scoring with that
-slope changes the IPS median by +$27 and its 5th percentile by +$0.5k; with the lower level as well,
+slope changes the IPS median by +$29 and its 5th percentile by +$0.5k; with the lower level as well,
 +$0.7k and +$1.0k. The engine keeps the constant 1.8%: it is slightly cautious, and in low-rate
 scenarios the slope relies on cash earning 3% above market rates, which can make the premium negative.
 
 **Rate stress.** Rates 0.75 points lower before the January 2027 lock, and expected to stay there (the
 long-run level moves with today's, matching the "unchanged" expectation): the IPS median falls from
-$197.6k to $161.5k, and still funds every payment. 0.75 points higher: $233.1k.
+$197.5k to $161.5k, and still funds every payment. 0.75 points higher: $232.9k.
 
 **Stock-rate correlation.** Correlations come from Aug 2017-Sep 2026, the youngest fund's history,
 where the S&P 500's monthly correlation with the 5-year rate change is -0.16 (the model's core: -0.17).
@@ -74,8 +74,8 @@ That window averages two regimes, +0.41 in 2017-2021 and -0.47 since 2022, and o
 sign follows inflation: 1994-1999 -0.30, 2000-2021 +0.36, 1994-2026 +0.09. A positive correlation is
 the bad case for an open ladder (rates fall as stocks fall). Re-scoring with the equity-rate block
 rescaled to each regime (`scripts/stock_rate_corr.py`): the IPS median stays within $0.2k and its 5th
-percentile ranges from $145.6k (the 2000-2021 regime) to $147.2k (today's). The index-first 60/40, which leaves the liabilities open, is exposed: its 5th percentile runs from $52.0k
-to $32.3k. Crash months show no flight to quality on average either: in the worst 5% of equity months
+percentile ranges from $145.5k (the 2000-2021 regime) to $147.1k (today's). The index-first 60/40, which leaves the liabilities open, is exposed: its 5th percentile runs from $51.6k
+to $31.9k. Crash months show no flight to quality on average either: in the worst 5% of equity months
 since 2007 the 5-year rate rose 0.05 points on average and fell in 58% of them, and the "crash
 correlation" of 0.39 rests on 12 months (p = 0.11 against no extra tail dependence;
 `scripts/crash_comovement.py`).
@@ -86,8 +86,8 @@ sleeve are IBTM.
 
 - **Prior:** market-cap weights from iShares holdings: ACWI for regions, Russell 1000 Growth and
   Value for the US style split, and the CRSP breakpoints that VUG/VTV/VB use for size. Risk aversion
-  δ = 1.80 makes the market earn the 13-firm median 10-year forecasts: each region's geometric
-  forecast plus half its own basket variance, weighted by region (market geometric 6.41%).
+  δ = 1.78 makes the market earn the 13-firm median 10-year forecasts: each region's geometric
+  forecast plus half its own basket variance, weighted by region (market geometric 6.38%).
 - **Views** (`config/cma.yaml`): international developed minus US (+0.80%), emerging minus developed
   (+0.50%), US value minus growth (+2.87%: Vanguard's +3.5% and the 1927-2026 Kenneth French history
   of +2.2%), US small minus large (+1.00%: J.P. Morgan, Vanguard and the French history). Each view's
@@ -107,7 +107,7 @@ sleeve are IBTM.
 | ETF | Market | Black-Litterman |
 |---|---:|---:|
 | VUG | 26.8% | 16.0% |
-| VTV | 29.9% | 31.6% |
+| VTV | 29.9% | 31.5% |
 | VB | 8.7% | 13.0% |
 | VGK | 13.8% | 16.2% |
 | BBJP | 5.2% | 6.8% |
@@ -125,8 +125,8 @@ Monte Carlo, median facility (IPS rules, 20,000 scenarios, `reports/report_numbe
 
 | Sleeve | Views right, $25 trades | Views right, no commissions | Views wrong (equilibrium), $25 trades |
 |---|---:|---:|---:|
-| VTI/VEA/VWO 60/30/10 (3 funds) | $197.8k | $198.6k | $197.2k |
-| Black-Litterman core (9 funds) | $197.6k | $199.0k | $196.4k |
+| VTI/VEA/VWO 60/30/10 (3 funds) | $197.7k | $198.5k | $197.1k |
+| Black-Litterman core (9 funds) | $197.5k | $198.9k | $196.2k |
 
 The core's views are worth about $0.4k before commissions. Its six extra funds cost the same in
 WInS commissions. So the core is a risk-control choice, not a return engine: it holds technology and
@@ -261,11 +261,11 @@ names get zero shares. Hence the IPS keeps the satellite out of WInS.
 
 | Floor | Median | 5th pct | 95th pct | Secured in 2031 (typical) | 10th-90th pct range (typical) |
 |---|---:|---:|---:|---:|---|
-| 0% | $200.8k | $141.6k | $290.5k | $0 | $144.5k-$202.5k |
-| 40% | $198.8k | $145.8k | $275.2k | $66.5k | $153.1k-$187.1k |
-| 60% (IPS) | $197.6k | $147.2k | $269.6k | $99.8k | $157.3k-$180.1k |
-| 80% | $196.2k | $147.3k | $265.6k | $133.1k | $161.3k-$172.7k |
-| 100% | $195.2k | $146.9k | $262.7k | $166.3k | $165.4k |
+| 0% | $200.7k | $141.5k | $290.3k | $0 | $144.5k-$201.5k |
+| 40% | $198.6k | $145.7k | $275.0k | $66.5k | $152.7k-$186.7k |
+| 60% (IPS) | $197.5k | $147.1k | $269.5k | $99.8k | $156.7k-$179.5k |
+| 80% | $196.1k | $147.2k | $265.5k | $133.0k | $160.8k-$172.1k |
+| 100% | $195.1k | $146.8k | $262.6k | $166.3k | $165.3k |
 
 "Typical" is the median, across 21 scenarios between the 45th and 55th percentile of January 2031
 wealth, of each scenario's own quote (`engine.conditional_2031_band`). A single scenario is noisy:
@@ -287,22 +287,22 @@ that matches its label. In the typical world, 85% of the facility gives:
 
 | Quote for co-sponsors (typical 2031 world) | Contribution range |
 |---|---|
-| Model 10th-90th percentile (historically ~98% of outcomes) | $157.3k-$180.1k |
-| 20th-80th percentile (historically ~80% of outcomes) | $160.3k-$175.5k |
+| Model 10th-90th percentile (historically ~98% of outcomes) | $156.7k-$179.5k |
+| 20th-80th percentile (historically ~80% of outcomes) | $159.7k-$174.9k |
 
 Quote the second as the 80% range, and the first as the cautious range. The paths overlap (about four
 independent six-year windows), so the calibration is thin evidence; both quotes sit above the $99.8k
 already secured by the floor. `scripts/report_numbers.py` writes both for the bad, typical and good
 worlds (`quotes_2031`).
 
-**Reverse stress test.** The worst 1% of futures average a $120.9k facility, with stocks down 32%
+**Reverse stress test.** The worst 1% of futures average a $120.8k facility, with stocks down 32%
 over 2028-2033 and a worst 12 months of -30%; rates barely move. The chance the facility ends below
 $100k is 0.03%, below $120k 0.4%, below $140k 2.7%.
 
 ## Changes from the improvement loop (October 2026)
 `docs/loop/IMPROVEMENT_LOG.md` records every round, what was checked and what was rejected. Adopted
 into the headline numbers: Gaussian rate shocks; the DGBAS-based AR(2) Taiwan building-cost process,
-correlated with USD/TWD as history shows (real median $156.8k -> $167.0k); commissions compounded as
+correlated with USD/TWD as history shows (real median $156.8k -> $166.9k); commissions compounded as
 if paid when incurred (median -$0.3k); rate-factor persistence bias-corrected (wider long-horizon
 rate spread, median unchanged); real Taiwan cost paths in the replay; the 2031 quote from a band of
 scenarios. Built but left off, with the evidence for each: expected-return uncertainty (no material

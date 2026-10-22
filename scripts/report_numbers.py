@@ -58,6 +58,7 @@ def main(n: int = 20_000):
         "tech_comm": round(float(w @ mw["tech"]), 4), "tech_comm_market": round(float(w_mkt @ mw["tech"]), 4),
         "china_taiwan": round(float(w @ mw["china_taiwan"]), 4), "china_taiwan_market": round(float(w_mkt @ mw["china_taiwan"]), 4),
         "delta": round(float(r["delta"]), 3),
+        "market_geometric_prior": round(float(r["mkt_geo"]), 4),   # what delta is set to make the market earn
         "dollars_laura_90k": {g.etf: int(round(90_000 * x, -2)) for g, x in zip(CORE, laura)} | {"SATELLITE": int(90_000 * SATELLITE_SHARE)},
         "dollars_wins_60k": {g.etf: int(round(60_000 * x, -2)) for g, x in zip(CORE, w)},
     }

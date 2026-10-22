@@ -109,7 +109,7 @@ regression tests in `tests/test_review_fixes.py`:
 | Satellite alpha view converted to arithmetic twice | 0.875% instead of 1.0% (the view at the time; it is now 0.82%); about $30 | No conversion for that view |
 
 The reviewer also suggested deriving risk aversion from the regions' arithmetic returns (each region's
-geometric forecast plus half its own basket variance). It is now 1.80, up from 1.74.
+geometric forecast plus half its own basket variance). It is now 1.78, up from 1.74.
 
 Checked and found correct: the nested 2031 simulation (matches the outer run to $0.01 with zero
 volatility), deterministic engine growth, generator moments, curve bootstrapping, the ladder LP
@@ -130,25 +130,25 @@ Run `python scripts/validate_model.py` (reports `validation_esg.csv`, `validatio
   risk (`scripts/equity_horizon.py`). The same test on USD/TWD: `docs/MODEL.md`.
 - **Rates:** the 10-year yield's change to January 2033 spans -2.8 to +2.8 points (5th-95th
   percentile), against -2.7 to +2.4 points over every 74-month window since 1994.
-- **Convergence:** across 8 seeds of 20,000 scenarios the median facility is $197,600 with a standard
-  error of $28; the 5th percentile's is $127.
+- **Convergence:** across 8 seeds of 20,000 scenarios the median facility is $197,478 with a standard
+  error of $28; the 5th percentile's is $126.
 - **Historical replay:** 184 real six-year paths (starts April 2005 to July 2020) applied to today's
-  curve. With returns re-centred on our expectations, the IPS median is $196.3k against $197.6k
-  simulated; its 5th percentile is $155.4k against $147.2k simulated, so the simulation is the more
+  curve. With returns re-centred on our expectations, the IPS median is $196.3k against $197.5k
+  simulated; its 5th percentile is $155.3k against $147.1k simulated, so the simulation is the more
   cautious. All-stock funds every payment in 90.2% of real paths against 86.8% simulated.
 - **Expected rate path:** forecasting the curve 74 months ahead from 320 month-ends (1994-2020), the
   error in the cost of ten payments is 7.7% for "unchanged", 7.5% for forwards minus the Kim-Wright term
   premium and 10.0% for pure forwards. "Unchanged" stays: it ties on accuracy and has the least bias.
 - **2031 range calibration:** on the same 184 paths, the model's 10th-90th percentile range quoted from
   each path's own January 2031 position contained the January 2033 result 98.4% of the time (re-centred
-  and as it happened): it behaves like a 98% range. The 20th-80th percentile band held 81.5% (75.5% as
+  and as it happened): it behaves like a 98% range. The 20th-80th percentile band held 81.0% (75.5% as
   it happened), so that is the range to quote as "80%" (`reports/policy_study.json`).
 - **Satellite weighting:** re-estimated each January since 2019, single-linkage HRP's realised
   volatility (16.1%) is level with average-linkage HRP (16.2%) and below Ward (16.7%), inverse-variance
   (16.9%) and equal weights (18.2%) (`reports/validation_hrp.csv`).
 - **Black-Litterman stability:** over tau 0.025-0.10 and value-view uncertainty 1.5-5 points, the
   resampled weights hold BBJP at 6.7-7.0% and BBCA at 3.8-3.9%; a single optimum swings them from 2.6%
-  to 9.5% and 1.5% to 5.5%.
+  to 9.5% and 1.5% to 5.6%.
 
 ## 8. Reproduce
 

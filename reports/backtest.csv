@@ -1,11 +1,11 @@
 paths,n_paths,first_start,last_start,strategy,funded,p5,median,p95,worst,worst_start
-History as it happened,184,2005-04-30,2020-07-31,"IPS, Black-Litterman core",1.0,162040.035,205581.171,240048.123,136336.935,2008-10-31
+History as it happened,184,2005-04-30,2020-07-31,"IPS, Black-Litterman core",1.0,162041.176,205575.556,240044.7,136335.49,2008-10-31
 History as it happened,184,2005-04-30,2020-07-31,"IPS, 60/30/10 ETFs",1.0,163055.8,208669.318,242386.084,136709.988,2008-10-31
 History as it happened,184,2005-04-30,2020-07-31,S9 Plans v2 P5,1.0,163694.29,207935.078,244287.102,137889.527,2008-10-31
 History as it happened,184,2005-04-30,2020-07-31,"S2 60/40, reserve bought in 2033",1.0,108559.724,278700.847,402375.383,74091.654,2006-07-31
 History as it happened,184,2005-04-30,2020-07-31,"S1 all equity, reserve bought in 2033",0.995,27103.585,344192.044,556030.711,0.0,2006-03-31
-History re-centred on BL expected returns,184,2005-04-30,2020-07-31,"IPS, Black-Litterman core",1.0,155412.623,196314.235,228692.192,129905.595,2008-10-31
-History re-centred on BL expected returns,184,2005-04-30,2020-07-31,"IPS, 60/30/10 ETFs",1.0,154212.069,196119.577,228896.892,128868.899,2008-10-31
-History re-centred on BL expected returns,184,2005-04-30,2020-07-31,S9 Plans v2 P5,1.0,156400.438,196315.948,230195.577,130146.335,2008-10-31
-History re-centred on BL expected returns,184,2005-04-30,2020-07-31,"S2 60/40, reserve bought in 2033",1.0,67311.016,222022.89,339317.312,33648.205,2006-05-31
-History re-centred on BL expected returns,184,2005-04-30,2020-07-31,"S1 all equity, reserve bought in 2033",0.902,0.0,246177.864,440416.395,0.0,2005-07-31
+History re-centred on BL expected returns,184,2005-04-30,2020-07-31,"IPS, Black-Litterman core",1.0,155316.596,196280.966,228541.854,129824.683,2008-10-31
+History re-centred on BL expected returns,184,2005-04-30,2020-07-31,"IPS, 60/30/10 ETFs",1.0,154114.574,195996.025,228749.77,128787.773,2008-10-31
+History re-centred on BL expected returns,184,2005-04-30,2020-07-31,S9 Plans v2 P5,1.0,156314.936,196195.717,229994.669,130065.788,2008-10-31
+History re-centred on BL expected returns,184,2005-04-30,2020-07-31,"S2 60/40, reserve bought in 2033",1.0,66849.383,221404.679,338585.797,33185.925,2006-05-31
+History re-centred on BL expected returns,184,2005-04-30,2020-07-31,"S1 all equity, reserve bought in 2033",0.902,0.0,245216.987,439098.955,0.0,2005-07-31
