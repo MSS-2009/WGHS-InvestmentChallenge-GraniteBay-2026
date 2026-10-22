@@ -166,3 +166,28 @@ contribution range $159.9k-$175.1k (was $161.3k-$176.6k). 106 tests pass; `run_a
 the committed reports. `docs/MODEL.md` and `docs/VALIDATION.md` updated.
 Not switched on, pending the user: the policy (IPS vs the 40%-equity alternatives), a STRIPS reserve
 outside WInS, FX hedging, and the choice of Taiwan cost drift.
+
+## Round 6: planner alone, no agents (2026-10-22, on `improve` after merging r5-integrate)
+At the user's instruction the planner continued without Gemini or subagents. One commit per item:
+- **Commissions compound** (`EngineConfig.compound_costs`): fees grow at the invested assets' return
+  as if paid when incurred, instead of being subtracted at face value in 2033. IPS median -$275.
+- **Doc consistency checker** (`scripts/doc_numbers.py`, `tests/test_doc_numbers.py`): 27 figures in
+  MODEL.md and VALIDATION.md are read from the reports and must match; `--fix` rewrites a stale figure
+  when its number-generalised pattern appears exactly once. Built after the planner itself mis-quoted a
+  CE gap in MODEL.md.
+- **Policy search rerun** (`--grid`, 3,456 policies): IPS within $2.2k of the best CE at gamma 4
+  (rank 546), every max-regret figure within $0.6k of the earlier run. Conclusions unchanged.
+- **Satellite selection bias, out of sample** (`scripts/satellite_oos.py`): the screen re-run at four
+  2023 dates against 300 random 35-name baskets each. Selection makes in-sample volatility look about
+  12% too low and the low-risk picks were no calmer than random afterwards. With the corrected risk
+  (vol 15.1% -> 16.9%, beta 0.89 -> 0.99; `scripts/satellite_risk_sensitivity.py`) the commission-free
+  satellite still adds about +$0.5k at the median but its 5th percentile turns slightly negative; with
+  WInS's $25 commissions it loses about $3.1-3.3k at the median either way. Verdict unchanged.
+- **Taiwan cost growth vs USD/TWD** (`scripts/taiwan_fx_corr.py`): -0.18 to -0.33 over 12- to 72-month
+  changes, 2000-2026; set to -0.25. Real 5th-95th range $113.5k-$247.3k -> $111.3k-$251.6k, median
+  unchanged.
+- **Rate persistence bias** (`calibrate.kendall_corrected`): OLS AR(1) over 393 months is biased low;
+  0.984/0.979/0.954 -> 0.994/0.989/0.964. 74-month 5-year change sd 1.26 -> 1.61 points (history 1.84);
+  10-year 5th-95th change -2.8/+2.8 (history -2.7/+2.4). IPS median unchanged.
+Headline now: median $197,593, p5 $147,153, CVaR5 $136,262, real median $167,008, typical secured 2031
+contribution $99.8k, 80% contribution range $160.3k-$175.5k. 109 tests pass; docs checked by script.
