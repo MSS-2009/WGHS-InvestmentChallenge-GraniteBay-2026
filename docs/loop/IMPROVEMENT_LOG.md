@@ -108,3 +108,22 @@ kurtosis 0.6, worst month -0.81 pp; model at t5 worst month -1.99 pp; Gaussian r
 | Thread | Branch | Brief | Question |
 |---|---|---|---|
 | lgm-rates | r4-rates | `docs/loop/r4_rates.md` | Give rate shocks their own (thinner) tails, keep crash correlations, measure the effect |
+| lgm-taiwan | r4-fx | `docs/loop/r4_fx.md` | USD/TWD drift: random walk vs interest-differential forward, tested on TWD history |
+
+### r3-strips (merged, with a correction)
+Real Public.com quotes for the ten Nov-15 STRIPS 2032-2041 and the 3.875% Dec-31-2032 note; the
+planner re-fetched one page and found the same quote. Quotes sit 1-11 bp from the model's zero curve.
+Correction: the LP prices at the quoted mid, but the retail half-spread is 1.5-1.8%. At the ask the
+STRIPS ladder costs +1.54% over zero-coupon value (reported: -0.06%), against +3.70% for the WInS
+ladder at 0% reinvestment and +1.82% at 3%. So outside WInS a reserve that needs no reinvestment
+assumption costs about what the WInS ladder costs when it assumes 3%: roughly $6k cheaper than
+making the WInS ladder certain. Idle cash falls from 197 to 47 days. Institutional spreads are far
+tighter (the worker cites 2-5 bp). Zero-coupon bonds create taxable imputed interest for a taxable owner.
+
+### r3-taiwan (merged)
+Monthly AR(2) (phi 0.655, -0.094) reproduces the data's lag-1 and lag-2 autocorrelations exactly
+(planner's check: 0.598, 0.298) and the variance-ratio profile from 1 to 72 months (72 months: 13.7%
+model, 12.7% history). Conditional check: 95.5% coverage over 66 high-inflation start windows (4
+independent episodes). Today's +7.3% state moves the real median by -$0.2k; the long-run drift moves
+it by up to $11k. Real median: $167.4k at the full-sample drift (2.85%), $169.6k at the 20-year
+drift, $158.6k at the 10-year drift, against $156.8k under the old 4%/1.5% assumption.
