@@ -126,10 +126,10 @@ Run `python scripts/validate_model.py` (reports `validation_esg.csv`, `validatio
   so crash risk is, if anything, overstated.
 - **Rates:** the 10-year yield's change to January 2033 spans -2.1 to +2.2 points (5th-95th
   percentile), against -2.7 to +2.4 points over every 74-month window since 1994.
-- **Convergence:** across 8 seeds of 20,000 scenarios the median facility is $197,912 with a standard
-  error of $32; the 5th percentile's is $83.
+- **Convergence:** across 8 seeds of 20,000 scenarios the median facility is $197,891 with a standard
+  error of $25; the 5th percentile's is $119.
 - **Historical replay:** 184 real six-year paths (starts April 2005 to July 2020) applied to today's
-  curve. With returns re-centred on our expectations, the IPS median is $196.6k against $197.9k
+  curve. With returns re-centred on our expectations, the IPS median is $196.6k against $197.8k
   simulated; its 5th percentile is $155.6k against $147.4k simulated, so the simulation is the more
   cautious. All-stock funds every payment in 90.2% of real paths against 86.7% simulated.
 - **Expected rate path:** forecasting the curve 74 months ahead from 320 month-ends (1994-2020), the
