@@ -46,3 +46,21 @@ releases at green. COMMON.md rule 11 asks workers to keep peak memory under abou
 | lgm-taiwan | r2-taiwan | `docs/loop/r2_taiwan.md` | Persistent Taiwan cost process from today's 7.3% state; real cost paths in the replay |
 | lgm-esg | r2-esg | `docs/loop/r2_esg.md` | Does GARCH help the 2031 quote when it starts from the filtered variance? |
 | lgm-policy | r2-policy | `docs/loop/r2_policy.md` | Fix the 2031 scenario ranking; re-rank with a value on the 2031 promise |
+
+### Round 2 results (verified by the planner)
+- **r2-esg (merged).** The GARCH variance filter recovers simulated variance paths exactly; today's
+  state is 0.70 of the long-run variance. Starting each historical path from its own filtered 2031
+  variance does not rescue GARCH: the 20-80 band's coverage is 73% (re-centred) against 81% for the
+  baseline, and it ties or loses in every regime tercile (calm 89% vs 97%, normal 57% vs 72%,
+  turbulent 74% vs 74%). The reason is structural: monthly persistence of 0.87 has a 5-month
+  half-life, so 96% of what is known in Jan 2031 has washed out by 2033. GARCH stays off.
+  Side observation (thin evidence, about 4 independent windows): after turbulent 2031 starts,
+  outcomes landed above the 80th percentile 25-38% of the time, which looks like post-crash rebounds.
+- **r2-policy (merged).** The ranking fix removes the $234k artifact: P2485 now secures $195.7k,
+  in line with its $193.0k median floor. The planner then simplified the fix so every policy ranks on
+  total Jan 2031 wealth before that month's floor move (identical for 2031-floor policies, and
+  correct for ratchets too); `policy_search_top.csv` was generated before this change.
+  On the full grid the IPS is on the efficient frontier: only three ratchet variants beat it on
+  median, p5, CVaR5 and the 2031 secured amount at once, each by under $100. The real choice it
+  leaves is a preference: P2361 (40% equity, 100% floor in 2031) gives up $3.9k of median for
+  +$8.6k at p5, +$9.9k CVaR5, the same CE at gamma 4, and $195k secured in 2031 instead of $118k.

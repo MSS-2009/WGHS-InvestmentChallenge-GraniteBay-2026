@@ -297,10 +297,10 @@ def conditional_2031(st: Strategy, sc: Scenarios, res: dict, params, i: int | No
     from .esg import simulate
 
     if i is None:
-        if st.floor_year < 2031 and "assets_2031" in res:
-            rank_on = res["assets_2031"]
-        else:
-            rank_on = res["growth_2031"]
+        # Rank on what the client holds in Jan 2031, before that month's floor move: growth assets
+        # plus any floor already bought (an earlier floor year, or ratchet moves). Without an
+        # earlier floor this equals growth_2031, so 2031-floor policies rank exactly as before.
+        rank_on = res.get("assets_2031", res["growth_2031"])
         i = int(np.argsort(rank_on)[len(rank_on) // 2])
     start = {"beta": sc.beta[i, M_2031 - sc.m0], "infl": sc.infl[i, M_2031 - sc.m0],
              "fx_log": np.full(n_inner, sc.fx_log[i, M_2031 - sc.m0]),
