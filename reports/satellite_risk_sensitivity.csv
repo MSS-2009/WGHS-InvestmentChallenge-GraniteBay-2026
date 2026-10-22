@@ -1,0 +1,7 @@
+risk_scale,reading,commissions,satellite_vol,satellite_beta,median_vs_core,p5_vs_core,cvar5_vs_core
+1.0,as_estimated,$25 (WInS),0.1508,0.8871,-3380.2553,-3058.9228,-3194.4831
+1.0,as_estimated,none,0.1508,0.8871,456.2722,506.012,365.7016
+1.116,with_return,$25 (WInS),0.1689,0.9935,-3121.8458,-3693.5129,-3863.1547
+1.116,with_return,none,0.1689,0.9935,651.6457,-69.4758,-277.6335
+1.116,risk_only,$25 (WInS),0.1689,0.9935,-3307.5282,-3813.619,-3975.0619
+1.116,risk_only,none,0.1689,0.9935,489.9733,-194.1651,-390.6291

@@ -210,7 +210,8 @@ Commission assumptions are an upper bound. Every invest or rebalance event trade
 replaces three names (six trades, $150).
 
 **Conclusion.** The satellite is a values-alignment and engagement tool, not a return engine. At a
-commission-free broker it is outcome-neutral and adds no tech or China concentration: look-through
+commission-free broker it is roughly outcome-neutral in the median (slightly negative in the tails once
+its selection bias is corrected, see Caveats) and adds no tech or China concentration: look-through
 tech/communication is 24.7% at a 20% satellite, against 36.0% for the market. Under WInS's $25
 commission it costs about 1.7% of the median facility.
 
@@ -284,9 +285,17 @@ search and robustness study (`docs/loop/r1_policy_findings.md`, `r2_policy_findi
   the October 2026 news check. They are judgments, and the rationale column says why.
 - The basket's history before 2014-2016 (HLT, KEYS, HWM) is renormalised over the names that existed.
   It is used for volatility and correlation only, never for expected return.
-- The satellite's risk is probably understated: names were picked for low past volatility and
-  drawdown, and the correlation window overlaps the screening window, so its beta (0.89) and
-  volatility (15.1%) are likely biased low.
+- The satellite's risk is understated, and now measured (`scripts/satellite_oos.py`): re-running the
+  quantitative screen at four dates in 2023 and following each basket for about three years, the
+  chosen names' volatility fell by a factor of 0.86 out of sample, against 0.77 for random 35-name
+  baskets from the same universe over the same windows (the market got calmer for everyone). Relative
+  to random baskets, selection made in-sample risk look about 12% too low; out of sample the "low-risk"
+  picks were no calmer than random baskets. Correcting for it (`scripts/satellite_risk_sensitivity.py`)
+  raises the satellite's volatility from 15.1% to 16.9% and its beta from 0.89 to 0.99: at a 20% share
+  and no commissions the median stays about +$0.5k, but the 5th percentile goes from +$0.5k to about
+  -$0.2k against the core alone; with $25 commissions it goes from -$3.1k to about -$3.8k. Thin
+  evidence: four overlapping screens, one market episode, today's index members only, and the
+  qualitative judgments could not be re-run historically.
 - Locked payments are certain only if cash awaiting a payment earns at least 3% (see "How certain is
   'certain'?"); the Monte Carlo does not simulate that reinvestment rate.
 
