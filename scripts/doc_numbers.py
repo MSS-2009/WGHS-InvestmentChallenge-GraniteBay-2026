@@ -74,6 +74,28 @@ def checks() -> list[tuple[str, str, str]]:
         secured = "$0" if row["secured_2031_typical"] == 0 else k(row["secured_2031_typical"])
         out.append(("MODEL", f"floor frontier {label}",
                     f"| {label} | {k(row['median'])} | {k(row['p5'])} | {k(row['p95'])} | {secured} | {range_txt} |"))
+    lo_b, hi_b = q["floor_dec_2032_band"]
+    out.append(("MODEL", "2031 floor band", f"floor the IPS buys varies from {k(lo_b)} to {k(hi_b)} with that month's rates"))
+    ff = {round(r["floor_share"], 2): r for r in ps["floor_frontier"]}
+    ips_ff, f80 = ff[0.6], ff[0.8]
+    gap_best = max(max(r[f"ce_gamma{g}"] for r in ff.values()) - ips_ff[f"ce_gamma{g}"] for g in (2, 4, 8))
+    gap_6080 = max(abs(ips_ff[f"ce_gamma{g}"] - f80[f"ce_gamma{g}"]) for g in (2, 4, 8))
+    out.append(("MODEL", "floor CE gaps", f"within {k(gap_best)} of the best for each, and 60% and 80% differ by under "
+                                          f"{k(np.ceil(gap_6080 / 100) * 100)}"))
+    out.append(("MODEL", "80% floor trade-off",
+                f"for {k(ips_ff['median'] - f80['median'])} of\nmedian, an 80% floor secures "
+                f"${(f80['secured_2031_typical'] - ips_ff['secured_2031_typical']) / 1000:.0f}k more"))
+    cs = ps["contribution_share"]
+    out.append(("MODEL", "contribution shares",
+                "give typical contributions of " + ", ".join(f"${c['contribution_median'] / 1000:.0f}k" for c in cs[:2])
+                + f" and ${cs[2]['contribution_median'] / 1000:.0f}k and leave\nLaura "
+                + ", ".join(f"${c['kept_median'] / 1000:.0f}k" for c in cs[:2]) + f" and ${cs[2]['kept_median'] / 1000:.0f}k"))
+    zero = stress["reserve_certain_at_0pct_reinvestment"]
+    out.append(("MODEL", "reserve certain at 0%", f"then lowers the median facility by {k(-zero['median_change'])}"))
+    out.append(("VALIDATION", "reserve certain at 0%", f"(median -{k(-zero['median_change'])})"))
+    out.append(("MODEL", "Taiwan cost-FX correlation range",
+                f"range from {rng(fx.loc['random_walk_no_cost_fx_corr', 'real_p5'], fx.loc['random_walk_no_cost_fx_corr', 'real_p95'])} "
+                f"to\n  {rng(fx.loc['random_walk', 'real_p5'], fx.loc['random_walk', 'real_p95'])}"))
     sat = pd.read_csv(R / "satellite_scoring.csv")
     piv = sat.pivot_table(index=["beliefs", "commissions"], columns="candidate", values="median_vs_core")
     for beliefs, comm, label in (("Equilibrium (no alpha)", "$25 (WInS)", "Equilibrium (no alpha) | $25 per trade (WInS)"),

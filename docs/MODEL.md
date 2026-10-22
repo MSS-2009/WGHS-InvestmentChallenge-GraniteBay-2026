@@ -44,15 +44,15 @@ Market inputs (all keyless):
   the real median by about $9k (`docs/loop/r3_taiwan_findings.md`). Cost growth is correlated -0.25
   with USD/TWD: in history a weaker Taiwan dollar has come with slower building-cost growth (12- to
   72-month changes, 2000-2026: -0.18 to -0.33, `scripts/taiwan_fx_corr.py`), so the two risks add up
-  rather than offset. This widens the real 5th-95th percentile range from $113.5k-$247.3k to
-  $111.3k-$251.6k and leaves the real median unchanged. The historical replay uses the index's real
+  rather than offset. This widens the real 5th-95th percentile range from $113.2k-$247.3k to
+  $110.8k-$251.8k and leaves the real median unchanged. The historical replay uses the index's real
   paths.
 
 **How certain is "certain"?** A locked payment is treated as certain. That rests on one assumption:
 coupons and fund proceeds that arrive before a payment are reinvested at 3% until it is due (the ladder
 LP and the engine's 1.8% ladder premium, `kappa0`, which a test pins to the LP). At 0% the cheapest
 ladder costs 3.7% over zero-coupon value instead of 1.8%. Pricing the reserve so it is certain even
-then lowers the median facility by $7.8k (`reports/report_numbers.json`, `stress`). Cash rates are
+then lowers the median facility by $7.9k (`reports/report_numbers.json`, `stress`). Cash rates are
 about 4.3% today, so 3% is cautious, but the WInS account itself pays no interest on cash: there the
 ladder as held is $189 short for the 2034 payment, fixed by 6 more IBTO shares
 (`scripts/wins_ladder_check.py`).
@@ -272,13 +272,13 @@ names get zero shares. Hence the IPS keeps the satellite out of WInS.
 
 "Typical" is the median, across 21 scenarios between the 45th and 55th percentile of January 2031
 wealth, of each scenario's own quote (`engine.conditional_2031_band`). A single scenario is noisy:
-within that band the floor the IPS buys varies from $112.5k to $123.6k with that month's rates.
+within that band the floor the IPS buys varies from $112.2k to $123.8k with that month's rates.
 
 Certainty equivalents (CRRA) favour 0%, 40% and 80% for risk aversion 2, 4 and 8. The IPS's 60% is
-within $2.0k of the best for each, and 60% and 80% differ by under $1.1k; wealth alone does not settle it. What changes sharply is what Laura can promise: for $1.3k of
+within $1.9k of the best for each, and 60% and 80% differ by under $1.1k; wealth alone does not settle it. What changes sharply is what Laura can promise: for $1.4k of
 median, an 80% floor secures $33k more and halves the range.
 
-**Contribution share.** 75%, 85% and 95% give typical contributions of $148k, $168k and $188k and leave
+**Contribution share.** 75%, 85% and 95% give typical contributions of $148k, $168k and $187k and leave
 Laura $49k, $30k and $10k. This is a preference, not something the model can optimise.
 
 **Range calibration on history.** On each of 184 real six-year paths (re-centred, starts 2005-2020),

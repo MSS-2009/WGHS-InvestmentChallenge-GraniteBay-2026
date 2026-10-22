@@ -3,12 +3,14 @@
 Usage: python scripts/fx_variants.py [n_scenarios]
 Headline parameters exactly as scripts/report_numbers.py builds them (IPS, Black-Litterman core, $25
 commissions, one seed), with the Taiwan building-cost process set to the fitted monthly AR(2) from
-config/taiwan.yaml (full-sample drift 2.85%, started from the Aug and Sep 2026 readings). Only
+config/taiwan.yaml (full-sample drift 2.85%, started from the Aug and Sep 2026 readings). In the first four rows only
 `fx_drift` (annual log drift of USD/TWD) changes between rows:
   random_walk      0 (today's assumption; the better forecast in scripts/fx_drift_study.py)
   half_forward     half the latest actual 180-day forward premium
   cip_latest       the latest interest differential (TW 90-day CP vs US 3-month)
   forward_latest   the latest actual 180-day forward premium (CBC Table 31.C)
+  random_walk_no_cost_fx_corr  as random_walk, with building-cost growth independent of USD/TWD
+                   (the headline uses -0.25, scripts/taiwan_fx_corr.py)
 Writes reports/fx_variants.csv.
 """
 import dataclasses as dc
@@ -42,11 +44,11 @@ def main(n: int = 20_000, seed: int = 11):
     base = dc.replace(esg_params(r["cal"], r["table"]["bl_geo_total"].values),
                       tw_cost_growth=tw["drifts"]["full_sample_35y"], tw_cost_phi=tuple(tw["tw_cost_phi"]),
                       tw_cost_sig_eps=tw["tw_cost_sig_eps"], tw_cost_state0=tuple(tw["tw_cost_state0_today"]))
-    variants = {"random_walk": 0.0, "half_forward": forward_latest / 2, "cip_latest": cip_latest,
-                "forward_latest": forward_latest}
+    variants = {"random_walk": (0.0, {}), "half_forward": (forward_latest / 2, {}), "cip_latest": (cip_latest, {}),
+                "forward_latest": (forward_latest, {}), "random_walk_no_cost_fx_corr": (0.0, {"tw_cost_fx_corr": 0.0})}
     rows = []
-    for name, drift in variants.items():
-        sc = simulate(dc.replace(base, fx_drift=drift), n=n, seed=seed)
+    for name, (drift, kw) in variants.items():
+        sc = simulate(dc.replace(base, fx_drift=drift, **kw), n=n, seed=seed)
         res = engine.run(st, sc, cfg)
         real = res["facility_real_tw2027"]
         fx = np.expm1(sc.fx_log[:, engine.M_2033] - sc.fx_log[:, engine.M_2027])
