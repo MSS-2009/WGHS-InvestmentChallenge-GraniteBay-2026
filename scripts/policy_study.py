@@ -66,20 +66,27 @@ def main(n: int = 20_000):
                                   "kept_median": round((1 - c) * float(np.median(fac))),
                                   "kept_p5": round((1 - c) * float(np.percentile(fac, 5)))} for c in (0.75, 0.85, 0.95)]
 
-    # 3. Range calibration on real history (returns re-centred on the model's expectations, and as they happened)
-    calib = {}
+    # 3. Range calibration on real history (returns re-centred on the model's expectations, and as they happened).
+    # For each path, record where its real January 2033 result fell in the distribution quoted in January 2031
+    # (its percentile rank). A band [a, 100-a] is calibrated when the share of ranks inside it matches its width.
+    calib, ranks = {}, {}
     for label, rec in (("recentred", core["table"]["bl_geo_total"].values), ("as_happened", None)):
         hs, starts = history_paths([g.history for g in CORE], recentre=rec)
         hr = engine.run(base, hs, cfg, snapshot_2031=True)
-        inside = below = above = 0
-        for i in range(hs.n):
-            c = engine.conditional_2031(base, hs, hr, p, i=i, n_inner=1500, cfg=cfg)
-            real = float(hr["facility"][i])
-            below += real < c["p10"]
-            above += real > c["p90"]
-            inside += c["p10"] <= real <= c["p90"]
-        calib[label] = {"paths": hs.n, "inside_80pct_range": round(inside / hs.n, 3), "below_range": round(below / hs.n, 3),
-                        "above_range": round(above / hs.n, 3), "first_start": str(starts[0].date()), "last_start": str(starts[-1].date())}
+        u = np.array([float((engine.conditional_2031(base, hs, hr, p, i=i, n_inner=1500, cfg=cfg)["inner"]
+                             <= hr["facility"][i]).mean()) for i in range(hs.n)])
+        ranks[label] = u
+        calib[label] = {"paths": hs.n, "inside_80pct_range": round(float(((u >= 0.10) & (u <= 0.90)).mean()), 3),
+                        "below_range": round(float((u < 0.10).mean()), 3), "above_range": round(float((u > 0.90).mean()), 3),
+                        "first_start": str(starts[0].date()), "last_start": str(starts[-1].date())}
+    # Narrowest central band (in 5-point steps) that still holds at least 80% of the re-centred real outcomes
+    for a in np.arange(45.0, -5.0, -5.0):
+        if ((ranks["recentred"] >= a / 100) & (ranks["recentred"] <= 1 - a / 100)).mean() >= 0.80:
+            break
+    inside = lambda u: round(float(((u >= a / 100) & (u <= 1 - a / 100)).mean()), 3)
+    calib["calibrated_band"] = {"percentiles": [float(a), float(100 - a)], "inside_recentred": inside(ranks["recentred"]),
+                                "inside_as_happened": inside(ranks["as_happened"]),
+                                "note": "paths overlap (184 starts, about four independent six-year windows), so this is thin evidence"}
     out["range_calibration_history"] = calib
 
     # 4. Reverse stress test: what the worst 1% and 5% of futures have in common

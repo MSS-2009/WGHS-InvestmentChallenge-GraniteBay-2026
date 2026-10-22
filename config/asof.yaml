@@ -1,0 +1,5 @@
+# The dates every run is anchored to. Change them here (and only here) to refresh the model, e.g.
+# before the Final Report: python scripts/run_all.py --refresh
+curve_date: 2026-10-20     # Treasury par curve the model starts from (must be before Jan 1, 2027)
+data_end: 2026-09-30       # last month-end of return history used for calibration and screens
+price_date: 2026-10-20     # closing prices used for WInS orders

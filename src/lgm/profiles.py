@@ -5,6 +5,7 @@ from functools import lru_cache
 
 import numpy as np
 
+from .asof import CURVE_DATE
 from .calibrate import calibrate
 from .curve import bootstrap
 from .data.treasury import par_curve
@@ -31,7 +32,7 @@ def region_drifts_for_sleeve(sleeve_geo: float, cov_m: np.ndarray, w=(0.6, 0.3, 
     return np.full(3, np.expm1(np.log1p(sleeve_geo) - bonus))
 
 
-def cs_team(curve_date: str = "2026-10-20", months: int = M_2033, t_dof: float | None = 5.0) -> ESGParams:
+def cs_team(curve_date: str = CURVE_DATE, months: int = M_2033, t_dof: float | None = 5.0) -> ESGParams:
     """The former CS team's documented inputs: equity 6.06%/yr net of fees for the 60/30/10
     sleeve, 16.5% volatility, rates unchanged on average (their 'expected path')."""
     cal = _cal()

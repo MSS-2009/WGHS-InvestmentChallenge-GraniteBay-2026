@@ -1,13 +1,13 @@
 """Build the stock satellite and score core + satellite with the Monte Carlo.
 
-Usage: python scripts/build_satellite.py [n_scenarios] [--rescreen]
+Usage: python scripts/build_satellite.py [n_scenarios] [--rescreen] [--refresh]
   1. Quant screen of the S&P 500 (IVV holdings)          -> reports/satellite_quant_screen.csv   (--rescreen)
   2. Sector-balanced shortlist                            -> reports/satellite_shortlist.csv      (--rescreen)
   3. Nasdaq evidence for the shortlist                    -> reports/satellite_evidence.csv       (--rescreen)
   4. Qualitative model and selection                      -> reports/satellite_qualitative.csv, satellite_selected.csv
   5. HRP weights; satellite inside Black-Litterman        -> reports/satellite_weights.csv, satellite_bl.csv
   6. Monte Carlo: satellite share x beliefs x commissions -> reports/satellite_scoring.csv
-  7. WInS whole-share orders at the Oct 20, 2026 close    -> reports/satellite_wins_orders.csv
+  7. WInS whole-share orders at the price-date close      -> reports/satellite_wins_orders.csv (--refresh refetches)
 Without --rescreen, steps 1-3 are read from reports/ (they depend on prices cached at screen time).
 """
 import sys
@@ -18,6 +18,7 @@ import pandas as pd
 import yaml
 
 from lgm import engine
+from lgm.asof import DATA_END, PRICE_DATE
 from lgm.data import nasdaq, yahoo
 from lgm.growth import qualitative, satellite
 from lgm.growth.core import build_core
@@ -29,7 +30,6 @@ from lgm.growth.universe import CORE
 ROOT = Path(__file__).resolve().parents[1]
 OUT, CFG = ROOT / "reports", ROOT / "config"
 SHARE_CLASS_DUPLICATES = {"GOOG": "GOOGL", "FOX": "FOXA", "NWS": "NWSA"}
-PRICE_DATE = "2026-10-20"
 SHARES = (0.0, 0.10, 0.20, 0.30)
 
 
@@ -56,9 +56,9 @@ def select(qcfg: dict) -> pd.DataFrame:
     return sel
 
 
-def wins_orders(w: pd.Series, sel: pd.DataFrame, budgets: dict[str, float], cov: pd.DataFrame) -> pd.DataFrame:
-    px = pd.Series({t: float(yahoo.history(t, start="2026-10-01", end=PRICE_DATE, interval="1d", refresh=True)
-                         .loc[PRICE_DATE, "close"]) for t in w.index})
+def wins_orders(w: pd.Series, sel: pd.DataFrame, budgets: dict[str, float], cov: pd.DataFrame,
+                refresh: bool = False) -> pd.DataFrame:
+    px = pd.Series({t: yahoo.close_on(t, PRICE_DATE, refresh) for t in w.index})
     rows, summary = [], []
     for label, b in budgets.items():
         n = whole_shares(w, px, b)
@@ -79,7 +79,7 @@ def wins_orders(w: pd.Series, sel: pd.DataFrame, budgets: dict[str, float], cov:
     return pd.DataFrame(summary)
 
 
-def main(n: int = 20_000, rescreen: bool = False):
+def main(n: int = 20_000, rescreen: bool = False, refresh: bool = False):
     qcfg = yaml.safe_load((CFG / "qualitative.yaml").read_text())
     ccfg = yaml.safe_load((CFG / "cma.yaml").read_text())
     imp = qcfg["implementation"]
@@ -130,8 +130,8 @@ def main(n: int = 20_000, rescreen: bool = False):
     geo_hoped = geo_bl.copy()
     added = r["alpha_prior"] - r["alpha_post"] - r["alpha_spillover"]
     geo_hoped[K] += added
-    beliefs = {"Equilibrium (no alpha)": geo_eq, "Black-Litterman posterior": geo_bl,
-               "Satellite alpha as hoped (+1.0%)": geo_hoped}
+    hoped = f"Satellite alpha as hoped ({r['alpha_prior']:+.2%})"
+    beliefs = {"Equilibrium (no alpha)": geo_eq, "Black-Litterman posterior": geo_bl, hoped: geo_hoped}
     kw = {k: (sat_kw if "satellite" in k else {}) for k in cands}
     rows = []
     for bname, geo in beliefs.items():
@@ -150,7 +150,7 @@ def main(n: int = 20_000, rescreen: bool = False):
     # Break-even alpha for the chosen share, from the posterior and "as hoped" runs (linear in alpha)
     pick = f"Core + {imp['share_of_equity']:.0%} satellite"
     g = df[(df["candidate"] == pick) & (df["commissions"] == "$25 (WInS)")].set_index("beliefs")["median_vs_core"]
-    slope = (g["Satellite alpha as hoped (+1.0%)"] - g["Black-Litterman posterior"]) / added
+    slope = (g[hoped] - g["Black-Litterman posterior"]) / added
     extra_needed = -g["Black-Litterman posterior"] / slope
     with pd.option_context("display.width", 220, "display.max_columns", 30):
         print(df[["beliefs", "commissions", "candidate", "funded", "p5", "median", "p95", "cvar5", "median_vs_core"]]
@@ -161,14 +161,14 @@ def main(n: int = 20_000, rescreen: bool = False):
     # 7. WInS whole-share orders
     sat_cov = long_cov(tickers)
     budgets = {"WInS mirror (20% of $60k equity)": 12_000.0, "Plan, Jan 2028 (20% of ~$90k equity)": 18_000.0}
-    print(wins_orders(w_sat, sel, budgets, sat_cov).to_string(index=False))
+    print(wins_orders(w_sat, sel, budgets, sat_cov, refresh).to_string(index=False))
 
 
-def long_cov(tickers: list[str], months: int = 60, end: str = "2026-09-30") -> pd.DataFrame:
+def long_cov(tickers: list[str], months: int = 60, end: str = DATA_END) -> pd.DataFrame:
     from lgm.growth.portfolio import long_prices
     return long_prices(tickers).pct_change().loc[:end].iloc[-months:].cov()
 
 
 if __name__ == "__main__":
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    main(int(args[0]) if args else 20_000, rescreen="--rescreen" in sys.argv)
+    main(int(args[0]) if args else 20_000, rescreen="--rescreen" in sys.argv, refresh="--refresh" in sys.argv)

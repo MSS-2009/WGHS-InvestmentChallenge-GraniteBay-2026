@@ -11,7 +11,7 @@ stocks, rates and FX together, as in 2008 and 2020.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy as np
 

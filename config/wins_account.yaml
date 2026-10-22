@@ -1,0 +1,22 @@
+# State of the team's WInS account. Update after every trading session; the WInS scripts read it.
+as_of: 2026-10-21
+cash: 38813.97                 # cash after the Oct 21 trades
+keep_cash: 6000.0              # buffer left uninvested (commissions, rounding)
+growth_funds_to_sell:          # growth funds bought on Oct 21 that the IPS excludes (shares)
+  ESGV: 252
+  VSGX: 290
+
+# Reserve ladder held in WInS, at the IPS's two-thirds WInS scale (payments of $33,333)
+ladder:
+  scale: 0.6666666667
+  bonds_face:                  # face value held, by WInS description
+    T-BOND 4.750% Feb-2037: 28000
+    T-BOND 4.500% May-2038: 29000
+    T-BOND 4.375% Nov-2039: 30000
+    T-BOND 4.250% Nov-2040: 31000
+    T-BOND 3.125% Nov-2041: 33000
+  funds:                       # iBonds term funds: shares and fill price
+    IBTO: {shares: 604, price: 23.20}
+    IBTP: {shares: 752, price: 24.32}
+    IBTQ: {shares: 726, price: 23.94}
+    IBTR: {shares: 695, price: 23.75}

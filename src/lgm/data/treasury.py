@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import datetime as dt
-import io
 from pathlib import Path
 
 import pandas as pd
@@ -23,9 +22,16 @@ def fetch_year(year: int, refresh: bool = False) -> Path:
         return path
     r = requests.get(URL.format(year=year), timeout=60, headers={"User-Agent": "lgm-research"})
     r.raise_for_status()
+    _check_csv(r.text, URL)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(r.text)
     return path
+
+
+def _check_csv(text: str, url: str):
+    """Refuse to cache anything but Treasury's CSV (an error page would overwrite good data)."""
+    if not text.startswith("Date,"):
+        raise ValueError(f"unexpected response from {url.split('?')[0]}: {text[:60]!r}")
 
 
 def load_year(year: int) -> pd.DataFrame:
@@ -66,6 +72,7 @@ def real_year(year: int, refresh: bool = False) -> pd.DataFrame:
     if refresh or not path.exists():
         r = requests.get(REAL_URL.format(year=year), timeout=60, headers={"User-Agent": "lgm-research"})
         r.raise_for_status()
+        _check_csv(r.text, REAL_URL)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(r.text)
     df = pd.read_csv(path)

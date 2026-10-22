@@ -10,7 +10,10 @@ from pathlib import Path
 
 import numpy as np
 
-from lgm import engine
+from lgm import engine, ladder
+from lgm.asof import CURVE_DATE
+from lgm.curve import bootstrap
+from lgm.data.treasury import par_curve
 from lgm.esg import simulate
 from lgm.growth.core import build_core
 from lgm.growth.scoring import esg_params
@@ -87,28 +90,48 @@ def main(n: int = 20_000):
     out["plan"]["kept_by_laura_median"] = round(float(np.median(res["facility"] - res["contribution"])), 1)
     out["plan"]["lock_cost_2027_median"] = round(float(np.median(res["lock_cost_2027"])), 1)
     order = np.argsort(res["growth_2031"])
-    quotes = {}
+    # The model's 10th-90th percentile range held ~98% of real outcomes on history; the band that held 80%
+    # comes from scripts/policy_study.py (run it first).
+    policy = OUT / "policy_study.json"
+    lo, hi = (json.loads(policy.read_text())["range_calibration_history"]["calibrated_band"]["percentiles"]
+              if policy.exists() else (20.0, 80.0))
+    quotes = {"calibrated_band_percentiles": [lo, hi]}
     for label, q in (("bad_p10", 0.10), ("median", 0.50), ("good_p90", 0.90)):
         i = int(order[int(q * (len(order) - 1))])
         c = engine.conditional_2031(st, sc, res, p, i=i, n_inner=3000, cfg=cfg)
         quotes[label] = {"growth_2031": round(c["growth_2031"], 1), "floor_dec_2032": round(c["floor"], 1),
                          "guaranteed_contribution": round(0.85 * c["floor"], 1),
                          "facility_p10": round(c["p10"], 1), "facility_p90": round(c["p90"], 1),
-                         "contribution_range": [round(0.85 * c["p10"], -2), round(0.85 * c["p90"], -2)]}
+                         "contribution_range": [round(0.85 * c["p10"], -2), round(0.85 * c["p90"], -2)],
+                         "contribution_range_calibrated": [round(0.85 * float(np.percentile(c["inner"], lo)), -2),
+                                                           round(0.85 * float(np.percentile(c["inner"], hi)), -2)]}
     out["quotes_2031"] = quotes
 
     # 4. Stress tests
     stress = {}
     for label, shift in (("rates_minus_75bp_at_lock", -0.0075), ("rates_plus_75bp_at_lock", 0.0075)):
+        # The shift is permanent: rates are expected to stay where they moved to (the model's "unchanged"
+        # expectation), so the long-run level moves with today's level instead of pulling it back.
+        d = np.array([shift, 0.0, 0.0])
         start = {"beta": np.tile(p.beta0, (n, 1)), "infl": np.full(n, p.infl0), "fx_log": np.zeros(n),
-                 "tw_cost_log": np.zeros(n), "beta_shift": np.array([shift, 0.0, 0.0])}
-        s2 = simulate(p, n=n, seed=11, start=start)
+                 "tw_cost_log": np.zeros(n), "beta_shift": d}
+        s2 = simulate(dc.replace(p, beta_mu=p.beta_mu + d), n=n, seed=11, start=start)
         rr = engine.run(st, s2, cfg)
         stress[label] = {"funded": float(rr["funded"].mean()), "median": round(float(np.median(rr["facility"])), 1),
                          "lock_cost_2027_median": round(float(np.median(rr["lock_cost_2027"])), 1)}
-    eq_only = np.argsort(sc.eq_log.sum((1, 2)))[: n // 20]
+    # Reinvestment: the ladder premium assumes cash awaiting a payment earns 3%. Pricing the reserve so it
+    # is certain even at 0% shows what that assumption is worth.
+    zc = bootstrap(par_curve(CURVE_DATE))
+    k0 = ladder.premium(zc, 0.0)
+    rr = engine.run(st, sc, dc.replace(cfg, kappa0=k0))
+    stress["reserve_certain_at_0pct_reinvestment"] = {
+        "ladder_premium": round(k0, 4), "ladder_premium_at_3pct": round(ladder.premium(zc, 0.03), 4),
+        "median": round(float(np.median(rr["facility"])), 1),
+        "median_change": round(float(np.median(rr["facility"]) - np.median(res["facility"])), 1),
+        "lock_cost_2027_median": round(float(np.median(rr["lock_cost_2027"])), 1)}
+    eq_only = np.argsort((sc.eq_log * np.asarray(w)).sum((1, 2)))[: n // 20]     # worst core-weighted stock paths
     stress["worst_5pct_stock_paths_median"] = round(float(np.median(res["facility"][eq_only])), 1)
-    stress["inflation_4pct_buying_power_change"] = round((1.03 / 1.04) ** 6 - 1, 4)
+    stress["inflation_4pct_buying_power_change"] = round((1.03 / 1.04) ** 6 - 1, 4)   # 4% vs 3% a year, 6 years (arithmetic)
     out["stress"] = stress
     (OUT / "report_numbers.json").write_text(json.dumps(out, indent=2))
     print(json.dumps(out, indent=2))

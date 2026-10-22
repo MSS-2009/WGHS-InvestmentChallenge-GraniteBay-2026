@@ -32,7 +32,7 @@ all-stock 86%; lock-and-balance $140k / $200k / $290k; random-rate reserve $388k
 Facility money in Jan 2033, $ thousands. Rebuilt engine: 20,000 scenarios, the team's documented
 inputs (stocks 6.06%/yr net, 16.5% volatility, rates unchanged on average), fat tails (Student-t, 5 df).
 
-| Plan | Funded: theirs / ours | 5th pct | Median | 95th pct | 2031 floor | 2031 80% range |
+| Plan | Funded: theirs / ours | 5th pct | Median | 95th pct | 2031 floor | 2031 10th-90th pct range |
 | --- | --- | --- | --- | --- | --- | --- |
 | S1 all equity | 86.8% / 86.7% | 0 / 0 | 212.8 / 220.9 | 759.3 / 780.9 | — | — |
 | S2 static 60/40 | 96.4% / 96.8% | 16.2 / 18.7 | 208.0 / 215.4 | 508.3 / 523.5 | 0 / 0 | 120.7-332.4 / 146.5-380.9 |
@@ -52,7 +52,7 @@ Other model claims:
 | Zero-coupon cost of the ladder, Oct 16 (guide 4C) | $295,584 | $295,559 |
 | Real-instrument ladder, Oct 16 (guide 4C) | $300,769 | $300,396 (LP, 3% reinvestment) |
 | Real-instrument ladder, Oct 20 (Plans v2) | $300.1k | $299,717 |
-| Rates 0.75 pts lower at the lock: lock-and-balance median | $192k -> $159k (-17%) | $196.1k -> $162.2k (-17%) |
+| Rates 0.75 pts lower at the lock, and staying lower: lock-and-balance median | $192k -> $159k (-17%) | $196.1k -> $160.4k (-18%) (`reports/plans_v2_rate_stress.json`) |
 | Fat tails change results by | < $5k | < $5k (Gaussian vs t5) |
 | Facility buys less in Taiwan terms | ~25% | 21% at 4%/yr building costs; 25% needs ~5%/yr |
 | Plans v2 nine-instrument ladder funds ten payments | yes | yes: coupons 2027-32 pay the 2033 payment; $4k-$16k surplus each year |
@@ -106,7 +106,7 @@ regression tests in `tests/test_review_fixes.py`:
 | Commissions charged per weight slot, not per fund | The 3-fund VTI/VEA/VWO baseline paid for 9 funds (about $465 of median) | Count funds held; `fund_groups` for funds spread over several slots |
 | VGIT and cash compounded an annual yield monthly as y/12 | S2 median $1.55k too high, S9 $0.37k | Monthly factor (1 + y)^(1/12) |
 | No January 2031 rebalancing check for plans without a floor | S2 median $0.8k lower | Check the band in January 2031 |
-| Satellite alpha view converted to arithmetic twice | 0.875% instead of 1.0%; about $30 | No conversion for that view |
+| Satellite alpha view converted to arithmetic twice | 0.875% instead of 1.0% (the view at the time; it is now 0.82%); about $30 | No conversion for that view |
 
 The reviewer also suggested deriving risk aversion from the regions' arithmetic returns (each region's
 geometric forecast plus half its own basket variance). It is now 1.80, up from 1.74.
@@ -126,18 +126,22 @@ Run `python scripts/validate_model.py` (reports `validation_esg.csv`, `validatio
   so crash risk is, if anything, overstated.
 - **Rates:** the 10-year yield's change to January 2033 spans -2.1 to +2.2 points (5th-95th
   percentile), against -2.7 to +2.4 points over every 74-month window since 1994.
-- **Convergence:** across 8 seeds of 20,000 scenarios the median facility is $197,906 with a standard
-  error of $31; the 5th percentile's is $84.
+- **Convergence:** across 8 seeds of 20,000 scenarios the median facility is $197,912 with a standard
+  error of $32; the 5th percentile's is $83.
 - **Historical replay:** 184 real six-year paths (starts April 2005 to July 2020) applied to today's
-  curve. With returns re-centred on our expectations, the IPS median is $196.7k against $197.9k
-  simulated; its 5th percentile is $155.7k against $147.4k simulated, so the simulation is the more
+  curve. With returns re-centred on our expectations, the IPS median is $196.6k against $197.9k
+  simulated; its 5th percentile is $155.6k against $147.4k simulated, so the simulation is the more
   cautious. All-stock funds every payment in 90.2% of real paths against 86.7% simulated.
 - **Expected rate path:** forecasting the curve 74 months ahead from 320 month-ends (1994-2020), the
   error in the cost of ten payments is 7.7% for "unchanged", 7.5% for forwards minus the Kim-Wright term
   premium and 10.0% for pure forwards. "Unchanged" stays: it ties on accuracy and has the least bias.
-- **2031 range calibration:** on the same 184 paths, the 80% range quoted from each path's own January
-  2031 position contained the January 2033 result 98.4% of the time (re-centred) and 97.8% (as it
-  happened). The range is conservative.
+- **2031 range calibration:** on the same 184 paths, the model's 10th-90th percentile range quoted from
+  each path's own January 2031 position contained the January 2033 result 98.4% of the time (re-centred
+  and as it happened): it behaves like a 98% range. The 20th-80th percentile band held 80.4% (74.5% as
+  it happened), so that is the range to quote as "80%" (`reports/policy_study.json`).
+- **Satellite weighting:** re-estimated each January since 2019, single-linkage HRP's realised
+  volatility (16.1%) is level with average-linkage HRP (16.2%) and below Ward (16.7%), inverse-variance
+  (16.9%) and equal weights (18.3%) (`reports/validation_hrp.csv`).
 - **Black-Litterman stability:** over tau 0.025-0.10 and value-view uncertainty 1.5-5 points, the
   resampled weights hold BBJP at 6.7-7.0% and BBCA at 3.8-3.9%; a single optimum swings them from 2.6%
   to 9.5% and 1.5% to 5.5%.
@@ -145,7 +149,24 @@ Run `python scripts/validate_model.py` (reports `validation_esg.csv`, `validatio
 ## 8. Reproduce
 
 ```
-python -m pytest                      # 52 tests, includes every guide figure
-python scripts/validate_plans_v2.py   # section 3 table -> reports/plans_v2_validation.csv
+python -m pytest                      # 61 tests, includes every guide figure and the audit fixes
+python scripts/validate_plans_v2.py   # section 3 table -> reports/plans_v2_validation.csv, plans_v2_rate_stress.json
 python scripts/validate_model.py      # section 7 -> reports/validation_*.csv, backtest.csv, bl_sensitivity.csv
 ```
+
+## 9. Audit of this repository (October 21, 2026)
+
+A second review (`WGHS_AUDIT.md`, kept beside the repository) re-ran every test and script; the
+committed reports reproduced to within about $20. Its findings were fixed as follows, with regression
+tests in `tests/test_audit_fixes.py`:
+
+| Finding | Fix |
+| --- | --- |
+| The WInS ladder check judged only the last payment and assumed 3% interest on cash (WInS pays 0%) | Checks every payment at WInS's 0%; prints the cheapest top-up and exits 1 if short. The ladder held is $189 short for 2034; 6 more IBTO shares fix it |
+| Reinvestment risk sat outside "100% funded" | `ladder.premium` derives the ladder premium from the LP (a test pins `kappa0` to it); a stress prices the reserve to be certain at 0% reinvestment (median -$7.8k) |
+| The 2031 "80% range" held 98% of real outcomes | Calibrated on history: the 20th-80th percentile band held 80%; both ranges are now reported |
+| Rate stresses faded back to today's curve by 2033 | The long-run level moves with the shock |
+| Negative-equity companies scored a neutral 3 on ROE and leverage | ROE not scored, leverage scores 1 (HLT 4.0 -> 3.5; selection unchanged) |
+| Stale "+1.0%" alpha label; HRP and rate-stress claims with no script behind them | Label follows `config/cma.yaml`; `validate_model.py` and `validate_plans_v2.py` now produce those numbers |
+| Dates and WInS account state hard-coded across files; WInS scripts always re-downloaded prices | `config/asof.yaml` (the engine's month timeline follows the curve date), `config/wins_account.yaml`, a price cache, `scripts/run_all.py [--refresh]` |
+| Downloaders cached whatever came back (FRED served an HTML maintenance page with status 200 during the audit) | Every downloader checks the response before overwriting its cache; a refresh keeps the cached copy of any source that fails |

@@ -27,10 +27,12 @@ class TreasuryBond:
     label: str = ""
 
     def coupon_dates(self, after: dt.date) -> list[dt.date]:
-        d, out = self.maturity, []
-        while d > after:
+        """Each date counts back from maturity in whole half-years, so month-end maturities keep their
+        day (Aug 31 -> Feb 28 -> Aug 31, not Aug 28)."""
+        out, k = [], 0
+        while (d := add_months(self.maturity, -6 * k)) > after:
             out.append(d)
-            d = add_months(d, -6)
+            k += 1
         return sorted(out)
 
     def cashflows(self, settle: dt.date | str) -> list[tuple[dt.date, float]]:

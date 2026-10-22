@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 
 from . import engine
+from .asof import CURVE_DATE, DATA_END
 from .calibrate import factor_history, usd_twd_monthly
 from .curve import bootstrap
 from .data import fred, treasury, yahoo
@@ -20,9 +21,9 @@ from .esg import Scenarios, initial_state
 PROXY = {"EMXC": "EEM", "MCHI": "FXI"}     # longer histories for the two young funds
 
 
-def history_paths(history_tickers: list[str], start: str = "2005-04-30", end: str = "2026-09-30",
+def history_paths(history_tickers: list[str], start: str = "2005-04-30", end: str = DATA_END,
                   months: int = engine.M_2033, recentre: np.ndarray | None = None,
-                  curve_date: str = "2026-10-20") -> tuple[Scenarios, list[pd.Timestamp]]:
+                  curve_date: str = CURVE_DATE) -> tuple[Scenarios, list[pd.Timestamp]]:
     tickers = [PROXY.get(t, t) for t in history_tickers]
     eq = np.log1p(yahoo.monthly_returns(tickers, start="2000-01-01")).loc[start:end]
     if recentre is not None:

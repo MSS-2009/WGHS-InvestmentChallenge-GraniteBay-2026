@@ -30,6 +30,8 @@ def holdings(fund: str, refresh: bool = False) -> list[dict]:
         url = f"https://www.ishares.com/us/products/{PRODUCTS[fund]}/fund/latest-holdings.csv"
         r = requests.get(url, timeout=60, headers={"User-Agent": "Mozilla/5.0"})
         r.raise_for_status()
+        if "\nTicker," not in r.text:
+            raise ValueError(f"iShares returned no holdings table for {fund}")
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(r.text)
     lines = path.read_text(encoding="utf-8-sig", errors="ignore").splitlines()

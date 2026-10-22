@@ -116,3 +116,18 @@ def zero_coupon_cost(curve: ZeroCurve, payments, as_of: dt.date | str | None = N
     """Value of the payments on the zero curve. `as_of` re-bases times (guide convention)."""
     base = as_date(as_of) if as_of else curve.date
     return float(sum(a * curve.df(year_frac(base, d)) for d, a in payments))
+
+
+def wins_reserve_universe():
+    """Instruments the reserve may use: WInS-listed Treasury bonds and the iBonds term funds."""
+    from .instruments import IBONDS_TREASURY, ibonds_fund, wins_treasury_bonds
+
+    return wins_treasury_bonds(2032, 2042) + [ibonds_fund(t) for t in IBONDS_TREASURY if IBONDS_TREASURY[t] >= 2032]
+
+
+def premium(curve: ZeroCurve, reinvest: float = 0.03, instruments=None) -> float:
+    """Cost of the cheapest real-instrument ladder over the payments' zero-coupon value. This is the
+    engine's `kappa0`; it grows as the assumed reinvestment rate for cash awaiting a payment falls."""
+    pays = payment_schedule()
+    lp = solve(instruments or wins_reserve_universe(), pays, curve, reinvest)
+    return lp.cost / zero_coupon_cost(curve, pays) - 1.0
