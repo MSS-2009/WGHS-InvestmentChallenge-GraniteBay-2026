@@ -29,12 +29,24 @@ def test_commissions_count_funds_held_not_weight_slots():
     sc = _flat(0.05, k=9)
     w = tuple(np.full(9, 1 / 9))
     st = dc.replace(S2, region_weights=w)
-    nine = engine.run(st, sc, engine.EngineConfig(eq_er=(0.0,) * 9))
-    three = engine.run(st, sc, engine.EngineConfig(eq_er=(0.0,) * 9, fund_groups=((0, 1, 2), (3, 4, 5, 6), (7, 8))))
+    flat = dict(eq_er=(0.0,) * 9, compound_costs=False)          # count tickets, not their lost returns
+    nine = engine.run(st, sc, engine.EngineConfig(**flat))
+    three = engine.run(st, sc, engine.EngineConfig(**flat, fund_groups=((0, 1, 2), (3, 4, 5, 6), (7, 8))))
     # each trading event (two deposits plus any band rebalance) saves six equity tickets
     saved = three["assets_2033"] - nine["assets_2033"]
     per_event = 6 * engine.COMMISSION_ETF
     assert (saved >= 2 * per_event).all() and np.allclose(saved % per_event, 0)
+
+
+def test_commissions_compound_at_the_portfolio_return():
+    # All in VGIT at a flat 5%: one $25 ticket on each deposit (Jan 2027, Jan 2028), and nothing else.
+    st = dc.replace(S2, equity_share=0.0, bond_vehicle="VGIT")
+    sc = _flat(0.05)
+    plain = engine.run(st, sc, engine.EngineConfig(compound_costs=False))
+    compounded = engine.run(st, sc, engine.EngineConfig(compound_costs=True))
+    g = 1.05 ** (1 / 12) - engine.ER["VGIT"] / 12
+    lost = engine.COMMISSION_ETF * (g ** 72 - 1) + engine.COMMISSION_ETF * (g ** 60 - 1)
+    assert np.allclose(plain["assets_2033"] - compounded["assets_2033"], lost, rtol=1e-9)
 
 
 def test_zero_weight_slots_are_not_charged():

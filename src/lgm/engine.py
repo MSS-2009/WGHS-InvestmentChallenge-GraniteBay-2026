@@ -38,6 +38,7 @@ class EngineConfig:
     extra_ticket_min: float = 10_000.0   # below this, a small top-up stays in the ETFs (no basket trades)
     annual_cost: float = 0.0      # recurring commissions per year (e.g. basket reconstitution)
     fund_groups: tuple | None = None  # equity slots traded as one fund, e.g. VTI = (0, 1, 2); None = each slot
+    compound_costs: bool = True   # commissions owed grow at the invested assets' return, as if paid when incurred
 
 
 def pay_tau(m: float) -> np.ndarray:
@@ -159,8 +160,14 @@ def _liquidate(s: State, sc: Scenarios, m: int, amount: np.ndarray):
     return np.minimum(amount, total)
 
 
+def _invested(s: State, sc: Scenarios, m: int) -> np.ndarray:
+    """Everything outside the reserve ladder: the growth sleeve plus the floor, at month m prices."""
+    return growth_value(s, sc, m) + s.floor_face * _ibtm_df(sc, m)
+
+
 def _step(s: State, sc: Scenarios, m: int, cfg: "EngineConfig"):
     """Advance one month: markets move, fees accrue."""
+    v0 = _invested(s, sc, m) if cfg.compound_costs else None
     s.eq *= np.exp(sc.eq_log[:, m - sc.m0, :]) * (1 - np.asarray(cfg.eq_er) / 12)
     if cfg.commissions and cfg.annual_cost and m >= M_2027:
         s.costs += cfg.annual_cost / 12
@@ -172,6 +179,11 @@ def _step(s: State, sc: Scenarios, m: int, cfg: "EngineConfig"):
     s.floor_face *= 1 - ER["IBTM"] / 12
     short = np.expm1(sc.zero_cc(m, [0.25])[:, 0])
     s.cash *= (1 + short) ** (1 / 12)
+    if v0 is not None:
+        # Commissions are settled from the portfolio in 2033; growing what is owed at the portfolio's
+        # own monthly return is the same as having paid each one when it was incurred.
+        v1 = _invested(s, sc, m + 1)
+        s.costs *= np.divide(v1, v0, out=np.ones_like(v0), where=v0 > 0)
 
 
 def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: State | None = None,
