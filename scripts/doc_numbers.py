@@ -100,6 +100,33 @@ def checks() -> list[tuple[str, str, str]]:
                 f"{pt(lo.history_2005_2026)} to {pt(hi.history_2005_2026)} points"))
     rp = json.loads((R / "rate_path_scenario.json").read_text())
     out.append(("MODEL", "Kim-Wright path", f"the median facility is\n  ${(rp['unchanged']['median'] - rp['kim_wright']['median']) / 1000:.1f}k lower"))
+    s1 = bt[(bt.paths.str.startswith("History re-centred")) & (bt.strategy.str.startswith("S1"))].iloc[0]
+    s1_sim = pv.loc["S1 Index-first, all equity", "funded"]
+    out.append(("VALIDATION", "replay, all-stock funded",
+                f"All-stock funds every payment in {s1.funded:.1%} of real paths against {s1_sim:.1%} simulated"))
+    out.append(("VALIDATION", "replay paths", f"{int(ips.n_paths)} real six-year paths (starts "
+                f"{pd.Timestamp(ips.first_start):%B %Y} to {pd.Timestamp(ips.last_start):%B %Y})"))
+    rc = ps["range_calibration_history"]
+    out.append(("VALIDATION", "2031 range calibration",
+                f"contained the January 2033 result {rc['recentred']['inside_80pct_range']:.1%} of the time"))
+    out.append(("VALIDATION", "2031 calibrated band",
+                f"band held {rc['calibrated_band']['inside_recentred']:.1%} ({rc['calibrated_band']['inside_as_happened']:.1%} as\n  it happened)"))
+    esg_v = pd.read_csv(R / "validation_esg.csv").set_index("check")
+    kurt = esg_v[esg_v.index.str.contains("kurtosis")]
+    out.append(("VALIDATION", "generator kurtosis",
+                f"monthly excess kurtosis {kurt.model.min():.1f}-{kurt.model.max():.1f} against "
+                f"{kurt.history_2005_2026.min():.1f}-{kurt.history_2005_2026.max():.1f} in 2005-2026"))
+    out.append(("VALIDATION", "VTV-VGK correlation", f"(VTV-VGK, {esg_v.loc['Correlation VTV-VGK', 'model']:.3f})"))
+    hrp = pd.read_csv(R / "validation_hrp.csv").set_index("rule").realised_vol
+    out.append(("VALIDATION", "HRP linkage vols",
+                f"volatility ({hrp.iloc[0]:.1%}) is level with average-linkage HRP ({hrp.iloc[1]:.1%}) and below Ward "
+                f"({hrp.iloc[2]:.1%}), inverse-variance\n  ({hrp.iloc[3]:.1%}) and equal weights ({hrp.iloc[4]:.1%})"))
+    bl = pd.read_csv(R / "bl_sensitivity.csv")
+    pc = lambda c: f"{bl[c].min():.1%} to {bl[c].max():.1%}"
+    out.append(("VALIDATION", "BL stability",
+                f"resampled weights hold BBJP at {bl.BBJP.min() * 100:.1f}-{bl.BBJP.max():.1%} and BBCA at "
+                f"{bl.BBCA.min() * 100:.1f}-{bl.BBCA.max():.1%}"))
+    out.append(("VALIDATION", "BL single optimum", f"and {pc('single_optimum_BBCA')}"))
     v2 = json.loads((R / "plans_v2_rate_stress.json").read_text())
     out.append(("VALIDATION", "Plans v2 rate stress",
                 f"{k(v2['base_median'])} -> {k(v2['minus_75bp_median'])}"))
