@@ -133,6 +133,7 @@ def sensitivity_rows() -> list[str]:
     eqm = sl["equilibrium|wins_commissions|Black-Litterman core"]["median"] - plan["median"]
     pr = pd.read_csv(R / "policy_robust.csv")
     pr = pr[pr.name == "IPS"].set_index("shift")
+    cs = pd.read_csv(R / "corr_shrink_ips.csv").set_index("target")
     dv = lambda shift, col="median": d(pr.loc[shift, col] - pr.loc["base", col])
     import yaml
 
@@ -144,6 +145,8 @@ def sensitivity_rows() -> list[str]:
         f"| Equity forecasts | 13-firm median | lowest / highest firm ({pts(us.min() - np.median(us))} / {pts(us.max() - np.median(us))} points) | "
         f"{dv('eq_cma_lowest')} / {dv('eq_cma_highest')} median |",
         f"| Equity volatility | history since 2005 | x0.8 / x1.2 | {dv('eq_vol_0.8', 'p5')} / {dv('eq_vol_1.2', 'p5')} 5th pct |",
+        f"| Equity correlations | shrunk toward zero | toward their average | {d(cs.loc['mean', 'median'] - cs.loc['zero', 'median'])} median, "
+        f"{d(cs.loc['mean', 'p5'] - cs.loc['zero', 'p5'])} 5th pct |",
         f"| Rates at the January 2027 lock | as today | 0.75 points lower / higher | "
         f"{d(st['rates_minus_75bp_at_lock']['median'] - plan['median'])} / {d(st['rates_plus_75bp_at_lock']['median'] - plan['median'])} median |",
         f"| Cash awaiting a ladder payment | earns 3% | earns 0% (WInS pays none) | "

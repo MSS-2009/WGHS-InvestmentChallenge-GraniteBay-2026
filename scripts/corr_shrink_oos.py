@@ -7,20 +7,28 @@ Ledoit-Wolf (`calibrate.calibrate_assets`). This re-estimates them on rolling 10
 error in the market's and the core's volatility and in the core's active risk against the market (each
 using the test window's own volatilities, so only correlations differ), and the realised volatility of
 the minimum-variance portfolio built from them. Two panels: the 7 funds with history from 2005, and all
-9 with EEM and FXI standing in for EMXC and MCHI before they existed. Writes reports/corr_shrink_oos.csv.
+9 with EEM and FXI standing in for EMXC and MCHI before they existed. Writes reports/corr_shrink_oos.csv,
+and reports/corr_shrink_ips.csv: the IPS headline (20,000 scenarios, seed 11) under each target.
 """
+import dataclasses as dc
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from sklearn.covariance import LedoitWolf
 
+from lgm import engine
 from lgm.asof import DATA_END
+from lgm.calibrate import calibrate_assets
 from lgm.data import yahoo
+from lgm.esg import simulate
 from lgm.growth.core import build_core
+from lgm.growth.scoring import esg_params
 from lgm.growth.universe import CORE
+from lgm.strategies import IPS
 
 OUT = Path(__file__).resolve().parents[1] / "reports" / "corr_shrink_oos.csv"
+IPS_OUT = OUT.with_name("corr_shrink_ips.csv")
 STAND_INS = {"EMXC": "EEM", "MCHI": "FXI"}
 WINDOW, STEP = 109, 6
 
@@ -70,6 +78,16 @@ def score(panel: pd.DataFrame, w_mkt: np.ndarray, w_core: np.ndarray, horizon: i
     return pd.DataFrame(rows)
 
 
+def ips_headline(target: str, n: int = 20_000) -> dict:
+    """The IPS headline as scripts/report_numbers.py computes it, with equity correlations shrunk toward `target`."""
+    r = build_core(cal=calibrate_assets([g.history for g in CORE], equity_shrink_target=target))
+    sc = simulate(esg_params(r["cal"], r["table"]["bl_geo_total"].values), n=n, seed=11)
+    cfg = engine.EngineConfig(eq_er=tuple(g.expense_ratio for g in CORE))
+    s = engine.summarize(engine.run(dc.replace(IPS, region_weights=tuple(r["w_bl"])), sc, cfg))
+    return {"target": target, "core_volatility": float(np.sqrt(r["w_bl"] @ r["cov"] @ r["w_bl"])),
+            **{k: s[k] for k in ("median", "p5", "cvar5", "real_median")}}
+
+
 def main():
     tickers = [g.history for g in CORE]
     panel = pd.DataFrame({t: np.log1p(yahoo.monthly_returns([STAND_INS.get(t, t)], start="2000-01-01")[STAND_INS.get(t, t)])
@@ -93,7 +111,10 @@ def main():
             print(f"\n{funds} funds, next {horizon} months ({len(df) // agg.shape[0]} windows, panel {panel.index[0]:%Y-%m} on)")
             print(agg.drop(columns=["funds", "horizon_m", "windows"]).round(4).to_string(index=False))
     pd.concat(out).round(4).to_csv(OUT, index=False)
-    print(f"Wrote {OUT}")
+    ips = pd.DataFrame([ips_headline(t) for t in ("zero", "mean")])
+    ips.round(4).to_csv(IPS_OUT, index=False)
+    print(ips.to_string(index=False))
+    print(f"Wrote {OUT} and {IPS_OUT}")
 
 
 if __name__ == "__main__":

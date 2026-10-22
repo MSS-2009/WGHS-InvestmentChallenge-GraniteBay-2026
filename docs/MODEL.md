@@ -13,6 +13,7 @@ reruns the same 20,000 scenarios; the sections below give the evidence for each 
 |---|---|---|---|
 | Equity forecasts | 13-firm median | lowest / highest firm (-2.8 / +3.1 points) | -$11.7k / +$13.9k median |
 | Equity volatility | history since 2005 | x0.8 / x1.2 | +$5.6k / -$5.7k 5th pct |
+| Equity correlations | shrunk toward zero | toward their average | -$115 median, -$1.2k 5th pct |
 | Rates at the January 2027 lock | as today | 0.75 points lower / higher | -$35.8k / +$35.5k median |
 | Cash awaiting a ladder payment | earns 3% | earns 0% (WInS pays none) | -$7.8k median |
 | Expected rate path | unchanged | forwards less Kim-Wright term premium | -$443 median |
