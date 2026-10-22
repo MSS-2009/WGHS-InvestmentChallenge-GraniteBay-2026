@@ -167,7 +167,8 @@ sleeve are IBTM.
   Views are converted to arithmetic returns leg by leg, each leg adding half its own basket variance.
   All four views are relative, so the posterior is shifted to give the market its prior (consensus)
   return (`black_litterman.anchor_to_prior`): otherwise the views also move the market's level, by
-  +0.15 to +0.38 points depending on small changes in risk. Weights are unchanged by the shift.
+  +0.11 to +0.39 points depending on small changes in risk (the correlation target, the EM and China
+  volatilities). Weights are unchanged by the shift.
 - **Constraints:** each group within [0.5×, 2×] of market weight (and at most +10pp); no look-through
   overweight in tech/communication or China+Taiwan, the two concentrations the client background
   check flags.
