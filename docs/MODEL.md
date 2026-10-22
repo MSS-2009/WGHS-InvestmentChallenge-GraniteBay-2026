@@ -305,8 +305,8 @@ in 2033 at face value. The January 2033 sale that pays the contribution in cash 
 ticket per fund still held (nine for the core, $225; 35 more for the satellite, $875;
 `EngineConfig.sell_at_settlement`).
 
-The base BL core median in this run is $197.0k. It is $-0.2k below the core's own run because the
-satellite view, being relative, lowers the core funds' posterior returns by a few basis points;
+The base BL core median in this run is $197.0k. It is $0.2k above the core's own run because the
+satellite, as one more asset with its own view, moves the core funds' posterior returns by a few basis points;
 comparisons within the run are unaffected. Funding stays 100% in every case: the satellite cannot
 touch the payments. At a 20% share, each extra 1pp of alpha moves the median by about $857. With $25
 commissions the satellite needs about 5.0pp a year of alpha beyond the posterior to break even, which

@@ -20,8 +20,8 @@ R = ROOT / "reports"
 
 
 def k(x: float) -> str:
-    """$197.6k style."""
-    return f"${x / 1000:,.1f}k"
+    """$197.6k style; a negative is -$0.2k, never $-0.2k."""
+    return ("-" if x < 0 else "") + f"${abs(x) / 1000:,.1f}k"
 
 
 def rng(a: float, b: float) -> str:
@@ -287,7 +287,8 @@ def checks() -> list[tuple[str, str, str]]:
     hoped20 = -sv.loc[("Satellite alpha as hoped (+0.82%)", "$25 (WInS)", "Core + 20% satellite"), "median_vs_core"]
     per_pp = (bl20 - hoped20) / (0.82 - 0.22)          # the hoped and posterior alphas, in points
     out.append(("MODEL", "satellite run base", f"The base BL core median in this run is {k(base_sat)}. It is "
-                                               f"{k(plan['median'] - base_sat)} below"))
+                                               f"{k(abs(base_sat - plan['median']))} "
+                                               f"{'above' if base_sat >= plan['median'] else 'below'} the core's own run"))
     out.append(("MODEL", "satellite alpha sensitivity",
                 f"each extra 1pp of alpha moves the median by about ${per_pp:,.0f}. With $25 commissions\n"
                 f"the satellite needs about {bl20 / per_pp:.1f}pp a year of alpha beyond the posterior to break even"))
