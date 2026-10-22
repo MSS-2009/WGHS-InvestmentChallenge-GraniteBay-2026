@@ -28,6 +28,40 @@ def rng(a: float, b: float) -> str:
     return f"{k(a)}-{k(b)}"
 
 
+def sensitivity_rows() -> list[str]:
+    """The 'What the numbers rest on' table in docs/MODEL.md: each assumption, the alternative tried,
+    and what it does to the IPS (headline median, 5th percentile, or real median where that is the point)."""
+    rn = json.loads((R / "report_numbers.json").read_text())
+    plan, st, sl = rn["plan"], rn["stress"], rn["sleeves"]
+    d = lambda x: ("+" if x >= 0 else "-") + (k(abs(x)) if abs(x) >= 1000 else f"${abs(x):,.0f}")
+    fx = pd.read_csv(R / "fx_variants.csv").set_index("variant")
+    rp = json.loads((R / "rate_path_scenario.json").read_text())
+    sr = pd.read_csv(R / "stock_rate_corr.csv")
+    sr = sr[sr.strategy.str.startswith("IPS")].set_index("variant")
+    lp = pd.read_csv(R / "ladder_premium.csv")
+    lp = lp[(lp.kind == "score") & lp.strategy.str.startswith("IPS")].set_index("variant")
+    sat = pd.read_csv(R / "satellite_scoring.csv").set_index(["beliefs", "commissions", "candidate"])
+    sat20 = sat.loc[("Black-Litterman posterior", "$25 (WInS)", "Core + 20% satellite"), "median_vs_core"]
+    eqm = sl["equilibrium|wins_commissions|Black-Litterman core"]["median"] - plan["median"]
+    return [
+        f"| Rates at the January 2027 lock | as today | 0.75 points lower / higher | "
+        f"{d(st['rates_minus_75bp_at_lock']['median'] - plan['median'])} / {d(st['rates_plus_75bp_at_lock']['median'] - plan['median'])} median |",
+        f"| Cash awaiting a ladder payment | earns 3% | earns 0% (WInS pays none) | "
+        f"{d(st['reserve_certain_at_0pct_reinvestment']['median_change'])} median |",
+        f"| Expected rate path | unchanged | forwards less Kim-Wright term premium | "
+        f"{d(rp['kim_wright']['median'] - rp['unchanged']['median'])} median |",
+        f"| Equity expected returns | Black-Litterman posterior | equilibrium (views wrong) | {d(eqm)} median |",
+        f"| Stock-rate correlation | -0.17 (2017-2026) | 2000-2021 regime (+0.28) | "
+        f"{d(sr.loc['2000..2021', 'median_vs_today'])} median, {d(sr.loc['2000..2021', 'p5_vs_today'])} 5th pct |",
+        f"| Ladder premium | constant 1.8% | moves with rates | {d(lp.loc['rate slope', 'median_vs_engine'])} median, "
+        f"{d(lp.loc['rate slope', 'p5_vs_engine'])} 5th pct |",
+        f"| Stock satellite | none | 20% of equity, $25 trades | {d(sat20)} median |",
+        f"| USD/TWD drift | none (random walk) | today's forward (-2.28% a year) | "
+        f"{d(fx.loc['forward_latest', 'real_median'] - fx.loc['random_walk', 'real_median'])} real median |",
+        f"| Taiwan building-cost drift | 2.85% (1991-2026) | 3.78% (last ten years) | about -$9k real median |",
+    ]
+
+
 def checks() -> list[tuple[str, str, str]]:
     """(doc, what, text that must appear)."""
     rn = json.loads((R / "report_numbers.json").read_text())
@@ -284,6 +318,7 @@ def checks() -> list[tuple[str, str, str]]:
                 f"with {c['volatility']:.1%} volatility, a {c['fee']:.2%} average fee and a {c['tracking_error']:.2%} tracking error. "
                 f"Look-through\ntech/communication is {c['tech_comm']:.1%} (market {c['tech_comm_market']:.1%}); "
                 f"China+Taiwan is {c['china_taiwan']:.1%} (market {c['china_taiwan_market']:.1%})."))
+    out += [("MODEL", f"sensitivity row {i + 1}", row) for i, row in enumerate(sensitivity_rows())]
     return out
 
 

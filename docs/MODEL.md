@@ -5,6 +5,29 @@ common random numbers, IPS rules) measures what it does to Laura's January 2033 
 contribution and to the certainty of her ten $50,000 payments. Results are as of the October 20, 2026
 Treasury curve and September 30, 2026 month-end prices.
 
+## What the numbers rest on
+The IPS median is $197.2k and its 5th percentile $146.8k. Each row changes one assumption and
+reruns the same 20,000 scenarios; the sections below give the evidence for each headline choice.
+
+| Assumption | Headline | Alternative | Effect on the IPS |
+|---|---|---|---|
+| Rates at the January 2027 lock | as today | 0.75 points lower / higher | -$36.0k / +$35.5k median |
+| Cash awaiting a ladder payment | earns 3% | earns 0% (WInS pays none) | -$7.9k median |
+| Expected rate path | unchanged | forwards less Kim-Wright term premium | -$467 median |
+| Equity expected returns | Black-Litterman posterior | equilibrium (views wrong) | -$1.2k median |
+| Stock-rate correlation | -0.17 (2017-2026) | 2000-2021 regime (+0.28) | +$29 median, -$1.6k 5th pct |
+| Ladder premium | constant 1.8% | moves with rates | +$29 median, +$481 5th pct |
+| Stock satellite | none | 20% of equity, $25 trades | -$4.3k median |
+| USD/TWD drift | none (random walk) | today's forward (-2.28% a year) | -$21.4k real median |
+| Taiwan building-cost drift | 2.85% (1991-2026) | 3.78% (last ten years) | about -$9k real median |
+
+Two things move the outcome by tens of thousands of dollars. The rate level when the payments are
+locked: lower rates make the ladder dearer, and the IPS carries this only until January 2027 and
+2028, two and fourteen months away. And, for what the money buys in Taiwan, the USD/TWD path, which
+no choice inside the model removes (hedging is the client's decision, `docs/loop/r4_fx_findings.md`).
+Of the other rows, a 0% cash rate on the ladder and the satellite under WInS commissions cost a few
+thousand dollars; every other modelling choice tested moves the median by under $1.5k.
+
 ## Part 1 — funding model
 Treasury par curve → zero curve → cheapest WInS-permitted cash-flow-matched ladder (linear program),
 and a monthly scenario generator: Nelson-Siegel rates, K equity assets, inflation, USD/TWD and Taiwan
