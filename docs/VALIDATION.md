@@ -109,7 +109,7 @@ regression tests in `tests/test_review_fixes.py`:
 | Satellite alpha view converted to arithmetic twice | 0.875% instead of 1.0% (the view at the time; it is now 0.82%); about $30 | No conversion for that view |
 
 The reviewer also suggested deriving risk aversion from the regions' arithmetic returns (each region's
-geometric forecast plus half its own basket variance). It is now 1.78, up from 1.74.
+geometric forecast plus half its own basket variance). It is now 1.70, up from 1.74.
 
 Checked and found correct: the nested 2031 simulation (matches the outer run to $0.01 with zero
 volatility), deterministic engine growth, generator moments, curve bootstrapping, the ladder LP
@@ -121,8 +121,8 @@ Run `python scripts/validate_model.py` (reports `validation_esg.csv`, `validatio
 `backtest.csv`, `bl_sensitivity.csv`).
 
 - **Generator reproduces its inputs:** each fund's median return exactly, its volatility within 0.05
-  points, and the one correlation checked (VTV-VGK, 0.793).
-- **Tails are fatter than history:** monthly excess kurtosis 3.9-6.0 against 0.1-3.4 in 2005-2026,
+  points, and the one correlation checked (VTV-VGK, 0.851).
+- **Tails are fatter than history:** monthly excess kurtosis 3.9-5.7 against 0.1-3.4 in 2005-2026
   so crash risk is, if anything, overstated.
 - **No long-horizon mean reversion to leave out:** US stocks' 74-month variance ratio since 1926 is 0.75
   against 0.91 for i.i.d. returns of the same length (p = 0.26; every start date and horizon tested,
@@ -134,25 +134,25 @@ Run `python scripts/validate_model.py` (reports `validation_esg.csv`, `validatio
   robustness study's x1.2 volatility case covers a return to that.
 - **Rates:** the 10-year yield's change to January 2033 spans -2.8 to +2.8 points (5th-95th
   percentile), against -2.7 to +2.4 points over every 74-month window since 1994.
-- **Convergence:** across 8 seeds of 20,000 scenarios the median facility is $197,253 with a standard
-  error of $28; the 5th percentile's is $126.
+- **Convergence:** across 8 seeds of 20,000 scenarios the median facility is $197,342 with a standard
+  error of $3; the 5th percentile's is $103.
 - **Historical replay:** 184 real six-year paths (starts April 2005 to July 2020) applied to today's
-  curve. With returns re-centred on our expectations, the IPS median is $196.1k against $197.2k
-  simulated; its 5th percentile is $155.1k against $146.8k simulated, so the simulation is the more
+  curve. With returns re-centred on our expectations, the IPS median is $196.3k against $197.3k
+  simulated; its 5th percentile is $155.3k against $145.7k simulated, so the simulation is the more
   cautious. All-stock funds every payment in 90.2% of real paths against 86.7% simulated.
 - **Expected rate path:** forecasting the curve 74 months ahead from 320 month-ends (1994-2020), the
   error in the cost of ten payments is 7.7% for "unchanged", 7.5% for forwards minus the Kim-Wright term
   premium and 10.0% for pure forwards. "Unchanged" stays: it ties on accuracy and has the least bias.
 - **2031 range calibration:** on the same 184 paths, the model's 10th-90th percentile range quoted from
-  each path's own January 2031 position contained the January 2033 result 98.4% of the time (re-centred
-  and as it happened): it behaves like a 98% range. The 20th-80th percentile band held 81.0% (75.5% as
+  each path's own January 2031 position contained the January 2033 result 99.5% of the time (re-centred
+  and as it happened): it behaves like a 98% range. The 20th-80th percentile band held 82.6% (77.7% as
   it happened), so that is the range to quote as "80%" (`reports/policy_study.json`).
 - **Satellite weighting:** re-estimated each January since 2019, single-linkage HRP's realised
   volatility (16.1%) is level with average-linkage HRP (16.2%) and below Ward (16.7%), inverse-variance
   (16.9%) and equal weights (18.2%) (`reports/validation_hrp.csv`).
 - **Black-Litterman stability:** over tau 0.025-0.10 and value-view uncertainty 1.5-5 points, the
-  resampled weights hold BBJP at 6.7-7.0% and BBCA at 3.8-3.9%; a single optimum swings them from 2.6%
-  to 9.5% and 1.5% to 5.6%.
+  resampled weights hold BBJP at 6.7-6.9% and BBCA at 3.8-3.9%; a single optimum swings them from 2.6%
+  to 9.5% and 1.9% to 6.0%.
 
 ## 8. Reproduce
 

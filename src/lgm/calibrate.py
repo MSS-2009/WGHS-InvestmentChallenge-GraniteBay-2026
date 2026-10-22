@@ -134,7 +134,8 @@ def calibrate(eq_window_start: str = "2007-08-31", end: str = DATA_END) -> Calib
 
 
 def calibrate_assets(history_tickers: list[str], window_start: str = "2017-08-31", end: str = DATA_END,
-                     vol_from: str = "2005-01-01", extra_returns: pd.DataFrame | None = None) -> dict:
+                     vol_from: str = "2005-01-01", extra_returns: pd.DataFrame | None = None,
+                     equity_shrink_target: str = "mean") -> dict:
     """Joint monthly shock covariance for K equity assets plus the 5 macro shocks
     (3 rate factors, inflation, USD/TWD), in that order.
 
@@ -165,8 +166,20 @@ def calibrate_assets(history_tickers: list[str], window_start: str = "2017-08-31
     for i, t in enumerate(assets):              # long-history vols for equities
         r = extra[t] if t in extra else np.log1p(yahoo.monthly_returns([t], start="2000-01-01")[t])
         sd[i] = float(r.dropna().loc[vol_from:end].std())
+    # Ledoit-Wolf intensity; target: zero correlation, except that equity pairs shrink toward their own
+    # average ("mean", constant-correlation as in Ledoit and Wolf 2004). Shrinking equities toward zero
+    # ("zero", the identity target) pulls every pair down and understates a diversified core's volatility
+    # (14.9% against 15.4% with the sample correlations, which the "mean" target keeps on average).
     lw = LedoitWolf().fit((joint.values - joint.values.mean(0)) / joint.std().values)
-    corr = lw.covariance_ / np.sqrt(np.outer(np.diag(lw.covariance_), np.diag(lw.covariance_)))
+    R = np.corrcoef(joint.values, rowvar=False)
+    target = np.eye(len(names))
+    if equity_shrink_target == "mean":
+        k = len(assets)
+        eq = R[:k, :k][~np.eye(k, dtype=bool)]
+        target[:k, :k] = np.where(np.eye(k, dtype=bool), 1.0, eq.mean())
+    elif equity_shrink_target != "zero":
+        raise ValueError(equity_shrink_target)
+    corr = (1 - lw.shrinkage_) * R + lw.shrinkage_ * target
     return {"cov": corr * np.outer(sd, sd), "corr": pd.DataFrame(corr, index=names, columns=names),
             "names": names, "months": int(joint.shape[0]), "shrinkage": float(lw.shrinkage_),
             "window": (str(joint.index.min().date()), str(joint.index.max().date())),

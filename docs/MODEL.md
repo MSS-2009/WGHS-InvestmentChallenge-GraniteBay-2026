@@ -6,19 +6,19 @@ contribution and to the certainty of her ten $50,000 payments. Results are as of
 Treasury curve and September 30, 2026 month-end prices.
 
 ## What the numbers rest on
-The IPS median is $197.2k and its 5th percentile $146.8k. Each row changes one assumption and
+The IPS median is $197.3k and its 5th percentile $145.7k. Each row changes one assumption and
 reruns the same 20,000 scenarios; the sections below give the evidence for each headline choice.
 
 | Assumption | Headline | Alternative | Effect on the IPS |
 |---|---|---|---|
 | Equity forecasts | 13-firm median | lowest / highest firm (-2.8 / +3.1 points) | -$11.8k / +$13.8k median |
-| Equity volatility | history since 2005 | x0.8 / x1.2 | +$5.5k / -$5.7k 5th pct |
+| Equity volatility | history since 2005 | x0.8 / x1.2 | +$6.1k / -$5.9k 5th pct |
 | Rates at the January 2027 lock | as today | 0.75 points lower / higher | -$36.0k / +$35.5k median |
 | Cash awaiting a ladder payment | earns 3% | earns 0% (WInS pays none) | -$7.9k median |
-| Expected rate path | unchanged | forwards less Kim-Wright term premium | -$467 median |
-| Equity views | Black-Litterman posterior | equilibrium (views wrong) | -$1.2k median |
-| Stock-rate correlation | -0.17 (2017-2026) | 2000-2021 regime (+0.28) | +$29 median, -$1.6k 5th pct |
-| Ladder premium | constant 1.8% | moves with rates | +$29 median, +$481 5th pct |
+| Expected rate path | unchanged | forwards less Kim-Wright term premium | -$441 median |
+| Equity views | Black-Litterman posterior | equilibrium (views wrong) | -$1.3k median |
+| Stock-rate correlation | -0.17 (2017-2026) | 2000-2021 regime (+0.28) | +$150 median, -$1.4k 5th pct |
+| Ladder premium | constant 1.8% | moves with rates | +$72 median, +$446 5th pct |
 | Stock satellite | none | 20% of equity, $25 trades | -$4.3k median |
 | USD/TWD drift | none (random walk) | today's forward (-2.28% a year) | -$21.4k real median |
 | Taiwan building-cost drift | 2.85% (1991-2026) | 3.78% (last ten years) | -$8.7k real median |
@@ -36,11 +36,11 @@ The model leaves these open. Each row gives what the evidence says and where it 
 
 | Decision | Evidence | Lean | Section |
 |---|---|---|---|
-| Growth mix and 2031 floor | 40% equity with a 100% floor instead of the IPS's 60% and 60%: median -$3.5k, 5th percentile +$8.2k, a 2031 floor worth $77.1k more at maturity; certainty equivalents within $0.5k at risk aversion 4 | How much the co-sponsors need promised in 2031 | Policy study |
+| Growth mix and 2031 floor | 40% equity with a 100% floor instead of the IPS's 60% and 60%: median -$3.5k, 5th percentile +$8.7k, a 2031 floor worth $77.1k more at maturity; certainty equivalents within $0.7k at risk aversion 4 | How much the co-sponsors need promised in 2031 | Policy study |
 | Contribution share | 75%, 85% and 95% give typical contributions of $148k, $168k, $187k; Laura keeps $49k, $30k, $10k | Preference | Policy study |
-| Hedge USD/TWD | On the random walk every hedge lowers the real 5th percentile and median; if the forward were unbiased, at most +$4.2k on the 5th percentile | Evidence says do not hedge | USD/TWD |
+| Hedge USD/TWD | On the random walk every hedge lowers the real 5th percentile and median; if the forward were unbiased, at most +$4.1k on the 5th percentile | Evidence says do not hedge | USD/TWD |
 | Taiwan building-cost drift | The long-run average forecast six-year cost growth better in real time (RMSE 0.167 vs 0.222); the ten-year drift would mean -$8.7k of real median | Evidence supports the long-run average | Taiwan building costs |
-| Stock satellite | -$4.3k median at 20% with WInS commissions, +$0.4k without | A values choice, not a return one | Part 2b |
+| Stock satellite | -$4.3k median at 20% with WInS commissions, +$0.3k without | A values choice, not a return one | Part 2b |
 | Reserve outside WInS | STRIPS need no reinvestment assumption and, at the retail ask, cost about what the WInS ladder costs assuming 3% (+1.54% vs +1.82% over zero-coupon value): $6.3k cheaper than making the WInS ladder certain, +$8.9k of median | Only if WInS rules do not bind | `scripts/strips_reserve.py` |
 
 ## Part 1 — funding model
@@ -56,12 +56,18 @@ leaves the IPS median within $0.1k. The engine applies a strategy month by month
 rebalancing band, 2031 floor, contribution rule). `docs/VALIDATION.md` checks this against the
 former team's guide and Plans v2.
 
+Shock correlations come from Aug 2017-Sep 2026 (the youngest fund's history), shrunk with Ledoit-Wolf
+intensity (8%). Equity pairs shrink toward their own average correlation rather than toward zero
+(constant-correlation target, Ledoit and Wolf 2004; `calibrate_assets`): the zero target had
+lowered the average equity correlation from 0.69 to 0.64 and the core's volatility from 15.4% to
+14.9%. The fix lowers the IPS 5th percentile by $1.1k and leaves the median and weights almost unchanged.
+
 Market inputs (all keyless):
 - **Expected rates: unchanged on average.** A 1994-2020 test (`scripts/rate_path_study.py`) forecast
   the curve 74 months ahead from 320 month-ends. Error in the cost of ten payments: unchanged 7.7%,
   forwards minus the Kim-Wright term premium 7.5%, pure forwards 10.0%. Unchanged also has the
   smallest bias, so it stays. Run today with the Kim-Wright path instead, the median facility is
-  $0.5k lower (`reports/rate_path_scenario.json`).
+  $0.4k lower (`reports/rate_path_scenario.json`).
 - **Inflation:** reverts from the latest CPI reading (September: 3.7%) toward 7-year breakeven
   inflation from Treasury's nominal and TIPS par curves (2.37% on October 20, 2026). TIPS are a gauge
   only; WInS forbids them.
@@ -69,17 +75,17 @@ Market inputs (all keyless):
   needed bad prints filtered out). No drift: on TWD's own history the random walk forecasts better
   than the forward at 12, 36 and 72 months, and the actual central-bank forward is biased (Fama slope
   -0.09; `docs/loop/r4_fx_findings.md`). If the Taiwan dollar did drift as today's forward implies
-  (-2.28% a year), the real median would be $145.4k instead of $166.7k.
+  (-2.28% a year), the real median would be $145.6k instead of $166.9k.
   No mean reversion either: over 2000-2026 the 74-month change spread is half a random walk's
   (variance ratio 0.34), but a random walk of the same length gives a median of 0.66 and 0.34 or less
   14% of the time; on FRED's copy of the same rate from 1983 the ratio is 1.55 (the late-1980s
-  appreciation). The model's 74-month spread (sd 14.0%) lies between the two samples' 6.5% and 16.4%
+  appreciation). The model's 74-month spread (sd 13.9%) lies between the two samples' 6.5% and 16.4%
   (`scripts/fx_horizon.py`).
   Partial hedges (`scripts/fx_hedge_frontier.py`, a share of the median facility sold forward in
   January 2027): on the random walk every hedge lowers the real 5th percentile as well as the median
-  (fully hedged $94.9k and $144.3k against $110.8k and $166.7k). Only if the forward is an
-  unbiased forecast does hedging pay, and then modestly: the median is unchanged within $0.9k
-  and the 5th percentile rises from $96.6k to at most $100.8k (at 75% hedged). Most of the
+  (fully hedged $94.1k and $144.4k against $110.4k and $166.9k). Only if the forward is an
+  unbiased forecast does hedging pay, and then modestly: the median is unchanged within $1.0k
+  and the 5th percentile rises from $96.2k to at most $100.3k (at 75% hedged). Most of the
   real risk is the facility's own dollar value, which no currency hedge removes.
 - **Taiwan building costs:** the official DGBAS construction cost index, 1991-2026
   (`data/raw/taiwan/`). Monthly log changes follow a fitted AR(2) (0.655, -0.094) that reproduces the
@@ -94,9 +100,9 @@ Market inputs (all keyless):
   Taiwan dollar has come with slower building-cost growth (12- to 72-month changes, 2000-2026: -0.18
   to -0.33, `scripts/taiwan_fx_corr.py`), so the two risks add up rather than offset. Against US
   stocks, cost growth has moved with them over 1 to 24 months (+0.08 to +0.23) and against them over
-  72 months (-0.41), but that last figure rests on 3 independent windows; the model's +0.09 to +0.11
-  sits inside the range. This widens the real 5th-95th percentile range from $113.2k-$247.3k to
-  $110.8k-$251.8k and leaves the real median unchanged. The historical replay uses the index's real
+  72 months (-0.41), but that last figure rests on 3 independent windows; the model's +0.08 to +0.10
+  sits inside the range. This widens the real 5th-95th percentile range from $112.7k-$248.4k to
+  $110.4k-$253.0k and leaves the real median unchanged. The historical replay uses the index's real
   paths.
 
 **How certain is "certain"?** A locked payment is treated as certain. That rests on one assumption:
@@ -109,25 +115,25 @@ ladder as held is $189 short for the 2034 payment, fixed by 6 more IBTO shares
 (`scripts/wins_ladder_check.py`).
 
 The 1.8% premium itself moves with rates, because cash awaiting a payment is assumed to earn a fixed 3%:
-re-solving the LP on simulated January 2027 curves gives 1.64% at today's 5-year rate plus 0.57 points
+re-solving the LP on simulated January 2027 curves gives 1.64% at today's 5-year rate plus 0.56 points
 per point of rate (0.9% to 2.5% across scenarios; `scripts/ladder_premium.py`). Scoring with that
-slope changes the IPS median by +$29 and its 5th percentile by +$0.5k; with the lower level as well,
+slope changes the IPS median by +$72 and its 5th percentile by +$0.4k; with the lower level as well,
 +$0.7k and +$1.0k. The engine keeps the constant 1.8%: it is slightly cautious, and in low-rate
 scenarios the slope relies on cash earning 3% above market rates, which can make the premium negative.
 
 **Rate stress.** Rates 0.75 points lower before the January 2027 lock, and expected to stay there (the
 long-run level moves with today's, matching the "unchanged" expectation): the IPS median falls from
-$197.2k to $161.2k, and still funds every payment. 0.75 points higher: $232.7k.
+$197.3k to $161.3k, and still funds every payment. 0.75 points higher: $232.8k.
 
 **Stock-rate correlation.** Correlations come from Aug 2017-Sep 2026, the youngest fund's history,
 where the S&P 500's monthly correlation with the 5-year rate change is -0.16 (the model's core: -0.17).
 That window averages two regimes, +0.41 in 2017-2021 and -0.47 since 2022, and over longer history the
 sign follows inflation: 1994-1999 -0.30, 2000-2021 +0.36, 1994-2026 +0.09. A positive correlation is
 the bad case for an open ladder (rates fall as stocks fall). Re-scoring with the equity-rate block
-rescaled to each regime (`scripts/stock_rate_corr.py`): the IPS median stays within $0.2k and its 5th
-percentile ranges from $145.3k (the 2000-2021 regime) to $146.8k (today's). The index-first
-60/40, which leaves the liabilities open, is exposed: its 5th percentile runs from $51.3k
-to $31.6k. Crash months show no flight to quality on average either: in the worst 5% of equity months
+rescaled to each regime (`scripts/stock_rate_corr.py`): the IPS median stays within $0.3k and its 5th
+percentile ranges from $144.3k (the 2000-2021 regime) to $145.7k (today's). The index-first
+60/40, which leaves the liabilities open, is exposed: its 5th percentile runs from $46.7k
+to $27.5k. Crash months show no flight to quality on average either: in the worst 5% of equity months
 since 2007 the 5-year rate rose 0.05 points on average and fell in 58% of them, and the "crash
 correlation" of 0.39 rests on 12 months (p = 0.11 against no extra tail dependence;
 `scripts/crash_comovement.py`).
@@ -138,7 +144,7 @@ sleeve are IBTM.
 
 - **Prior:** market-cap weights from iShares holdings: ACWI for regions, Russell 1000 Growth and
   Value for the US style split, and the CRSP breakpoints that VUG/VTV/VB use for size. Risk aversion
-  δ = 1.78 makes the market earn the 13-firm median 10-year forecasts: each region's geometric
+  δ = 1.70 makes the market earn the 13-firm median 10-year forecasts: each region's geometric
   forecast plus half its own basket variance, weighted by region (market geometric 6.38%).
 - **Views** (`config/cma.yaml`): international developed minus US (+0.80%), emerging minus developed
   (+0.50%), US value minus growth (+2.87%: Vanguard's +3.5% and the 1927-2026 Kenneth French history
@@ -152,35 +158,35 @@ sleeve are IBTM.
   check flags.
 - **Resampling:** one optimum sits on these limits and swaps weight between near-identical funds
   when an input moves slightly. Across τ 0.025-0.10 and value-view uncertainty 1.5-5 points it moved
-  BBJP between 2.6% and 9.5%. The weights are the average optimum over 500 draws of expected returns
+  BBJP between 2.6% and 9.1%. The weights are the average optimum over 500 draws of expected returns
   from the posterior (Michaud 1998), with the prior covariance as risk. Over the same grid BBJP stays
-  at 6.7-7.0% (`reports/bl_sensitivity.csv`).
+  at 6.7-6.9% (`reports/bl_sensitivity.csv`).
 
 | ETF | Market | Black-Litterman |
 |---|---:|---:|
-| VUG | 26.8% | 16.0% |
-| VTV | 29.9% | 31.5% |
-| VB | 8.7% | 13.0% |
-| VGK | 13.8% | 16.2% |
+| VUG | 26.8% | 16.1% |
+| VTV | 29.9% | 31.7% |
+| VB | 8.7% | 12.7% |
+| VGK | 13.8% | 16.3% |
 | BBJP | 5.2% | 6.8% |
 | EPP | 2.2% | 2.9% |
-| BBCA | 3.0% | 3.8% |
-| EMXC | 8.6% | 7.8% |
+| BBCA | 3.0% | 3.9% |
+| EMXC | 8.6% | 7.7% |
 | MCHI | 1.9% | 1.9% |
 
 The core holds 60% US, 30% developed and 10% emerging stocks, against the market's 65/24/10: the
 developed-beats-US view moves about 5 points out of the US. It expects 6.7% a year after fees
-(market 6.4%), with 14.9% volatility, a 0.10% average fee and a 1.29% tracking error. Look-through
-tech/communication is 29.7% (market 36.0%); China+Taiwan is 4.9% (market 5.2%).
+(market 6.4%), with 15.4% volatility, a 0.10% average fee and a 1.18% tracking error. Look-through
+tech/communication is 29.8% (market 36.0%); China+Taiwan is 4.9% (market 5.2%).
 
 Monte Carlo, median facility (IPS rules, 20,000 scenarios, `reports/report_numbers.json`):
 
 | Sleeve | Views right, $25 trades | Views right, no commissions | Views wrong (equilibrium), $25 trades |
 |---|---:|---:|---:|
-| VTI/VEA/VWO 60/30/10 (3 funds) | $197.6k | $198.5k | $197.0k |
-| Black-Litterman core (9 funds) | $197.2k | $198.9k | $196.0k |
+| VTI/VEA/VWO 60/30/10 (3 funds) | $197.7k | $198.6k | $196.9k |
+| Black-Litterman core (9 funds) | $197.3k | $198.9k | $196.0k |
 
-The core's views are worth about $0.4k before commissions. Its six extra funds cost about $0.7k in
+The core's views are worth about $0.3k before commissions. Its six extra funds cost about $0.7k in
 WInS commissions, so with $25 trades it trails the 3-fund portfolio by $0.4k. So the core is a
 risk-control choice, not a return engine: it holds technology and China+Taiwan below the market's
 share for about 0.2% of the median. Equity selection is second-order for Laura; the funding
@@ -257,7 +263,7 @@ The satellite is one more asset to the scenario generator: the HRP basket rebala
 volatility (15.1%) comes from history back to 2005. Correlations come from the common window. It is
 funded from VUG/VTV pro rata, so the core's region and style decisions stand.
 
-- **Equilibrium:** CAPM-implied return from its covariance with the market (beta 0.89), so
+- **Equilibrium:** CAPM-implied return from its covariance with the market (beta 0.90), so
   zero alpha by construction.
 - **Style benchmark** (Sharpe style analysis): 72% VTV, 17% VB, 11% VUG. Tracking error 7.0%.
   Stating the alpha view against this benchmark keeps the value view from leaking into it.
@@ -272,10 +278,10 @@ funded from VUG/VTV pro rata, so the core's region and style decisions stand.
 ### Monte Carlo verdict (median facility vs the BL core alone, IPS rules)
 | Beliefs | Commissions | +10% | +20% | +30% |
 |---|---|---:|---:|---:|
-| Equilibrium (no alpha) | $25 per trade (WInS) | −$4.7k | −$4.8k | −$4.9k |
-| BL posterior (+0.22%) | $25 per trade (WInS) | −$4.5k | −$4.3k | −$4.1k |
-| BL posterior (+0.22%) | none | +$0.3k | +$0.4k | +$0.6k |
-| Alpha as hoped (+0.82%) | $25 per trade (WInS) | −$4.2k | −$3.8k | −$3.4k |
+| Equilibrium (no alpha) | $25 per trade (WInS) | −$4.7k | −$4.8k | −$4.8k |
+| BL posterior (+0.22%) | $25 per trade (WInS) | −$4.5k | −$4.3k | −$4.2k |
+| BL posterior (+0.22%) | none | +$0.2k | +$0.3k | +$0.6k |
+| Alpha as hoped (+0.82%) | $25 per trade (WInS) | −$4.2k | −$3.7k | −$3.3k |
 
 Commissions are charged as if paid from the portfolio when incurred (they lose the returns the
 portfolio would have earned), which raises the satellite's cost by about $0.5k against charging them
@@ -283,11 +289,11 @@ in 2033 at face value. The January 2033 sale that pays the contribution in cash 
 ticket per fund still held (nine for the core, $225; 35 more for the satellite, $875;
 `EngineConfig.sell_at_settlement`).
 
-The base BL core median in this run is $197.0k. It is $0.3k below the core's own run because the
+The base BL core median in this run is $197.1k. It is $0.2k below the core's own run because the
 satellite view, being relative, lowers the core funds' posterior returns by a few basis points;
 comparisons within the run are unaffected. Funding stays 100% in every case: the satellite cannot
-touch the payments. At a 20% share, each extra 1pp of alpha moves the median by about $810. With $25
-commissions the satellite needs about 5.3pp a year of alpha beyond the posterior to break even, which
+touch the payments. At a 20% share, each extra 1pp of alpha moves the median by about $980. With $25
+commissions the satellite needs about 4.4pp a year of alpha beyond the posterior to break even, which
 is not credible. The cost is fixed per trade rather than proportional, so at WInS commission levels a
 smaller satellite is no cheaper. Without commissions it is roughly neutral.
 
@@ -316,19 +322,19 @@ names get zero shares. Hence the IPS keeps the satellite out of WInS.
 
 | Floor | Median | 5th pct | 95th pct | Secured in 2031 (typical) | 10th-90th pct range (typical) |
 |---|---:|---:|---:|---:|---|
-| 0% | $200.4k | $141.3k | $290.1k | $0 | $144.3k-$201.3k |
-| 40% | $198.4k | $145.5k | $274.8k | $66.5k | $152.5k-$186.5k |
-| 60% (IPS) | $197.2k | $146.8k | $269.2k | $99.8k | $156.5k-$179.3k |
-| 80% | $195.9k | $147.0k | $265.2k | $133.0k | $160.6k-$171.9k |
-| 100% | $195.1k | $146.8k | $262.6k | $166.3k | $165.3k |
+| 0% | $200.4k | $140.2k | $292.6k | $0 | $145.0k-$202.1k |
+| 40% | $198.4k | $144.4k | $276.9k | $66.6k | $152.9k-$188.1k |
+| 60% (IPS) | $197.3k | $145.7k | $271.6k | $99.9k | $157.0k-$180.5k |
+| 80% | $196.0k | $146.2k | $267.1k | $133.3k | $161.1k-$172.8k |
+| 100% | $195.1k | $146.0k | $265.1k | $166.6k | $165.7k |
 
 "Typical" is the median, across 21 scenarios between the 45th and 55th percentile of January 2031
 wealth, of each scenario's own quote (`engine.conditional_2031_band`). A single scenario is noisy:
-within that band the floor the IPS buys varies from $112.2k to $123.8k with that month's rates.
+within that band the floor the IPS buys varies from $111.1k to $127.0k with that month's rates.
 
 Certainty equivalents (CRRA) favour 0%, 40% and 80% for risk aversion 2, 4 and 8. The IPS's 60% is
 within $1.9k of the best for each, and 60% and 80% differ by under $1.1k; wealth alone does not
-settle it. What changes sharply is what Laura can promise: for $1.4k of
+settle it. What changes sharply is what Laura can promise: for $1.3k of
 median, an 80% floor secures $33k more and halves the range.
 
 **Contribution share.** 75%, 85% and 95% give typical contributions of $148k, $168k and $187k and leave
@@ -336,35 +342,36 @@ Laura $49k, $30k and $10k. This is a preference, not something the model can opt
 
 **Range calibration on history.** On each of 184 real six-year paths (re-centred, starts 2005-2020),
 the model's 10th-90th percentile range, quoted from that path's own January 2031 position, contained
-the January 2033 result 98.4% of the time; 1.1% fell below it. As history happened: 98.4%, none below.
+the January 2033 result 99.5% of the time; 0.0% fell below it. As history happened: 98.4%, none below.
 So the model's "80% range" behaved like a 98% range: its tails are fatter than history's. The 20th-80th
-percentile band held 81.0% of the re-centred results (75.5% as history happened), so it is the range
+percentile band held 82.6% of the re-centred results (77.7% as history happened), so it is the range
 that matches its label. In the typical world, 85% of the facility gives:
 
 | Quote for co-sponsors (typical 2031 world) | Contribution range |
 |---|---|
-| Model 10th-90th percentile (historically ~98% of outcomes) | $156.5k-$179.3k |
-| 20th-80th percentile (historically ~80% of outcomes) | $159.5k-$174.7k |
+| Model 10th-90th percentile (historically ~98% of outcomes) | $157.0k-$180.5k |
+| 20th-80th percentile (historically ~80% of outcomes) | $160.0k-$175.5k |
 
 Quote the second as the 80% range, and the first as the cautious range. The paths overlap (about four
-independent six-year windows), so the calibration is thin evidence; both quotes sit above the $99.8k
+independent six-year windows), so the calibration is thin evidence; both quotes sit above the $99.9k
 already secured by the floor. `scripts/report_numbers.py` writes both for the bad, typical and good
 worlds (`quotes_2031`).
 
-**Reverse stress test.** The worst 1% of futures average a $120.6k facility, with stocks down 32%
-over 2028-2033 and a worst 12 months of -30%; rates barely move. The chance the facility ends below
-$100k is 0.03%, below $120k 0.4%, below $140k 2.8%.
+**Reverse stress test.** The worst 1% of futures average a $119.5k facility, with stocks down 33%
+over 2028-2033 and a worst 12 months of -31%; rates barely move. The chance the facility ends below
+$100k is 0.03%, below $120k 0.4%, below $140k 3.1%.
 
 ## Changes from the improvement loop (October 2026)
 `docs/loop/IMPROVEMENT_LOG.md` records every round, what was checked and what was rejected. Adopted
 into the headline numbers: Gaussian rate shocks; the DGBAS-based AR(2) Taiwan building-cost process,
-correlated with USD/TWD as history shows (real median $156.8k -> $166.7k); commissions compounded as
+correlated with USD/TWD as history shows (real median $156.8k -> $166.9k); commissions compounded as
 if paid when incurred (median -$0.3k), plus the sale tickets in January 2033 (-$0.2k); rate-factor
 persistence bias-corrected (wider long-horizon rate spread, median unchanged); J.P. Morgan's 2027
-assumptions in place of its 2026 ones (median -$0.1k); real Taiwan cost paths in the replay; the 2031
+assumptions in place of its 2026 ones (median -$0.1k); equity correlations shrunk toward their average instead of zero (5th
+percentile -$1.1k); real Taiwan cost paths in the replay; the 2031
 quote from a band of scenarios. Built but left off, with the evidence for each: expected-return
 uncertainty (no material effect), GARCH volatility clustering (worse calibrated on history), a USD/TWD
-drift (the forward is a biased forecast for TWD), a rate-dependent ladder premium (+$29 median, and it
+drift (the forward is a biased forecast for TWD), a rate-dependent ladder premium (+$72 median, and it
 relies on 3% cash in low-rate scenarios). Checked and found not to need a change: the stock-rate
 correlation regime (the IPS barely moves), crash-month co-movement (not significant), and long-horizon
 mean reversion in stocks or USD/TWD (neither significant). Studies whose decisions belong to the
@@ -386,9 +393,9 @@ used the defaults of their round.
   to random baskets, selection made in-sample risk look about 12% too low; out of sample the
   "low-risk" picks were no calmer than random baskets. Correcting for it
   (`scripts/satellite_risk_sensitivity.py`) raises the satellite's volatility from 15.1% to 16.9% and
-  its beta from 0.89 to 0.99: at a 20% share and no commissions the median stays positive (+$0.4k as
-  estimated, +$0.6k to +$0.8k corrected), but the 5th percentile goes from +$0.2k to -$0.2k to -$0.3k
-  against the core alone; with $25 commissions from -$4.0k to -$4.6k to -$4.7k. Thin evidence: four
+  its beta from 0.89 to 0.99: at a 20% share and no commissions the median stays positive (+$0.3k as
+  estimated, +$0.5k to +$0.7k corrected), but the 5th percentile goes from +$0.3k to -$0.2k to -$0.4k
+  against the core alone; with $25 commissions from -$4.1k to -$4.6k to -$4.8k. Thin evidence: four
   overlapping screens, one market episode, today's index members only, and the qualitative judgments
   could not be re-run historically.
 - Locked payments are certain only if cash awaiting a payment earns at least 3% (see "How certain is

@@ -89,3 +89,19 @@ def test_settlement_sells_each_fund_still_held_once():
     extra = engine.run(st, sc, engine.EngineConfig(**kw, extra_tickets=34))
     extra_kept = engine.run(st, sc, engine.EngineConfig(**kw, extra_tickets=34, sell_at_settlement=False))
     assert np.allclose(extra_kept["assets_2033"] - extra["assets_2033"], (2 + 34) * engine.COMMISSION_ETF)
+
+
+def test_equity_correlations_shrink_toward_their_average_not_zero():
+    import numpy as np
+    from lgm.calibrate import calibrate_assets
+    from lgm.growth.universe import CORE
+
+    tickers = [g.history for g in CORE]
+    k = len(tickers)
+    off = ~np.eye(k, dtype=bool)
+    zero = calibrate_assets(tickers, equity_shrink_target="zero")["corr"].values
+    mean = calibrate_assets(tickers)["corr"].values
+    # the zero target pulls the average equity correlation down by the shrinkage; the mean target keeps it
+    assert mean[:k, :k][off].mean() > zero[:k, :k][off].mean() + 0.03
+    assert np.allclose(mean[k:, :], zero[k:, :]) and np.allclose(mean[:k, k:], zero[:k, k:])   # nothing else moves
+    assert np.linalg.eigvalsh(mean).min() > 0
