@@ -66,97 +66,97 @@
   "sleeves": {
     "bl|wins_commissions|VTI/VEA/VWO 60/30/10": {
       "funded": 1.0,
-      "p5": 147987.9,
-      "p10": 157963.9,
-      "median": 197913.2,
-      "p90": 250624.0,
-      "p95": 269716.7,
-      "cvar5": 136839.5,
-      "real_median": 157074.3
+      "p5": 147750.3,
+      "p10": 157785.3,
+      "median": 197936.7,
+      "p90": 250669.3,
+      "p95": 269695.2,
+      "cvar5": 137251.4,
+      "real_median": 167504.6
     },
     "bl|wins_commissions|Black-Litterman core": {
       "funded": 1.0,
-      "p5": 147374.5,
-      "p10": 157568.4,
-      "median": 197910.1,
-      "p90": 251095.1,
-      "p95": 269822.4,
-      "cvar5": 136214.6,
-      "real_median": 156833.9
+      "p5": 147396.2,
+      "p10": 157218.9,
+      "median": 197846.0,
+      "p90": 251486.8,
+      "p95": 270158.4,
+      "cvar5": 136629.4,
+      "real_median": 167359.2
     },
     "bl|no_commissions|VTI/VEA/VWO 60/30/10": {
       "funded": 1.0,
-      "p5": 148729.7,
-      "p10": 158665.8,
-      "median": 198578.8,
-      "p90": 251333.6,
-      "p95": 270331.4,
-      "cvar5": 137577.7,
-      "real_median": 157626.8
+      "p5": 148503.3,
+      "p10": 158475.2,
+      "median": 198606.4,
+      "p90": 251356.3,
+      "p95": 270370.5,
+      "cvar5": 137990.5,
+      "real_median": 168080.0
     },
     "bl|no_commissions|Black-Litterman core": {
       "funded": 1.0,
-      "p5": 148540.4,
-      "p10": 158759.9,
-      "median": 199009.2,
-      "p90": 252352.3,
-      "p95": 271097.8,
-      "cvar5": 137430.5,
-      "real_median": 157742.4
+      "p5": 148574.5,
+      "p10": 158381.3,
+      "median": 199020.2,
+      "p90": 252684.7,
+      "p95": 271461.5,
+      "cvar5": 137847.2,
+      "real_median": 168317.4
     },
     "equilibrium|wins_commissions|VTI/VEA/VWO 60/30/10": {
       "funded": 1.0,
-      "p5": 147540.9,
-      "p10": 157548.9,
-      "median": 197318.1,
-      "p90": 249781.0,
-      "p95": 268856.4,
-      "cvar5": 136477.4,
-      "real_median": 156610.8
+      "p5": 147333.1,
+      "p10": 157315.1,
+      "median": 197368.1,
+      "p90": 249909.3,
+      "p95": 268984.3,
+      "cvar5": 136878.7,
+      "real_median": 166985.6
     },
     "equilibrium|wins_commissions|Black-Litterman core": {
       "funded": 1.0,
-      "p5": 146559.7,
-      "p10": 156704.4,
-      "median": 196654.3,
-      "p90": 249490.8,
-      "p95": 268075.0,
-      "cvar5": 135460.4,
-      "real_median": 155894.1
+      "p5": 146541.2,
+      "p10": 156349.9,
+      "median": 196632.4,
+      "p90": 249881.9,
+      "p95": 268466.1,
+      "cvar5": 135879.5,
+      "real_median": 166355.4
     },
     "equilibrium|no_commissions|VTI/VEA/VWO 60/30/10": {
       "funded": 1.0,
-      "p5": 148290.8,
-      "p10": 158247.7,
-      "median": 197991.0,
-      "p90": 250480.1,
-      "p95": 269533.9,
-      "cvar5": 137217.0,
-      "real_median": 157146.4
+      "p5": 148050.8,
+      "p10": 158059.1,
+      "median": 198055.5,
+      "p90": 250605.1,
+      "p95": 269640.2,
+      "cvar5": 137619.0,
+      "real_median": 167547.2
     },
     "equilibrium|no_commissions|Black-Litterman core": {
       "funded": 1.0,
-      "p5": 147741.4,
-      "p10": 157887.1,
-      "median": 197798.7,
-      "p90": 250684.0,
-      "p95": 269392.9,
-      "cvar5": 136681.7,
-      "real_median": 156804.6
+      "p5": 147758.5,
+      "p10": 157506.9,
+      "median": 197753.7,
+      "p90": 251050.7,
+      "p95": 269703.6,
+      "cvar5": 137099.8,
+      "real_median": 167337.2
     }
   },
   "plan": {
     "funded": 1.0,
-    "p5": 147374.5,
-    "p10": 157568.4,
-    "median": 197910.1,
-    "p90": 251095.1,
-    "p95": 269822.4,
-    "cvar5": 136214.6,
-    "real_median": 156833.9,
-    "contribution_median": 168223.5,
-    "contribution_p5": 125268.3,
-    "kept_by_laura_median": 29686.5,
+    "p5": 147396.2,
+    "p10": 157218.9,
+    "median": 197846.0,
+    "p90": 251486.8,
+    "p95": 270158.4,
+    "cvar5": 136629.4,
+    "real_median": 167359.2,
+    "contribution_median": 168169.1,
+    "contribution_p5": 125286.8,
+    "kept_by_laura_median": 29676.9,
     "lock_cost_2027_median": 300000.0
   },
   "quotes_2031": {
@@ -165,70 +165,70 @@
       80.0
     ],
     "bad_p10": {
-      "growth_2031": 143897.6,
-      "floor_dec_2032": 92101.3,
-      "guaranteed_contribution": 78286.1,
-      "facility_p10": 145351.7,
-      "facility_p90": 166958.7,
+      "growth_2031": 143710.0,
+      "floor_dec_2032": 89692.1,
+      "guaranteed_contribution": 76238.3,
+      "facility_p10": 142586.0,
+      "facility_p90": 164116.5,
       "contribution_range": [
-        123500.0,
-        141900.0
+        121200.0,
+        139500.0
       ],
       "contribution_range_calibrated": [
-        126000.0,
-        138200.0
+        123600.0,
+        135800.0
       ]
     },
     "median": {
-      "growth_2031": 179134.8,
-      "floor_dec_2032": 118489.7,
-      "guaranteed_contribution": 100716.3,
-      "facility_p10": 186191.7,
-      "facility_p90": 213191.7,
+      "growth_2031": 179102.7,
+      "floor_dec_2032": 114768.2,
+      "guaranteed_contribution": 97553.0,
+      "facility_p10": 181722.7,
+      "facility_p90": 208643.1,
       "contribution_range": [
-        158300.0,
-        181200.0
+        154500.0,
+        177300.0
       ],
       "contribution_range_calibrated": [
-        161300.0,
-        176600.0
+        157500.0,
+        172700.0
       ]
     },
     "good_p90": {
-      "growth_2031": 225540.8,
-      "floor_dec_2032": 152459.9,
-      "guaranteed_contribution": 129590.9,
-      "facility_p10": 238996.8,
-      "facility_p90": 273168.9,
+      "growth_2031": 225592.0,
+      "floor_dec_2032": 148683.0,
+      "guaranteed_contribution": 126380.6,
+      "facility_p10": 233868.8,
+      "facility_p90": 267911.9,
       "contribution_range": [
-        203100.0,
-        232200.0
+        198800.0,
+        227700.0
       ],
       "contribution_range_calibrated": [
-        207000.0,
-        226300.0
+        202600.0,
+        221800.0
       ]
     }
   },
   "stress": {
     "rates_minus_75bp_at_lock": {
       "funded": 1.0,
-      "median": 161915.7,
+      "median": 161861.1,
       "lock_cost_2027_median": 300000.0
     },
     "rates_plus_75bp_at_lock": {
       "funded": 1.0,
-      "median": 233312.8,
-      "lock_cost_2027_median": 278422.9
+      "median": 233355.4,
+      "lock_cost_2027_median": 278421.3
     },
     "reserve_certain_at_0pct_reinvestment": {
       "ladder_premium": 0.037,
       "ladder_premium_at_3pct": 0.0182,
-      "median": 190060.3,
-      "median_change": -7849.7,
+      "median": 190016.0,
+      "median_change": -7830.0,
       "lock_cost_2027_median": 300000.0
     },
-    "worst_5pct_stock_paths_median": 151978.6,
+    "worst_5pct_stock_paths_median": 152007.0,
     "inflation_4pct_buying_power_change": -0.0563
   }
 }
