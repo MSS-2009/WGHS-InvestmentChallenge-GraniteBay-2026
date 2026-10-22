@@ -236,3 +236,10 @@ contribution $99.8k, 80% contribution range $160.3k-$175.5k. 109 tests pass; doc
   computed (not typed) CMA shifts in `policy_robust` and table labels; pyflakes clean and in CI; a
   fresh clone passes the tests and reproduces every committed report byte for byte.
 Headline: median $197,244, p5 $146,831, CVaR5 $135,959, real median $166,709; 119 tests pass.
+
+### Round 6, late afternoon: two calibration biases in the equity risk
+- **Correlation shrinkage target**: Ledoit-Wolf toward the identity pulled every equity pair toward
+  zero (average 0.69 -> 0.64), so the core's volatility read 14.9% against 15.4% with the sample
+  correlations. Equity pairs now shrink toward their own average (constant-correlation target, same
+  intensity). IPS 5th percentile -$1.1k, median +$33, weights within 0.3pp. Crash-month correlation
+  already matched history (0.38 model, 0.39 history, worst 5% of months since 2017).
