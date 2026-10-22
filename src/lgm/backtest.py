@@ -24,7 +24,7 @@ PROXY = {"EMXC": "EEM", "MCHI": "FXI"}     # longer histories for the two young 
 def history_paths(history_tickers: list[str], start: str = "2005-04-30", end: str = DATA_END,
                   months: int = engine.M_2033, recentre: np.ndarray | None = None,
                   curve_date: str = CURVE_DATE,
-                  real_tw_cost: bool = False) -> tuple[Scenarios, list[pd.Timestamp]]:
+                  real_tw_cost: bool = True) -> tuple[Scenarios, list[pd.Timestamp]]:
     tickers = [PROXY.get(t, t) for t in history_tickers]
     eq = np.log1p(yahoo.monthly_returns(tickers, start="2000-01-01")).loc[start:end]
     if recentre is not None:

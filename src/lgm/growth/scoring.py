@@ -35,10 +35,23 @@ def latest_inflation(month_end: str = DATA_END) -> float:
     return float((cpi / cpi.shift(12) - 1).dropna().loc[:month_end].iloc[-1])
 
 
+def taiwan_cost_params(drift_key: str = "full_sample_35y") -> dict:
+    """ESGParams fields for the fitted monthly AR(2) Taiwan building-cost process (config/taiwan.yaml,
+    docs/loop/r3_taiwan_findings.md), started from the Aug and Sep 2026 DGBAS readings."""
+    import yaml
+
+    from ..asof import CFG
+
+    tw = yaml.safe_load((CFG.parent / "taiwan.yaml").read_text())["fitted_monthly"]
+    return {"tw_cost_growth": tw["drifts"][drift_key], "tw_cost_phi": tuple(tw["tw_cost_phi"]),
+            "tw_cost_sig_eps": tw["tw_cost_sig_eps"], "tw_cost_state0": tuple(tw["tw_cost_state0_today"])}
+
+
 def esg_params(cal: dict, eq_geo: np.ndarray, curve_date: str = CURVE_DATE, infl_phi: float = 0.966,
                phi: np.ndarray | None = None, infl_mu: float | None = None) -> ESGParams:
     """Inflation starts at the latest CPI reading and reverts toward market breakeven inflation unless
-    `infl_mu` is given."""
+    `infl_mu` is given. Rate shocks are Gaussian while equities keep Student-t(5) tails
+    (docs/loop/r4_rates_findings.md); Taiwan building costs follow the fitted AR(2)."""
     from ..profiles import _cal
 
     zc = bootstrap(par_curve(curve_date))
@@ -47,7 +60,7 @@ def esg_params(cal: dict, eq_geo: np.ndarray, curve_date: str = CURVE_DATE, infl
     return ESGParams(months=engine.M_2033, beta0=beta0, resid=resid, beta_mu=beta0.copy(), phi=phi,
                      cov=cal["cov"], eq_geo=np.asarray(eq_geo), infl0=latest_inflation(),
                      infl_mu=market_inflation(curve_date) if infl_mu is None else infl_mu,
-                     infl_phi=_cal().infl_phi, t_dof=5.0)
+                     infl_phi=_cal().infl_phi, t_dof=5.0, rate_dof="gaussian", **taiwan_cost_params())
 
 
 def score(weights: dict[str, np.ndarray], ers: dict[str, np.ndarray], params: ESGParams, n: int = 20_000,
