@@ -192,16 +192,14 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
     if not np.isfinite(rate_shared) or not 0.0 <= rate_shared <= 1.0:
         raise ValueError(f"rate_shared must be a finite fraction in [0, 1], got {p.rate_shared!r}")
     garch = _garch_parameters(p.eq_garch, len(p.eq_geo))
-    eq_vol_scale = p.eq_vol_scale
-    if garch is not None:
-        try:
-            eq_vol_scale = float(p.eq_vol_scale)
-        except (TypeError, ValueError, OverflowError) as exc:
-            raise ValueError(
-                f"eq_vol_scale must be finite and positive when eq_garch is enabled, got {p.eq_vol_scale!r}"
-            ) from exc
-        if not np.isfinite(eq_vol_scale) or eq_vol_scale <= 0:
-            raise ValueError(f"eq_vol_scale must be finite and positive when eq_garch is enabled, got {p.eq_vol_scale!r}")
+    try:
+        eq_vol_scale = float(p.eq_vol_scale)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError(f"eq_vol_scale must be finite and nonnegative, got {p.eq_vol_scale!r}") from exc
+    if not np.isfinite(eq_vol_scale) or eq_vol_scale < 0:
+        raise ValueError(f"eq_vol_scale must be finite and nonnegative, got {p.eq_vol_scale!r}")
+    if garch is not None and eq_vol_scale == 0:
+        raise ValueError(f"eq_vol_scale must be positive when eq_garch is enabled, got {p.eq_vol_scale!r}")
     if garch is not None and start is not None and "garch_h" in start:
         start_h = np.asarray(start["garch_h"], dtype=float)
         if not np.isfinite(start_h).all() or np.any(start_h < 0):

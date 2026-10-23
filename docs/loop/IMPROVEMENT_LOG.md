@@ -358,3 +358,5 @@ paths and the default model are unaffected.
 The follow-up edge-case pass now rejects boolean or floating-point factor indices, malformed/non-numeric
 volatility scales, and starting variance arrays whose shape cannot map unambiguously to simulation paths.
 Scalar continuation state and one value per path remain supported and produce identical paths when equal.
+Equity volatility scales are now finite and nonnegative for all scenarios; negative values previously
+flipped equity cross-correlations, while zero remains available for a deterministic-equity stress.

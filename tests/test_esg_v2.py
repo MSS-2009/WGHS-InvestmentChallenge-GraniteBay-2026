@@ -215,6 +215,24 @@ def test_garch_requires_positive_equity_volatility_scale(scale):
         simulate(p, n=2, seed=1)
 
 
+@pytest.mark.parametrize("scale", [-1.0, np.nan, np.inf, "invalid", None])
+def test_equity_volatility_scale_rejects_invalid_values_without_garch(scale):
+    core = build_core()
+    p = esg_params(core["cal"], core["table"]["bl_geo_total"].values)
+    p.eq_vol_scale = scale
+    with pytest.raises(ValueError, match="eq_vol_scale"):
+        simulate(p, n=2, seed=1)
+
+
+def test_zero_equity_volatility_scale_is_a_valid_stress_without_garch():
+    core = build_core()
+    p = esg_params(core["cal"], core["table"]["bl_geo_total"].values)
+    p.eq_vol_scale = 0.0
+    sc = simulate(p, n=2, seed=1)
+    expected = np.log1p(p.eq_geo) / 12.0
+    np.testing.assert_array_equal(sc.eq_log, np.broadcast_to(expected, sc.eq_log.shape))
+
+
 @pytest.mark.parametrize("start_h", [-0.1, np.nan, np.inf])
 def test_garch_rejects_invalid_starting_variances(start_h):
     core = build_core()
