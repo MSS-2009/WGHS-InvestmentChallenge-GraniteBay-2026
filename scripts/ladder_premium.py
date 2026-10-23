@@ -6,8 +6,9 @@ LP's on today's curve, scaled down with the ladder's remaining time). This re-so
 WInS ladder (`ladder.premium`, cash awaiting a payment at 3%) on 61 simulated curves spread across the
 5-year rate's range at each lock date, fits premium = a + b x (5-year rate - today's), and scores the
 strategies with that slope (`EngineConfig.kappa_rate_slope`) and with the fitted Jan 2027 level.
-Today's WInS instruments are used at every date, so the 2031 and 2033 fits are rougher (bonds age
-out, new ones are not added). Writes reports/ladder_premium.csv.
+Today's WInS instruments are used at every date, so the 2031 fit is rougher (bonds age out, new ones
+are not added). Jan 2033 is omitted because the first scheduled payment is due at settlement, so there
+is no remaining ladder to price. Writes reports/ladder_premium.csv.
 """
 import dataclasses as dc
 import datetime as dt
@@ -39,8 +40,7 @@ def main(n: int = 20_000):
     ref = float(sc.zero_cc(0, 5.0)[0, 0])
     cfg0 = engine.EngineConfig()
     rows, fits = [], {}
-    for name, m in (("Jan 2027", engine.M_2027), ("Jan 2028", engine.M_2028), ("Jan 2031", engine.M_2031),
-                    ("Jan 2033", engine.M_2033)):
+    for name, m in (("Jan 2027", engine.M_2027), ("Jan 2028", engine.M_2028), ("Jan 2031", engine.M_2031)):
         z5 = sc.zero_cc(m, 5.0)[:, 0]
         idx = np.argsort(z5)[np.linspace(0, n - 1, 61).astype(int)]
         prem = np.array([ladder.premium(sc.curve(i, m, month_date(m))) for i in idx])

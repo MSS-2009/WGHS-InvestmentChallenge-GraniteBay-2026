@@ -35,6 +35,21 @@ class ParCurve:
     tenors: np.ndarray
     par: np.ndarray
 
+    def __post_init__(self) -> None:
+        try:
+            tenors = np.array(self.tenors, dtype=float, copy=True)
+            par = np.array(self.par, dtype=float, copy=True)
+            date = as_date(self.date)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError("par curve needs a valid date and finite tenor/yield vectors") from exc
+        if (tenors.ndim != 1 or par.ndim != 1 or len(tenors) < 2 or tenors.shape != par.shape
+                or not np.isfinite(tenors).all() or not np.isfinite(par).all()
+                or np.any(tenors <= 0.0) or np.any(np.diff(tenors) <= 0.0) or np.any(par <= -2.0)):
+            raise ValueError("par curve needs increasing positive tenors and finite yields above -200%")
+        object.__setattr__(self, "date", date)
+        object.__setattr__(self, "tenors", tenors)
+        object.__setattr__(self, "par", par)
+
     @classmethod
     def from_points(cls, date: dt.date | str, points: dict[float, float]) -> "ParCurve":
         """Build from {tenor_years: yield_in_percent}."""
@@ -43,7 +58,12 @@ class ParCurve:
         return cls(as_date(date), t, y)
 
     def par_at(self, t: float | np.ndarray, method: str = "linear") -> np.ndarray:
-        t = np.asarray(t, dtype=float)
+        try:
+            t = np.asarray(t, dtype=float)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError("par maturity must contain finite nonnegative years") from exc
+        if not np.isfinite(t).all() or np.any(t < 0.0):
+            raise ValueError("par maturity must contain finite nonnegative years")
         if method == "linear":
             return np.interp(t, self.tenors, self.par)
         if method == "pchip":
@@ -55,6 +75,14 @@ class ParCurve:
         raise ValueError(f"unknown interpolation method {method!r}")
 
     def shifted(self, bp: float) -> "ParCurve":
+        if isinstance(bp, (bool, np.bool_)):
+            raise ValueError("bp must be a finite real number")
+        try:
+            bp = float(bp)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError("bp must be a finite real number") from exc
+        if not np.isfinite(bp):
+            raise ValueError("bp must be a finite real number")
         return ParCurve(self.date, self.tenors, self.par + bp / 1e4)
 
 
@@ -66,10 +94,28 @@ class ZeroCurve:
     knots: np.ndarray
     log_df: np.ndarray
 
+    def __post_init__(self) -> None:
+        try:
+            knots = np.array(self.knots, dtype=float, copy=True)
+            log_df = np.array(self.log_df, dtype=float, copy=True)
+            date = as_date(self.date)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError("zero curve needs a valid date and finite knot/log-discount vectors") from exc
+        if (knots.ndim != 1 or log_df.ndim != 1 or len(knots) < 2 or knots.shape != log_df.shape
+                or not np.isfinite(knots).all() or not np.isfinite(log_df).all()
+                or knots[0] < 0.0 or np.any(np.diff(knots) <= 0.0)):
+            raise ValueError("zero curve needs at least two increasing nonnegative knots and finite log discounts")
+        object.__setattr__(self, "date", date)
+        object.__setattr__(self, "knots", knots)
+        object.__setattr__(self, "log_df", log_df)
+
     def df(self, t: float | np.ndarray) -> np.ndarray:
-        t = np.asarray(t, dtype=float)
-        if np.any(t < 0):
-            raise ValueError("discount factor requested for a past date")
+        try:
+            t = np.asarray(t, dtype=float)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError("discount maturity must contain finite nonnegative years") from exc
+        if not np.isfinite(t).all() or np.any(t < 0.0):
+            raise ValueError("discount maturity must contain finite nonnegative years")
         last_fwd = -(self.log_df[-1] - self.log_df[-2]) / (self.knots[-1] - self.knots[-2])
         inside = np.interp(t, self.knots, self.log_df)
         beyond = self.log_df[-1] - last_fwd * (t - self.knots[-1])
@@ -77,7 +123,13 @@ class ZeroCurve:
 
     def zero(self, t: float | np.ndarray) -> np.ndarray:
         """Annually compounded zero-coupon rate for maturity t (years)."""
-        t = np.maximum(np.asarray(t, dtype=float), 1e-9)
+        try:
+            t = np.asarray(t, dtype=float)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError("zero-rate maturity must contain finite nonnegative years") from exc
+        if not np.isfinite(t).all() or np.any(t < 0.0):
+            raise ValueError("zero-rate maturity must contain finite nonnegative years")
+        t = np.maximum(t, 1e-9)
         return self.df(t) ** (-1.0 / t) - 1.0
 
     def df_date(self, d: dt.date | str) -> float:
@@ -87,6 +139,14 @@ class ZeroCurve:
 
     def shifted(self, bp: float) -> "ZeroCurve":
         """Parallel shift of continuously compounded zero rates by `bp` basis points."""
+        if isinstance(bp, (bool, np.bool_)):
+            raise ValueError("bp must be a finite real number")
+        try:
+            bp = float(bp)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError("bp must be a finite real number") from exc
+        if not np.isfinite(bp):
+            raise ValueError("bp must be a finite real number")
         return ZeroCurve(self.date, self.knots, self.log_df - (bp / 1e4) * self.knots)
 
 
@@ -97,6 +157,16 @@ def bootstrap(par: ParCurve, method: str = "linear", max_t: float = 30.0) -> Zer
         1 = c * sum_{i<=n} DF_i + DF_n   =>   DF_n = (1 - c * sum_{i<n} DF_i) / (1 + c).
     The 6-month point is a bill: DF = 1 / (1 + y/2).
     """
+    if not isinstance(par, ParCurve):
+        raise ValueError("par must be a curve.ParCurve instance")
+    if isinstance(max_t, (bool, np.bool_)):
+        raise ValueError("max_t must be finite and at least 0.5 years")
+    try:
+        max_t = float(max_t)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("max_t must be finite and at least 0.5 years") from exc
+    if not np.isfinite(max_t) or max_t < 0.5:
+        raise ValueError("max_t must be finite and at least 0.5 years")
     grid = np.arange(0.5, max_t + 1e-9, 0.5)
     ys = par.par_at(grid, method=method)
     dfs: list[float] = []
@@ -104,6 +174,8 @@ def bootstrap(par: ParCurve, method: str = "linear", max_t: float = 30.0) -> Zer
     for y in ys:
         c = y / 2.0
         df = (1.0 - c * running) / (1.0 + c)
+        if not np.isfinite(df) or df <= 0.0:
+            raise ValueError(f"par yields imply a nonpositive discount factor at {len(dfs) / 2 + 0.5:g} years")
         dfs.append(df)
         running += df
     # Short end: anchor 1-month and 3-month bills so the first half-year is not flat.

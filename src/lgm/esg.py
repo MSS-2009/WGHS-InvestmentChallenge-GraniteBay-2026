@@ -16,6 +16,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from . import nelson_siegel as ns
+from .asof import month_of
 from .curve import ZeroCurve
 
 TAU_GRID = np.array([0.0833, 0.25, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20, 25, 30], dtype=float)
@@ -67,6 +68,8 @@ class Scenarios:
     eq_drift_err: np.ndarray | None = None
     garch_h: np.ndarray | None = None
     tw_cost_infl: np.ndarray | None = None
+    fx_log_2027: np.ndarray | None = None  # Jan 2027 baseline retained by nested simulations
+    tw_cost_log_2027: np.ndarray | None = None
 
     @property
     def n(self) -> int:
@@ -224,6 +227,15 @@ def _path_state(value, n: int, name: str) -> np.ndarray:
     return state
 
 
+def _tw_cost_state(value, n: int, name: str):
+    """Normalize one lag state or the (two-lag) AR(2) state."""
+    if value is None:
+        return None
+    if isinstance(value, (tuple, list)) and len(value) == 2:
+        return tuple(_path_state(item, n, name) for item in value)
+    return _path_state(value, n, name)
+
+
 def _parameter_values(value, shape: tuple, name: str) -> np.ndarray:
     """Normalize finite numeric model parameters with an exact shape."""
     try:
@@ -272,11 +284,10 @@ def _prepare_start(start, n: int, n_equities: int):
     for key in ("tw_cost_state", "tw_cost_infl"):
         if key not in out:
             continue
-        state = out[key]
-        if isinstance(state, (tuple, list)) and len(state) == 2:
-            out[key] = tuple(_path_state(value, n, key) for value in state)
-        else:
-            out[key] = _path_state(state, n, key)
+        out[key] = _tw_cost_state(out[key], n, key)
+    for key in ("fx_log_2027", "tw_cost_log_2027"):
+        if key in out:
+            out[key] = _path_state(out[key], n, key)
     return out
 
 
@@ -370,13 +381,17 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
         raise ValueError("infl_phi must be finite and stationary (absolute value < 1)") from exc
     if not np.isfinite(infl_phi) or abs(infl_phi) >= 1.0:
         raise ValueError("infl_phi must be finite and stationary (absolute value < 1)")
+    if isinstance(p.rate_shared, (bool, np.bool_)):
+        raise ValueError(f"rate_shared must be a finite fraction in [0, 1], got {p.rate_shared!r}")
     try:
         rate_shared = float(p.rate_shared)
-    except (TypeError, ValueError) as exc:
+    except (TypeError, ValueError, OverflowError) as exc:
         raise ValueError(f"rate_shared must be a finite fraction in [0, 1], got {p.rate_shared!r}") from exc
     if not np.isfinite(rate_shared) or not 0.0 <= rate_shared <= 1.0:
         raise ValueError(f"rate_shared must be a finite fraction in [0, 1], got {p.rate_shared!r}")
     garch = _garch_parameters(p.eq_garch, len(p.eq_geo))
+    if isinstance(p.eq_vol_scale, (bool, np.bool_)):
+        raise ValueError(f"eq_vol_scale must be finite and nonnegative, got {p.eq_vol_scale!r}")
     try:
         eq_vol_scale = float(p.eq_vol_scale)
     except (TypeError, ValueError, OverflowError) as exc:
@@ -415,6 +430,11 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
         if not np.isfinite(tw_cost_sig_eps) or tw_cost_sig_eps < 0.0:
             raise ValueError("tw_cost_sig_eps must be finite and nonnegative")
     start = _prepare_start(start, n, K)
+    tw_cost_initial_state = None
+    if tw_cost_ar is not None and start is None:
+        raw_cost_state = p.tw_cost_state0 if p.tw_cost_state0 is not None else p.tw_cost_infl0
+        name = "tw_cost_state0" if p.tw_cost_state0 is not None else "tw_cost_infl0"
+        tw_cost_initial_state = _tw_cost_state(raw_cost_state, n, name)
     if garch is not None and start is not None and "garch_h" in start:
         try:
             start_h = _state_values(start["garch_h"], "garch_h")
@@ -533,16 +553,12 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
             rho1 = phi1 / max(1.0 - phi2, 1e-12)
             cov_y = rho1 * var_y
 
-        state_in = None
+        state_in = tw_cost_initial_state
         if start is not None:
             if "tw_cost_state" in start:
                 state_in = start["tw_cost_state"]
             elif "tw_cost_infl" in start:
                 state_in = start["tw_cost_infl"]
-        elif p.tw_cost_state0 is not None:
-            state_in = p.tw_cost_state0
-        elif p.tw_cost_infl0 is not None:
-            state_in = p.tw_cost_infl0
 
         if state_in is None and sig_eps == 0.0:
             y_prev2 = np.full(n, mu)
@@ -604,4 +620,14 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
         tw0 = 0.0 if start is None else start["tw_cost_log"][:, None]
         tw_cost_log = np.concatenate([np.zeros((n, 1)), np.cumsum(tw, axis=1)], axis=1) + tw0
         tw_cost_infl = None
-    return Scenarios(beta, eq_log, infl, fx_log, tw_cost_log, resid, rate_floor, m0, eq_drift_err, garch_h, tw_cost_infl)
+    m27 = month_of(2027) - m0
+    if 0 <= m27 <= M:
+        fx_log_2027 = fx_log[:, m27].copy()
+        tw_cost_log_2027 = tw_cost_log[:, m27].copy()
+    elif start is not None:
+        fx_log_2027 = start.get("fx_log_2027")
+        tw_cost_log_2027 = start.get("tw_cost_log_2027")
+    else:
+        fx_log_2027 = tw_cost_log_2027 = None
+    return Scenarios(beta, eq_log, infl, fx_log, tw_cost_log, resid, rate_floor, m0, eq_drift_err,
+                     garch_h, tw_cost_infl, fx_log_2027, tw_cost_log_2027)

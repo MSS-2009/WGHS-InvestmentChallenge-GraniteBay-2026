@@ -141,11 +141,9 @@ def test_2030_floor_ranking_picks_true_median():
     # growth_2031 is essentially 0 because all growth was moved to floor in 2030
     assert np.allclose(r["growth_2031"], 0.0)
 
-    # 2. Old ranking on growth_2031 picks an arbitrary index
-    old_i = int(np.argsort(r["growth_2031"])[len(r["growth_2031"]) // 2])
+    # 2. Once the 2030 floor moves all growth into IBTM, growth_2031 has no ranking information.
+    assert np.ptp(r["growth_2031"]) < 1e-6
     true_median_floor = float(np.median(r["floor_2033"]))
-    old_floor = float(r["floor_2033"][old_i])
-    old_error = abs(old_floor - true_median_floor)
 
     # 3. New conditional_2031 ranking (when i is None) automatically uses assets_2031
     c = engine.conditional_2031(st_2030, sc, r, p)
@@ -153,8 +151,7 @@ def test_2030_floor_ranking_picks_true_median():
     new_floor = c["floor"]
     new_error = abs(new_floor - true_median_floor)
 
-    assert new_i != old_i
-    # The new ranking picks a scenario whose floor is within 3% of true population median,
-    # whereas the old ranking made an error of tens of thousands of dollars (> $50k)
+    # The selected scenario is the wealth median; ties in growth_2031 cannot perturb the rank.
+    expected_i = int(np.argsort(r["assets_2031"])[len(r["assets_2031"]) // 2])
+    assert new_i == expected_i
     assert new_error < 0.05 * true_median_floor
-    assert old_error > 0.20 * true_median_floor

@@ -37,3 +37,10 @@ def test_at_the_reference_rate_the_slope_changes_nothing():
     a = engine.run(IPS, sc, engine.EngineConfig())
     b = engine.run(IPS, sc, engine.EngineConfig(kappa_rate_slope=0.5, kappa_rate_ref=ref))
     assert np.allclose(a["facility"], b["facility"])
+
+
+def test_slope_cannot_make_the_ladder_price_negative():
+    sc = _flat([0.05])
+    cfg = engine.EngineConfig(kappa_rate_slope=200.0, kappa_rate_ref=0.06)
+    with pytest.raises(ValueError, match="greater than -100%"):
+        engine.kappa(engine.M_2027, cfg, sc)

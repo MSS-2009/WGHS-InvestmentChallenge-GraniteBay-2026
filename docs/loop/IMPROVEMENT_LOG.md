@@ -376,3 +376,55 @@ Nested simulation now checks required continuation keys and validates shared/per
 finite values before generating shocks, including optional drift and Taiwan AR state.
 Initial Nelson-Siegel factors, curve residuals, inflation levels, FX drift, and rate floor now require
 finite numeric values with exact expected shapes.
+The calibrated Taiwan cost AR initial lags also reject non-finite or wrongly sized states before draws.
+Boolean equity-volatility scales and rate-tail shares are now rejected explicitly instead of coercing to
+zero/one, matching the existing strict checks for correlations and persistence.
+
+### Round 7: strategy and engine allocation guards
+
+The engine previously accepted strategy region weights that did not sum to one, which could create or
+destroy principal when investing. Strategies now require finite, nonnegative weights that sum to one
+within a small tolerance, then normalize them exactly. Fractions, supported bond vehicles, floor years,
+and ratchet thresholds also fail early when invalid.
+
+The engine now validates scenario path dimensions and finite values, plus continuation-state dimensions,
+holdings, locked fractions, and ratchet values. Configuration checks reject expense ratios that would
+turn monthly equity growth negative; negative ticket counts or recurring costs; duplicate, malformed, or
+negative deposits; incomplete or overlapping fund groups; and invalid rate-sensitive ladder prices.
+String rate floors and non-State continuation objects now produce clear input errors.
+
+No modeled result moved under the valid defaults. After the full report pipeline, the headline remains
+$196,989 median, $146,102 p5, $135,214 CVaR5, and $166,547 real median. The full test suite and pyflakes
+pass, and `doc_numbers.py` finds 0 of 126 figures missing. The known WInS check remains a nonfatal $133
+2034 shortfall, with a six-share IBTO top-up. The input guards were pushed to the personal fork on
+`improve` in commits `f9e5c7f`, `2dabbb3`, `138198a`, and `445d527`; upstream was not changed.
+
+The nested January 2031 quote also exposed a deflator-indexing error: its FX and Taiwan-cost paths keep
+their accumulated 2027 levels, but the real-facility calculation treated the nested path's first month as
+January 2027. Nested scenarios now carry their January 2027 baselines through continuation, and the engine
+requires those baselines when starting after that date. This leaves the full-horizon headline unchanged
+and fixes the nested real-dollar output.
+
+A Linux CI run also exposed a platform-dependent tie-order assertion in the 2030-floor ranking test. The
+test now checks the invariant directly: `growth_2031` is constant, and the conditional selector chooses
+the exact median index by `assets_2031`. It no longer assumes that an arbitrary tied index must miss the
+median floor by a fixed dollar percentage.
+
+The conditional 2031 quote helpers now validate scenario indices, snapshot requirements, percentile
+bands, sample counts, seed values, and percentile outputs before drawing nested paths. The engine also
+rejects wrong strategy/configuration types, invalid continuation-state indices, and non-boolean snapshot
+or drift flags with direct errors. These checks do not alter valid model outputs.
+
+The cash-flow ladder solver now normalizes one-shot payment iterables, requires strictly ordered positive
+payments and a reinvestment rate above -100%, and rejects duplicate instrument labels and unknown
+constraints. A fixed amount now remains fixed when a compatible minimum is also provided; contradictory
+fixed/minimum bounds fail explicitly. Annual schedules from leap day roll to February 28 in non-leap years.
+Matured bonds and term funds now expose no future cash flows, and explicit ladder matrices reject expired
+instruments. The premium helper filters expired candidates from future-date universes. The study also
+drops its Jan 2033 fit: the first payment is due at settlement, and its previous fit incorrectly credited
+the already-matured IBTM toward that payment.
+
+Treasury par/zero curves now validate tenor, knot, and discount-vector shapes and values. Negative or
+non-finite maturities fail directly; `ZeroCurve.zero()` no longer turns a past date into a plausible
+short rate. Bootstrap horizons must include at least one semiannual point, and nonpositive discount
+factors are reported as invalid input data.
