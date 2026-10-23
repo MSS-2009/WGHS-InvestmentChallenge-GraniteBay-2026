@@ -3,12 +3,14 @@
 Liability-driven investment model for the 2026-27 Laura Gao case: fund ten fixed $50,000 payments
 (2033-2042) with certainty, then build the largest responsible facility contribution for 2033.
 
-> **AI use and citation.** This code, its reports and the documents in `docs/` were generated with
-> Claude (Anthropic), an AI assistant; the commit history shows it. Competition rules say AI-generated
-> work cannot be submitted as the team's own, and any AI material that is included must be cited. Use this
-> repository as a reference and checking tool: rebuild the numbers you submit yourselves, and cite it
-> (for example "Laura Gao investment model, generated with Claude (Anthropic), October 2026") wherever its
-> output appears in the IPS or Final Report.
+> **AI use and citation.** This code, its reports and the documents in `docs/` were generated with AI
+> assistants: Claude (Anthropic) wrote most of it, and Gemini (Google) wrote
+> part of the October 21-22, 2026 studies (the policy search and robustness study, the Taiwan data
+> readers and the USD/TWD study). The commit history shows who wrote what. Competition rules say
+> AI-generated work cannot be submitted as the team's own, and any AI material that is included must be
+> cited. Use this repository as a reference and checking tool: rebuild the numbers you submit yourselves,
+> and cite it (for example "Laura Gao investment model, generated with Claude (Anthropic) and Gemini
+> (Google), October 2026") wherever its output appears in the IPS or Final Report.
 
 **Part 1 — core funding model (built)**
 - `curve.py` — Treasury par curve to zero-coupon curve (bootstrapping).
@@ -27,11 +29,11 @@ Liability-driven investment model for the 2026-27 Laura Gao case: fund ten fixed
 - `growth/core.py`, `black_litterman.py`, `lookthrough.py` — nine-ETF core: market-cap prior, views from
   13 firms' published capital-market assumptions, constrained optimiser (no tech/communication or
   China+Taiwan overweight), resampled over 500 posterior draws for stable weights.
-- `growth/satellite.py`, `qualitative.py` — 35-stock satellite: S&P 500 risk and return-quality screens,
-  then the values (Laura fit) and company-strength model with yes/no gates; HRP weights.
-- `growth/portfolio.py`, `scoring.py` — the satellite as one more Black-Litterman asset (alpha view over
-  its style benchmark), sized and judged with the Part 1 Monte Carlo, including commissions and WInS
-  whole-share orders.
+- `growth/satellite.py`, `qualitative.py`, `portfolio.py` — a 35-stock values satellite (S&P 500 risk and
+  return-quality screens, a values and company-strength model with yes/no gates, HRP weights), tested as
+  one more Black-Litterman asset and rejected: under WInS's $25 commissions it lowers the median facility
+  by about $4k, so the IPS holds no individual stocks.
+- `scoring.py` — the scenario generator's headline settings and candidate scoring.
 
 See `docs/MODEL.md` for the design and results.
 
@@ -77,7 +79,7 @@ python scripts/wins_rebalance.py    # orders that bring WInS in line with the IP
 python scripts/wins_ladder_check.py # does the WInS ladder meet every payment at 0% interest on cash?
 ```
 
-Studies behind the assumptions (each writes one report; `run_all.py` reruns all but the policy search and the waterfall):
+Studies behind the assumptions (each writes one report; `run_all.py` reruns all but the policy search):
 ```
 python scripts/fx_variants.py            # USD/TWD drift, cost-FX correlation and cost drift in Taiwan terms
 python scripts/fx_hedge_frontier.py      # hedging 0-100% of the facility, under two beliefs about the forward
@@ -94,9 +96,8 @@ python scripts/satellite_oos.py          # the satellite's selection bias, out o
 python scripts/satellite_risk_sensitivity.py   # the satellite verdict with that bias corrected
 python scripts/policy_search.py --grid --workers 6   # 3,456 policies (about 3.5 min)
 python scripts/policy_robust.py          # the IPS and the search's best policies under 11 assumption shifts
-python scripts/round6_waterfall.py       # what each October 22 change did to the IPS headline (about 3 min)
 ```
-`python scripts/doc_numbers.py --fix` rewrites figures in `docs/` that a model change has moved.
-`docs/loop/IMPROVEMENT_LOG.md` records each round of the October 2026 improvement loop.
+`python scripts/doc_numbers.py --fix` lists, without writing, the figures in `docs/` that a model change
+has moved; check each one, then add `--write`. Run it only right after `run_all.py`.
 
 See `docs/VALIDATION.md` for the check of the former team's numbers.

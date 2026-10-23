@@ -46,10 +46,11 @@ def top_up(c: dict, reinvest: float) -> dict[str, float]:
     return {lab: res.holdings.get(lab, 0.0) - held[lab] for lab in held if res.holdings.get(lab, 0.0) - held[lab] > 0.5}
 
 
-def main(reinvest: float | None = None) -> int:
+def main(reinvest: float | None = None, account: dict | None = None) -> int:
     if reinvest is None:
         reinvest = float(yaml.safe_load((CFG / "wins_rules.yaml").read_text())["interest_on_cash"])
-    c = coverage(reinvest)
+    account = account or yaml.safe_load((CFG / "wins_account.yaml").read_text())
+    c = coverage(reinvest, account)
     print(f"cash waiting for a payment earns {reinvest:.1%}")
     print(f"{'payment':>8} {'cash arriving':>14} {'surplus after':>14}")
     for (d, _), cash, s in zip(c["payments"], c["cash"], c["surplus"]):
@@ -59,7 +60,7 @@ def main(reinvest: float | None = None) -> int:
         print("every payment covered")
         return 0
     print(f"SHORTFALL in {', '.join(map(str, short))}; cheapest top-up:")
-    funds = yaml.safe_load((CFG / "wins_account.yaml").read_text())["ladder"]["funds"]
+    funds = account["ladder"]["funds"]
     for lab, extra in top_up(c, reinvest).items():
         n = f" ({int(np.ceil(extra / funds[lab]['price']))} shares)" if lab in funds else ""
         print(f"  add ${extra:,.0f} of {lab}{n}")

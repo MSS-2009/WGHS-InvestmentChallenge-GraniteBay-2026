@@ -160,8 +160,9 @@ Run `python scripts/validate_model.py` (reports `validation_esg.csv`, `validatio
 - **2031 range calibration:** on the same 184 paths, the model's 10th-90th percentile range quoted from
   each path's own January 2031 position contained the January 2033 result 99.5% of the time re-centred
   (98.4% as it happened): it behaves like a 98% range. The 20th-80th percentile band held 82.1% (75.5% as
-  it happened), so that is the range to quote as "80%" (`reports/policy_study.json`).
-- **Satellite weighting:** re-estimated each January since 2019, single-linkage HRP's realised
+  it happened); that band was tuned on the same overlapping history (about four independent six-year windows), so
+  the plan quotes the cautious 10th-90th range (`reports/policy_study.json`).
+- **Satellite weighting (satellite tested, not adopted):** re-estimated each January since 2019, single-linkage HRP's realised
   volatility (16.1%) is level with average-linkage HRP (16.2%) and below Ward (16.7%), inverse-variance
   (16.9%) and equal weights (18.2%) (`reports/validation_hrp.csv`).
 - **Black-Litterman stability:** over tau 0.025-0.10 and value-view uncertainty 1.5-5 points, the
@@ -178,7 +179,7 @@ python scripts/validate_model.py      # section 7 -> reports/validation_*.csv, b
 
 ## 9. Audit of this repository (October 21, 2026)
 
-A second review (`WGHS_AUDIT.md`, kept beside the repository) re-ran every test and script; the
+A second review on October 21 re-ran every test and script; the
 committed reports reproduced to within about $20. Its findings were fixed as follows, with regression
 tests in `tests/test_audit_fixes.py`:
 
@@ -196,24 +197,40 @@ tests in `tests/test_audit_fixes.py`:
 ## 10. Self-review during the improvement loop (October 22, 2026)
 
 A read of the engine, the order scripts and the documents, with each finding fixed and, where it
-is code, tested (`docs/loop/IMPROVEMENT_LOG.md` gives the effects):
+is code, tested:
 
 | Finding | Fix |
 | --- | --- |
 | The 2031 floor move charged 4 ETF tickets on top of the forced rebalance, which already charges one per fund | One ticket per fund; a separate floor ticket only when the sleeve holds VGIT (`tests/test_review_fixes.py`) |
 | `wins_rebalance.py` ignored the ladder check's shortfall | The cheapest top-up (6 IBTO) is ordered first (`tests/test_audit_fixes.py`) |
 | A Taiwan cost correlation with both CPI and USD/TWD would have diluted the first | Refused (`tests/test_taiwan_esg.py`); the headline uses only USD/TWD |
-| A non-finite, nonnumeric, boolean, or out-of-range Taiwan cost correlation could distort dependence or produce NaNs | Accept only finite numeric coefficients in [-1, 1] (`tests/test_taiwan_esg.py`) |
-| Nonstationary Taiwan building-cost AR coefficients could create explosive paths when an explicit state bypassed stationary initialization | Validate AR(1)/AR(2) stationarity before drawing (`tests/test_taiwan_esg.py`) |
-| Taiwan cost drift or volatility outside its domain could create NaNs, negative volatility, or fail at stationary initialization | Require growth > -100%, finite nonnegative volatility, and support deterministic zero-volatility paths (`tests/test_taiwan_esg.py`) |
-| Non-finite or wrongly sized Taiwan cost starting lags could poison the AR(2) path | Require finite shared or per-scenario initial state values (`tests/test_taiwan_esg.py`) |
-| Invalid Student-t degrees of freedom or boolean/out-of-range rate-tail shares could produce NaNs or select unintended tails | Validate ESG tail controls as numeric values before drawing; positive infinity is the Gaussian limit (`tests/test_rate_tails.py`) |
-| Invalid GARCH coefficients, volatility scale, initial variance shape, or factor index could create non-finite paths or fail during broadcasting | Require stationary coefficients, a finite nonnegative scale (positive with GARCH), an integer equity factor, and scalar or path-sized finite starting variances (`tests/test_esg_v2.py`) |
-| Nonstationary Nelson-Siegel or inflation persistence could make simulated levels explode | Require finite rate-factor AR coefficients with absolute values below one and a stationary inflation AR coefficient (`tests/test_rate_tails.py`) |
-| Asymmetric, non-finite, or invalid covariance matrices could be partially ignored by Cholesky/eigendecomposition | Validate shock covariance as symmetric positive-definite and expected-return covariance as symmetric positive-semidefinite (`tests/test_rate_tails.py`) |
-| Invalid sample counts, horizons, or annual geometric returns could fail during allocation or produce NaN equity drift | Require positive integer counts/horizon and finite equity returns above -100% (`tests/test_rate_tails.py`) |
-| Malformed nested-simulation state could broadcast silently or fail deep in path generation | Require the four core continuation fields and validate optional drift/GARCH/Taiwan state shapes and finiteness (`tests/test_rate_tails.py`, `tests/test_esg_v2.py`) |
-| Malformed initial curve, residual, FX-drift, or inflation state could fail during interpolation or produce invalid paths | Require finite model state with the expected Nelson-Siegel and residual shapes (`tests/test_rate_tails.py`) |
+| Inputs to the generator (correlations, tails, persistence, covariances, starting state, sample sizes) were not validated, so a bad value could give NaNs or wrong paths silently | Each is checked before any random draw; valid inputs give identical results (`tests/test_rate_tails.py`, `tests/test_esg_v2.py`, `tests/test_taiwan_esg.py`) |
 | `esg_params` took an `infl_phi` argument and ignored it | Removed; the fitted value is used, as before |
 | The equity correlation target was changed on an argument, not a test | Tested out of sample and reverted (`scripts/corr_shrink_oos.py`) |
 | Doc sentences gone stale as figures moved: "up from 1.74" when δ was 1.74, "$-0.2k below" for a base that was above, 99.5% given for both calibration samples | Rewritten, each with a check in `scripts/doc_numbers.py`; negatives now print as -$x |
+
+## 11. Review of the merged improvement loop (October 23, 2026)
+
+Four reviewers read the 183 commits merged on October 22 (generator, engine and WInS scripts, Black-Litterman
+and forecasts, docs and hygiene), re-ran the tests and studies, and checked the changed forecasts against
+J.P. Morgan's and Vanguard's publications. No change moved a payment's funding. Findings and fixes:
+
+| Finding | Fix |
+| --- | --- |
+| Ten $25 tickets were charged to invest a rounding residue of about $0.0000000001 when a deposit went entirely to the ladder (about 9% of scenarios), so results depended on floating-point noise and did not reproduce across machines | No commission on amounts under $1 (`tests/test_audit_fixes.py`) |
+| Vanguard's value/growth and small/large inputs came from an older run while its firm row used the September 30, 2026 run | Updated to +3.0% and +0.9% from Vanguard's published chart data |
+| The docs offered a STRIPS reserve outside WInS and currency hedging with forwards as client options; WInS allows neither | Removed, with the STRIPS study and its scraped quote pages |
+| The 2031 quotes multiplied by a hard-coded 85% contribution share | Read from the IPS (80% since October 23) |
+| `doc_numbers.py --fix` could copy a wrong report value into seven places without listing them | Dry run by default; writes only with `--write` |
+| Two Taiwan data downloaders switched certificate checks off on refresh | Checks stay on |
+| Two Taiwan study scripts overwrote `config/taiwan.yaml` with a template missing keys the headline needs | They write proposals to `reports/` |
+| Weights rounded to four decimals (sum 0.9999) were rejected | Accepted and renormalised (`tests/test_strategy_validation.py`) |
+| `wins_rebalance.py` crashed with nothing left to invest; two tests asserted the WInS account's October 21 state | A clear message; the tests use a frozen copy of that account |
+| The loop's process logs (home-directory paths, tooling chatter) sat in the public repository | Removed; every finding is reproducible from its script |
+| The README credited only Claude, though Gemini wrote part of the studies | Both cited |
+
+Disclosed, not changed: the January 2033 sale tickets are an upper bound (with an 80% floor the matured
+IBTM usually covers the contribution; $225); the Taiwan cost drift is a log average applied as a simple
+rate (2.85% against a 2.865% compound rate, about $0.1k of real median); and anchoring the
+Black-Litterman market level to the 13-firm consensus is a judgment, not a bug fix (left alone,
+Black-Litterman lets the relative views lift the market's expected return by 0.1-0.4 points).

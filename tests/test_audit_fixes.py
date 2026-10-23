@@ -20,6 +20,7 @@ from lgm.profiles import cs_team
 from lgm.strategies import S9
 
 ROOT = Path(__file__).resolve().parents[1]
+OCT21 = yaml.safe_load((ROOT / "tests" / "data" / "wins_account_2026-10-21.yaml").read_text())   # before the Oct 23 trades
 
 
 def _script(name):
@@ -42,16 +43,16 @@ def test_timeline_follows_the_curve_date():
 
 def test_ladder_check_judges_every_payment_not_just_the_last():
     lc = _script("wins_ladder_check")
-    at0 = lc.coverage(0.0)
+    at0 = lc.coverage(0.0, OCT21)
     assert min(at0["surplus"]) < 0 < at0["surplus"][-1]      # a middle payment is short, the last is not
-    assert lc.main(0.0) == 1 and lc.main(0.03) == 0
+    assert lc.main(0.0, OCT21) == 1 and lc.main(0.03, OCT21) == 0
 
 
 def test_ladder_check_top_up_closes_the_gap():
     lc = _script("wins_ladder_check")
-    c = lc.coverage(0.0)
+    c = lc.coverage(0.0, OCT21)
     extra = lc.top_up(c, 0.0)
-    acct = copy.deepcopy(yaml.safe_load((ROOT / "config" / "wins_account.yaml").read_text()))
+    acct = copy.deepcopy(OCT21)
     for lab, dollars in extra.items():
         f = acct["ladder"]["funds"][lab]
         f["shares"] += int(np.ceil(dollars / f["price"]))
@@ -104,7 +105,7 @@ def test_close_on_reads_the_cache_without_the_network(monkeypatch):
 
 def test_wins_orders_include_the_ladder_top_up(capsys):
     """The order list buys what the ladder check says is missing before sizing the growth sleeve."""
-    _script("wins_rebalance").main()
+    _script("wins_rebalance").main(account=copy.deepcopy(OCT21))
     out = capsys.readouterr().out
     buys = {line.split()[1]: int(line.split()[2]) for line in out.splitlines() if line.strip().startswith("Buy")}
     assert buys.get("IBTO", 0) >= 6                 # the 2034 payment is $189 short at 0% interest

@@ -17,6 +17,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from lgm.strategies import IPS
+
 ROOT = Path(__file__).resolve().parents[1]
 R = ROOT / "reports"
 
@@ -35,8 +37,8 @@ def hedge_sentence() -> str:
     hf = pd.read_csv(R / "fx_hedge_frontier.csv").set_index(["belief", "hedge_ratio"])
     rw, fw = hf.loc["random walk (headline)"], hf.loc["forward unbiased"]
     best = fw.real_p5.idxmax()
-    return (f"Partial hedges (`scripts/fx_hedge_frontier.py`, a share of the median facility sold forward in\n"
-            f"  January 2027): on the random walk every hedge lowers the real 5th percentile as well as the median\n"
+    return (f"WInS has no currency forwards, so the plan cannot hedge. For information only, partial hedges\n"
+            f"  (`scripts/fx_hedge_frontier.py`, a share of the median facility sold forward in January 2027): on the random walk every hedge lowers the real 5th percentile as well as the median\n"
             f"  (fully hedged {k(rw.loc[1.0, 'real_p5'])} and {k(rw.loc[1.0, 'real_median'])} against "
             f"{k(rw.loc[0.0, 'real_p5'])} and {k(rw.loc[0.0, 'real_median'])}). Only if the forward is an\n"
             f"  unbiased forecast does hedging pay, and then modestly: the median is unchanged within "
@@ -76,38 +78,37 @@ def taiwan_equity_sentence() -> str:
 
 
 def decision_rows() -> list[str]:
-    """The 'Decisions for the client' table in docs/MODEL.md: what the evidence says on each choice the
-    model leaves open."""
+    """The 'Decisions' table in docs/MODEL.md: each choice the model leaves to the client, the evidence,
+    and what was decided."""
+    from lgm.strategies import IPS
+
     d = lambda x: ("+" if x >= 0 else "-") + k(abs(x))
-    pr = pd.read_csv(R / "policy_robust.csv")
-    b = pr[pr["shift"] == "base"].set_index("name")
-    ips, alt = b.loc["IPS"], b.loc["P2361"]
-    cs = json.loads((R / "policy_study.json").read_text())["contribution_share"]
-    hf = pd.read_csv(R / "fx_hedge_frontier.csv").set_index(["belief", "hedge_ratio"])
-    fw = hf.loc["forward unbiased"]
+    ps = json.loads((R / "policy_study.json").read_text())
+    ff = {round(r["floor_share"], 2): r for r in ps["floor_frontier"]}
+    f60, fips = ff[0.6], ff[round(IPS.floor_share_2031, 2)]
+    width = lambda r: r["range_2031_typical"][1] - r["range_2031_typical"][0]
+    cs = ps["contribution_share"]
     td = pd.read_csv(R / "taiwan_drift_study.csv").pivot(index="origins", columns="rule", values="rmse")
     fx = pd.read_csv(R / "fx_variants.csv").set_index("variant")
     sat = pd.read_csv(R / "satellite_scoring.csv").set_index(["beliefs", "commissions", "candidate"])
     s20 = sat.loc[("Black-Litterman posterior", "$25 (WInS)", "Core + 20% satellite"), "median_vs_core"]
     s20f = sat.loc[("Black-Litterman posterior", "none", "Core + 20% satellite"), "median_vs_core"]
+    shares = ", ".join(f"{c['share']:.0%}" for c in cs[:-1]) + f" and {cs[-1]['share']:.0%}"
     return [
-        f"| Growth mix and 2031 floor | {alt.equity_share:.0%} equity with a {alt.floor_share:.0%} floor instead of the IPS's "
-        f"{ips.equity_share:.0%} and {ips.floor_share:.0%}: median {d(alt['median'] - ips['median'])}, 5th percentile "
-        f"{d(alt.p5 - ips.p5)}, a 2031 floor worth {k(alt.secured_2031_median - ips.secured_2031_median)} more at maturity; certainty "
-        f"equivalents within {k(abs(alt.ce_gamma4 - ips.ce_gamma4))} at risk aversion 4 | How much the co-sponsors need "
-        f"promised in 2031 | Policy study |",
-        "| Contribution share | 75%, 85% and 95% give typical contributions of "
+        f"| 2031 floor | {IPS.floor_share_2031:.0%} of the growth sleeve moves into IBTM. Against 60%: median "
+        f"{d(fips['median'] - f60['median'])}, typical secured contribution {d(fips['secured_2031_typical'] - f60['secured_2031_typical'])}, "
+        f"likely range {k(width(fips))} wide instead of {k(width(f60))} | Decided: {IPS.floor_share_2031:.0%} | Policy study |",
+        f"| Contribution share | {shares} give typical contributions of "
         + ", ".join(f"${c['contribution_median'] / 1000:.0f}k" for c in cs) + "; Laura keeps "
-        + ", ".join(f"${c['kept_median'] / 1000:.0f}k" for c in cs) + " | Preference | Policy study |",
-        f"| Hedge USD/TWD | On the random walk every hedge lowers the real 5th percentile and median; if the forward "
-        f"were unbiased, at most {d(fw.real_p5.max() - fw.loc[0.0, 'real_p5'])} on the 5th percentile | Evidence says do not "
-        f"hedge | USD/TWD |",
+        + ", ".join(f"${c['kept_median'] / 1000:.0f}k" for c in cs) + f" | Decided: {IPS.contribution_share:.0%} | Policy study |",
+        f"| Stock satellite | {d(s20)} median at 20% with WInS commissions, {d(s20f)} without | Dropped: the plan runs "
+        f"entirely in WInS | Part 2b |",
+        "| Hedge USD/TWD | Not possible in WInS, which has no currency forwards; on the random walk every hedge would also "
+        "lower the real 5th percentile and median | Unhedged | USD/TWD |",
         f"| Taiwan building-cost drift | The long-run average forecast six-year cost growth better in real time "
         f"(RMSE {td.loc['all', 'expanding']:.3f} vs {td.loc['all', 'trailing_10y']:.3f}); the ten-year drift would mean "
         f"{d(fx.loc['random_walk_tw_drift_10y', 'real_median'] - fx.loc['random_walk', 'real_median'])} of real median | "
         f"Evidence supports the long-run average | Taiwan building costs |",
-        f"| Stock satellite | {d(s20)} median at 20% with WInS commissions, {d(s20f)} without | A values choice, "
-        f"not a return one | Part 2b |",
     ]
 
 
@@ -202,7 +203,7 @@ def checks() -> list[tuple[str, str, str]]:
         f = row["floor_share"]
         if abs(f - 0.2) < 1e-9:
             continue                     # the doc's table shows the 0, 40, 60, 80 and 100% floors
-        label = f"{f:.0%}" + (" (IPS)" if abs(f - 0.6) < 1e-9 else "")
+        label = f"{f:.0%}" + (" (IPS)" if abs(f - IPS.floor_share_2031) < 1e-9 else "")
         lo, hi = row["range_2031_typical"]
         range_txt = k(lo) if lo == hi else rng(lo, hi)
         secured = "$0" if row["secured_2031_typical"] == 0 else k(row["secured_2031_typical"])
@@ -211,19 +212,19 @@ def checks() -> list[tuple[str, str, str]]:
     lo_b, hi_b = q["floor_dec_2032_band"]
     out.append(("MODEL", "2031 floor band", f"floor the IPS buys varies from {k(lo_b)} to {k(hi_b)} with that month's rates"))
     ff = {round(r["floor_share"], 2): r for r in ps["floor_frontier"]}
-    ips_ff, f80 = ff[0.6], ff[0.8]
+    ips_ff, f60, f80 = ff[round(IPS.floor_share_2031, 2)], ff[0.6], ff[0.8]
     gap_best = max(max(r[f"ce_gamma{g}"] for r in ff.values()) - ips_ff[f"ce_gamma{g}"] for g in (2, 4, 8))
-    gap_6080 = max(abs(ips_ff[f"ce_gamma{g}"] - f80[f"ce_gamma{g}"]) for g in (2, 4, 8))
+    gap_6080 = max(abs(f60[f"ce_gamma{g}"] - f80[f"ce_gamma{g}"]) for g in (2, 4, 8))
     out.append(("MODEL", "floor CE gaps", f"within {k(gap_best)} of the best for each, and 60% and 80% differ by under "
                                           f"{k(np.ceil(gap_6080 / 100) * 100)}"))
     out.append(("MODEL", "80% floor trade-off",
-                f"for {k(ips_ff['median'] - f80['median'])} of\nmedian, an 80% floor secures "
-                f"${(f80['secured_2031_typical'] - ips_ff['secured_2031_typical']) / 1000:.0f}k more"))
+                f"for {k(f60['median'] - f80['median'])} of\nmedian, an 80% floor secures "
+                f"${(f80['secured_2031_typical'] - f60['secured_2031_typical']) / 1000:.0f}k more"))
     cs = ps["contribution_share"]
     out.append(("MODEL", "contribution shares",
-                "give typical contributions of " + ", ".join(f"${c['contribution_median'] / 1000:.0f}k" for c in cs[:2])
-                + f" and ${cs[2]['contribution_median'] / 1000:.0f}k and leave\nLaura "
-                + ", ".join(f"${c['kept_median'] / 1000:.0f}k" for c in cs[:2]) + f" and ${cs[2]['kept_median'] / 1000:.0f}k"))
+                "give typical contributions of " + ", ".join(f"${c['contribution_median'] / 1000:.0f}k" for c in cs[:-1])
+                + f" and ${cs[-1]['contribution_median'] / 1000:.0f}k and leave\nLaura "
+                + ", ".join(f"${c['kept_median'] / 1000:.0f}k" for c in cs[:-1]) + f" and ${cs[-1]['kept_median'] / 1000:.0f}k"))
     zero = stress["reserve_certain_at_0pct_reinvestment"]
     out.append(("MODEL", "reserve certain at 0%", f"then lowers the median facility by {k(-zero['median_change'])}"))
     out.append(("VALIDATION", "reserve certain at 0%", f"(median -{k(-zero['median_change'])})"))

@@ -26,8 +26,8 @@ ROOT = Path(__file__).resolve().parents[1]
 COMMISSION = float(yaml.safe_load((ROOT / "config" / "wins_rules.yaml").read_text())["equities"]["commission"])
 
 
-def main(refresh: bool = False):
-    acct = yaml.safe_load((ROOT / "config" / "wins_account.yaml").read_text())
+def main(refresh: bool = False, account: dict | None = None):
+    acct = account or yaml.safe_load((ROOT / "config" / "wins_account.yaml").read_text())
     held = acct["growth_funds_to_sell"]
     w = pd.Series(json.loads((ROOT / "reports" / "report_numbers.json").read_text())["core"]["weights"])
     tickers = list(w.index) + ["IBTM", *held]
