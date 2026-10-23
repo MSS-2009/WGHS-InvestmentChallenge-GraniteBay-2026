@@ -370,3 +370,5 @@ Nelson-Siegel rate factors and inflation now receive the same stationarity guard
 non-finite, or unit-root/explosive AR inputs fail before path generation.
 Both shock and expected-return covariance inputs are checked for dimensions, finiteness, symmetry, and
 the appropriate positive-definiteness condition before draws; zero expected-return covariance remains valid.
+Simulation counts and horizons now require positive integers, continuation month indices must be
+nonnegative integers, and annual equity geometric returns must be finite and above -100%.

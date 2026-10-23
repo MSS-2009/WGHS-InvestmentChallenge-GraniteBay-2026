@@ -202,13 +202,34 @@ def _tw_cost_ar_coefficients(value):
 
 def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
              start: dict | None = None, m0: int = 0) -> Scenarios:
-    """Simulate n scenarios for p.months months. `start` overrides month-0 state
-    (keys: beta, infl, fx_log, tw_cost_log, each (n,...)) for nested simulation."""
+    """Simulate n scenarios for p.months months.
+
+    `start` supplies continuation state. Beta and inflation accept shared values or one value per
+    scenario; FX and cost-index levels are scenario vectors. Optional drift, GARCH, and Taiwan AR
+    states accept shared values or scenario-wise values as appropriate.
+    """
+    if isinstance(n, (bool, np.bool_)) or not isinstance(n, (int, np.integer)) or n < 1:
+        raise ValueError(f"n must be a positive integer, got {n!r}")
+    if (isinstance(p.months, (bool, np.bool_)) or not isinstance(p.months, (int, np.integer))
+            or p.months < 1):
+        raise ValueError(f"months must be a positive integer, got {p.months!r}")
+    if (isinstance(m0, (bool, np.bool_)) or not isinstance(m0, (int, np.integer)) or m0 < 0):
+        raise ValueError(f"m0 must be a nonnegative integer, got {m0!r}")
     t_dof = _dof(p.t_dof, "t_dof")
     rate_dof = _dof(p.rate_dof, "rate_dof", allow_gaussian=True)
     infl_dof = _dof(p.infl_dof, "infl_dof", allow_gaussian=True)
     fx_dof = _dof(p.fx_dof, "fx_dof", allow_gaussian=True)
-    K = len(p.eq_geo)
+    try:
+        raw_eq_geo = np.asarray(p.eq_geo, dtype=object)
+        if any(isinstance(x, (bool, np.bool_)) for x in raw_eq_geo.flat):
+            raise ValueError("boolean returns")
+        eq_geo = np.asarray(raw_eq_geo, dtype=float)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("eq_geo must be a finite one-dimensional vector of annual returns above -100%") from exc
+    if (eq_geo.ndim != 1 or eq_geo.size < 1 or not np.isfinite(eq_geo).all()
+            or np.any(eq_geo <= -1.0)):
+        raise ValueError("eq_geo must be a finite one-dimensional vector of annual returns above -100%")
+    K = eq_geo.size
     try:
         raw_shock_cov = np.asarray(p.cov, dtype=object)
         if any(isinstance(x, (bool, np.bool_)) for x in raw_shock_cov.flat):
@@ -361,7 +382,7 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
             if m < M - 1:
                 garch_h[:, m + 1] = omega + alpha * (shocks[:, m, factor_idx] ** 2 / var0) + beta * garch_h[:, m]
 
-    eq_mu = np.log1p(p.eq_geo) / 12.0                         # median growth preserved
+    eq_mu = np.log1p(eq_geo) / 12.0                            # median growth preserved
     eq_drift_err = None
     if start is not None and "eq_drift_err" in start:
         err = np.asarray(start["eq_drift_err"])

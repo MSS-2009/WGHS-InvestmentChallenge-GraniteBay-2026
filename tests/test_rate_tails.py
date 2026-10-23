@@ -33,6 +33,35 @@ def test_default_rate_tails_bit_for_bit_identical(base_params):
     np.testing.assert_array_equal(sc_gaussian.beta, sc_normal.beta)
 
 
+@pytest.mark.parametrize("n", [0, -1, 1.5, True, "2"])
+def test_scenario_count_must_be_positive_integer(base_params, n):
+    with pytest.raises(ValueError, match="n must be a positive integer"):
+        esg.simulate(base_params, n=n)
+
+
+@pytest.mark.parametrize("months", [0, -1, 1.5, True, "12"])
+def test_horizon_must_be_positive_integer(base_params, months):
+    p = dc.replace(base_params, months=months)
+    with pytest.raises(ValueError, match="months must be a positive integer"):
+        esg.simulate(p, n=2)
+
+
+@pytest.mark.parametrize("m0", [-1, 1.5, True, "0"])
+def test_start_month_must_be_nonnegative_integer(base_params, m0):
+    with pytest.raises(ValueError, match="m0 must be a nonnegative integer"):
+        esg.simulate(base_params, n=2, m0=m0)
+
+
+@pytest.mark.parametrize("geo", [
+    [-1.0, 0.05, 0.05], [np.nan, 0.05, 0.05], [np.inf, 0.05, 0.05],
+    [True, False, True], [[0.05, 0.05, 0.05]], "invalid",
+])
+def test_equity_geometric_returns_must_be_finite_and_above_minus_one(base_params, geo):
+    p = dc.replace(base_params, eq_geo=geo)
+    with pytest.raises(ValueError, match="eq_geo must be a finite one-dimensional"):
+        esg.simulate(p, n=2)
+
+
 @pytest.mark.parametrize("phi", [
     [0.9, 1.0, 0.9], [0.9, -1.0, 0.9], [0.9, np.nan, 0.9],
     [0.9, np.inf, 0.9], [0.9, 0.8], "invalid", [False, False, False],
