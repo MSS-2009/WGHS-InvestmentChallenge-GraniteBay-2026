@@ -241,6 +241,34 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
     if garch is not None and eq_vol_scale == 0:
         raise ValueError(f"eq_vol_scale must be positive when eq_garch is enabled, got {p.eq_vol_scale!r}")
     tw_cost_ar = _tw_cost_ar_coefficients(p.tw_cost_phi)
+    if isinstance(p.tw_cost_growth, (bool, np.bool_)):
+        raise ValueError("tw_cost_growth must be finite and greater than -1")
+    try:
+        tw_cost_growth = float(p.tw_cost_growth)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("tw_cost_growth must be finite and greater than -1") from exc
+    if not np.isfinite(tw_cost_growth) or tw_cost_growth <= -1.0:
+        raise ValueError("tw_cost_growth must be finite and greater than -1")
+    tw_cost_vol = None
+    if tw_cost_ar is None or p.tw_cost_sig_eps is None:
+        if isinstance(p.tw_cost_vol, (bool, np.bool_)):
+            raise ValueError("tw_cost_vol must be finite and nonnegative")
+        try:
+            tw_cost_vol = float(p.tw_cost_vol)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError("tw_cost_vol must be finite and nonnegative") from exc
+        if not np.isfinite(tw_cost_vol) or tw_cost_vol < 0.0:
+            raise ValueError("tw_cost_vol must be finite and nonnegative")
+    tw_cost_sig_eps = None
+    if tw_cost_ar is not None and p.tw_cost_sig_eps is not None:
+        if isinstance(p.tw_cost_sig_eps, (bool, np.bool_)):
+            raise ValueError("tw_cost_sig_eps must be finite and nonnegative")
+        try:
+            tw_cost_sig_eps = float(p.tw_cost_sig_eps)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError("tw_cost_sig_eps must be finite and nonnegative") from exc
+        if not np.isfinite(tw_cost_sig_eps) or tw_cost_sig_eps < 0.0:
+            raise ValueError("tw_cost_sig_eps must be finite and nonnegative")
     if garch is not None and start is not None and "garch_h" in start:
         start_h = np.asarray(start["garch_h"], dtype=float)
         if not np.isfinite(start_h).all() or np.any(start_h < 0):
@@ -338,13 +366,13 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
     if tw_cost_ar is not None:
         phi1, phi2 = tw_cost_ar
 
-        mu = float(np.log1p(p.tw_cost_growth) / 12.0)
+        mu = float(np.log1p(tw_cost_growth) / 12.0)
 
         # Innovation standard deviation:
-        if p.tw_cost_sig_eps is not None:
-            sig_eps = float(p.tw_cost_sig_eps)
+        if tw_cost_sig_eps is not None:
+            sig_eps = tw_cost_sig_eps
         else:
-            sig_1m = float(p.tw_cost_vol) / np.sqrt(12.0)
+            sig_1m = tw_cost_vol / np.sqrt(12.0)
             if phi2 == 0.0:
                 sig_eps = sig_1m * np.sqrt(max(1.0 - phi1**2, 0.0))
             else:
@@ -372,7 +400,10 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
         elif p.tw_cost_infl0 is not None:
             state_in = p.tw_cost_infl0
 
-        if state_in is None:
+        if state_in is None and sig_eps == 0.0:
+            y_prev2 = np.full(n, mu)
+            y_prev1 = np.full(n, mu)
+        elif state_in is None:
             cov_mat = np.array([[var_y, cov_y], [cov_y, var_y]])
             chol_init = np.linalg.cholesky(cov_mat)
             if antithetic:
@@ -425,7 +456,7 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
         tw_cost_infl[:, 0] = y_prev1
         tw_cost_infl[:, 1:] = y
     else:
-        tw = np.log1p(p.tw_cost_growth) / 12 + p.tw_cost_vol / np.sqrt(12) * rng.standard_normal((n, M))
+        tw = np.log1p(tw_cost_growth) / 12 + tw_cost_vol / np.sqrt(12) * rng.standard_normal((n, M))
         tw0 = 0.0 if start is None else start["tw_cost_log"][:, None]
         tw_cost_log = np.concatenate([np.zeros((n, 1)), np.cumsum(tw, axis=1)], axis=1) + tw0
         tw_cost_infl = None

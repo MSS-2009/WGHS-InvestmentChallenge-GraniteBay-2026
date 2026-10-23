@@ -364,5 +364,7 @@ Taiwan cost correlation inputs also reject booleans and nonnumeric values, which
 coerce or fail on with an unhelpful low-level exception.
 Taiwan building-cost AR(1)/AR(2) persistence is now checked for stationarity before any draws, including
 when the caller supplies an explicit state that would otherwise bypass stationary initialization.
+Taiwan cost drift and innovation scales now reject invalid domains; zero volatility remains a valid
+deterministic stress, including the stationary AR(2) initialization path.
 Nelson-Siegel rate factors and inflation now receive the same stationarity guard; wrong-shaped, boolean,
 non-finite, or unit-root/explosive AR inputs fail before path generation.

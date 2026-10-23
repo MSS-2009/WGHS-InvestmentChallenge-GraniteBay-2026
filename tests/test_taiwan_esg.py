@@ -255,6 +255,37 @@ def test_taiwan_cost_ar_coefficients_must_be_stationary_even_with_explicit_state
         simulate(p, n=20, seed=3)
 
 
+@pytest.mark.parametrize("growth", [-1.0, -1.01, np.nan, np.inf, "invalid", True])
+def test_taiwan_cost_growth_requires_finite_gross_rate_above_zero(base_params, growth):
+    p = dc.replace(base_params, tw_cost_growth=growth)
+    with pytest.raises(ValueError, match="tw_cost_growth"):
+        simulate(p, n=2, seed=3)
+
+
+@pytest.mark.parametrize("vol", [-0.01, np.nan, np.inf, "invalid", True])
+def test_taiwan_cost_volatility_requires_finite_nonnegative_value(base_params, vol):
+    p = dc.replace(base_params, tw_cost_vol=vol)
+    with pytest.raises(ValueError, match="tw_cost_vol"):
+        simulate(p, n=2, seed=3)
+
+
+@pytest.mark.parametrize("sig_eps", [-0.01, np.nan, np.inf, "invalid", True])
+def test_taiwan_cost_innovation_scale_requires_finite_nonnegative_value(base_params, sig_eps):
+    p = dc.replace(base_params, tw_cost_phi=(0.65, -0.09), tw_cost_sig_eps=sig_eps)
+    with pytest.raises(ValueError, match="tw_cost_sig_eps"):
+        simulate(p, n=2, seed=3)
+
+
+def test_zero_taiwan_cost_volatility_is_a_valid_deterministic_stress(base_params):
+    mu = np.log1p(base_params.tw_cost_growth) / 12
+    legacy = simulate(dc.replace(base_params, months=12, tw_cost_vol=0.0), n=4, seed=3)
+    ar = simulate(dc.replace(base_params, months=12, tw_cost_phi=(0.65, -0.09), tw_cost_vol=0.0,
+                             tw_cost_sig_eps=0.0, tw_cost_state0=None, tw_cost_infl0=None), n=4, seed=3)
+    expected = np.broadcast_to(np.arange(13)[None, :] * mu, (4, 13))
+    np.testing.assert_allclose(legacy.tw_cost_log, expected, atol=1e-15)
+    np.testing.assert_allclose(ar.tw_cost_log, expected, atol=1e-15)
+
+
 def test_variance_ratio_separates_iid_from_mean_reversion():
     from lgm.calibrate import variance_ratio, variance_ratio_test
 
