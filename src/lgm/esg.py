@@ -16,6 +16,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from . import nelson_siegel as ns
+from .asof import month_of
 from .curve import ZeroCurve
 
 TAU_GRID = np.array([0.0833, 0.25, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20, 25, 30], dtype=float)
@@ -67,6 +68,8 @@ class Scenarios:
     eq_drift_err: np.ndarray | None = None
     garch_h: np.ndarray | None = None
     tw_cost_infl: np.ndarray | None = None
+    fx_log_2027: np.ndarray | None = None  # Jan 2027 baseline retained by nested simulations
+    tw_cost_log_2027: np.ndarray | None = None
 
     @property
     def n(self) -> int:
@@ -282,6 +285,9 @@ def _prepare_start(start, n: int, n_equities: int):
         if key not in out:
             continue
         out[key] = _tw_cost_state(out[key], n, key)
+    for key in ("fx_log_2027", "tw_cost_log_2027"):
+        if key in out:
+            out[key] = _path_state(out[key], n, key)
     return out
 
 
@@ -614,4 +620,14 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
         tw0 = 0.0 if start is None else start["tw_cost_log"][:, None]
         tw_cost_log = np.concatenate([np.zeros((n, 1)), np.cumsum(tw, axis=1)], axis=1) + tw0
         tw_cost_infl = None
-    return Scenarios(beta, eq_log, infl, fx_log, tw_cost_log, resid, rate_floor, m0, eq_drift_err, garch_h, tw_cost_infl)
+    m27 = month_of(2027) - m0
+    if 0 <= m27 <= M:
+        fx_log_2027 = fx_log[:, m27].copy()
+        tw_cost_log_2027 = tw_cost_log[:, m27].copy()
+    elif start is not None:
+        fx_log_2027 = start.get("fx_log_2027")
+        tw_cost_log_2027 = start.get("tw_cost_log_2027")
+    else:
+        fx_log_2027 = tw_cost_log_2027 = None
+    return Scenarios(beta, eq_log, infl, fx_log, tw_cost_log, resid, rate_floor, m0, eq_drift_err,
+                     garch_h, tw_cost_infl, fx_log_2027, tw_cost_log_2027)

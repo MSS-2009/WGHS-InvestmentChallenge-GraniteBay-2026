@@ -382,6 +382,17 @@ def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: Sta
     _finite_path("fx_log", sc.fx_log, (int(n), horizon + 1), min_axes=(1,))
     _finite_path("tw_cost_log", sc.tw_cost_log, (int(n), horizon + 1), min_axes=(1,))
     _finite_path("resid", sc.resid, (len(TAU_GRID),))
+    if m0 <= M_2027:
+        i27 = M_2027 - int(m0)
+        fx_2027 = sc.fx_log[:, i27]
+        tw_cost_2027 = sc.tw_cost_log[:, i27]
+    else:
+        fx_base = getattr(sc, "fx_log_2027", None)
+        tw_cost_base = getattr(sc, "tw_cost_log_2027", None)
+        if fx_base is None or tw_cost_base is None:
+            raise ValueError("nested scenarios need their January 2027 FX and Taiwan-cost baselines")
+        fx_2027 = _finite_path("fx_log_2027", fx_base, (int(n),))
+        tw_cost_2027 = _finite_path("tw_cost_log_2027", tw_cost_base, (int(n),))
     if isinstance(sc.rate_floor, (bool, np.bool_)) or not isinstance(sc.rate_floor, Real):
         raise ValueError("scenarios.rate_floor must be a finite scalar")
     try:
@@ -479,8 +490,8 @@ def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: Sta
     open_cost = ((1 - s.locked) * PMT * sc.df(M_2033, pay_tau(M_2033)) * (1 + kappa(M_2033, cfg, sc))).sum(1)
     funded = assets >= open_cost - 1e-6
     facility = np.maximum(assets - open_cost, 0.0)
-    i33, i27 = M_2033 - sc.m0, max(M_2027 - sc.m0, 0)   # nested runs measure from their start
-    real = facility * np.exp(sc.fx_log[:, i33] - sc.fx_log[:, i27]) / np.exp(sc.tw_cost_log[:, i33] - sc.tw_cost_log[:, i27])
+    i33 = M_2033 - sc.m0
+    real = facility * np.exp(sc.fx_log[:, i33] - fx_2027) / np.exp(sc.tw_cost_log[:, i33] - tw_cost_2027)
     out.update({"funded": funded, "facility": facility, "contribution": facility * st.contribution_share,
                 "facility_real_tw2027": real, "assets_2033": assets, "open_cost_2033": open_cost,
                 "shortfall": np.maximum(open_cost - assets, 0.0), "locked_2033": s.locked.mean(1),
@@ -528,6 +539,17 @@ def conditional_2031(st: Strategy, sc: Scenarios, res: dict, params, i: int | No
     start = {"beta": sc.beta[i, M_2031 - sc.m0], "infl": sc.infl[i, M_2031 - sc.m0],
              "fx_log": np.full(n_inner, sc.fx_log[i, M_2031 - sc.m0]),
              "tw_cost_log": np.full(n_inner, sc.tw_cost_log[i, M_2031 - sc.m0])}
+    if sc.m0 <= M_2027:
+        fx_2027 = sc.fx_log[i, M_2027 - sc.m0]
+        tw_cost_2027 = sc.tw_cost_log[i, M_2027 - sc.m0]
+    else:
+        fx_base = getattr(sc, "fx_log_2027", None)
+        tw_cost_base = getattr(sc, "tw_cost_log_2027", None)
+        if fx_base is None or tw_cost_base is None:
+            raise ValueError("conditional_2031 needs January 2027 FX and Taiwan-cost baselines")
+        fx_2027, tw_cost_2027 = fx_base[i], tw_cost_base[i]
+    start["fx_log_2027"] = np.full(n_inner, fx_2027)
+    start["tw_cost_log_2027"] = np.full(n_inner, tw_cost_2027)
     if keep_drift and getattr(sc, "eq_drift_err", None) is not None:
         start["eq_drift_err"] = sc.eq_drift_err[i]
     if getattr(sc, "garch_h", None) is not None:

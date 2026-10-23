@@ -398,3 +398,9 @@ $196,989 median, $146,102 p5, $135,214 CVaR5, and $166,547 real median. The full
 pass, and `doc_numbers.py` finds 0 of 126 figures missing. The known WInS check remains a nonfatal $133
 2034 shortfall, with a six-share IBTO top-up. The input guards were pushed to the personal fork on
 `improve` in commits `f9e5c7f`, `2dabbb3`, `138198a`, and `445d527`; upstream was not changed.
+
+The nested January 2031 quote also exposed a deflator-indexing error: its FX and Taiwan-cost paths keep
+their accumulated 2027 levels, but the real-facility calculation treated the nested path's first month as
+January 2027. Nested scenarios now carry their January 2027 baselines through continuation, and the engine
+requires those baselines when starting after that date. This leaves the full-horizon headline unchanged
+and fixes the nested real-dollar output.
