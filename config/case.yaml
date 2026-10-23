@@ -1,0 +1,12 @@
+# Laura Gao case (2026-27 WGHS case study). All flows occur on January 1 of the year shown.
+contributions:
+  - {date: 2027-01-01, amount: 300000}
+  - {date: 2028-01-01, amount: 150000}
+payments:            # operating commitment: fixed nominal, not inflation-adjusted
+  amount: 50000
+  first: 2033-01-01
+  count: 10          # 2033 through 2042
+milestones:
+  co_sponsor_quote: 2031-01-01
+  reserve_set_aside: 2033-01-01
+  facility_contribution: 2033-01-01

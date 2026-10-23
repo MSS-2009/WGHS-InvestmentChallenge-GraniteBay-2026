@@ -1,0 +1,13 @@
+# Capital-market and model assumptions.
+# Profile `cs_team` reproduces the former CS team's documented inputs so their numbers can be checked.
+# Profile `house` holds this model's own researched assumptions (filled in Part 2).
+cs_team:
+  curve_date: 2026-10-20
+  equity:
+    regions: [US, DEV, EM]
+    weights: [0.60, 0.30, 0.10]          # VTI / VEA / VWO split of the equity sleeve (Plans v2)
+    geo_return_net: 0.0606               # Plans v2 Appendix B: equity 6.06%/yr net of fees
+    vol: 0.165                           # guide Step 7
+  bond_fund_return: 0.049                # Plans v2 Appendix B: VGIT about 4.9%
+  reinvestment_rate: 0.03                # guide Step 4C: interim coupons reinvested at 3%
+  expense_ratios: {VTI: 0.0003, VEA: 0.0003, VWO: 0.0006, VGIT: 0.0003, IBTM: 0.0007, IBTO: 0.0007, IBTP: 0.0007, IBTQ: 0.0007, IBTR: 0.0007}

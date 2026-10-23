@@ -1,0 +1,172 @@
+{
+  "n_scenarios": 20000,
+  "floor_frontier": [
+    {
+      "floor_share": 0.0,
+      "median": 199953,
+      "p5": 140314,
+      "p95": 290982,
+      "secured_2031_typical": 0,
+      "range_2031_typical": [
+        144800.0,
+        201600.0
+      ],
+      "ce_gamma2": 195814,
+      "ce_gamma4": 186541,
+      "ce_gamma8": 169365
+    },
+    {
+      "floor_share": 0.2,
+      "median": 199192,
+      "p5": 142722,
+      "p95": 282380,
+      "secured_2031_typical": 33479,
+      "range_2031_typical": [
+        148400.0,
+        194600.0
+      ],
+      "ce_gamma2": 195401,
+      "ce_gamma4": 187222,
+      "ce_gamma8": 171875
+    },
+    {
+      "floor_share": 0.4,
+      "median": 198133,
+      "p5": 144633,
+      "p95": 276026,
+      "secured_2031_typical": 66958,
+      "range_2031_typical": [
+        153100.0,
+        187500.0
+      ],
+      "ce_gamma2": 194900,
+      "ce_gamma4": 187591,
+      "ce_gamma8": 173716
+    },
+    {
+      "floor_share": 0.6,
+      "median": 196989,
+      "p5": 146102,
+      "p95": 270262,
+      "secured_2031_typical": 100437,
+      "range_2031_typical": [
+        157300.0,
+        180700.0
+      ],
+      "ce_gamma2": 194142,
+      "ce_gamma4": 187477,
+      "ce_gamma8": 174701
+    },
+    {
+      "floor_share": 0.8,
+      "median": 195755,
+      "p5": 146324,
+      "p95": 266201,
+      "secured_2031_typical": 133916,
+      "range_2031_typical": [
+        161800.0,
+        173300.0
+      ],
+      "ce_gamma2": 193118,
+      "ce_gamma4": 186868,
+      "ce_gamma8": 174826
+    },
+    {
+      "floor_share": 1.0,
+      "median": 195015,
+      "p5": 146253,
+      "p95": 263762,
+      "secured_2031_typical": 167395,
+      "range_2031_typical": [
+        166700.0,
+        166700.0
+      ],
+      "ce_gamma2": 192379,
+      "ce_gamma4": 186316,
+      "ce_gamma8": 174651
+    }
+  ],
+  "best_floor_by_gamma": {
+    "2": 0.0,
+    "4": 0.4,
+    "8": 0.8
+  },
+  "contribution_share": [
+    {
+      "share": 0.75,
+      "contribution_median": 147742,
+      "contribution_p5": 109576,
+      "kept_median": 49247,
+      "kept_p5": 36525
+    },
+    {
+      "share": 0.85,
+      "contribution_median": 167441,
+      "contribution_p5": 124187,
+      "kept_median": 29548,
+      "kept_p5": 21915
+    },
+    {
+      "share": 0.95,
+      "contribution_median": 187140,
+      "contribution_p5": 138797,
+      "kept_median": 9849,
+      "kept_p5": 7305
+    }
+  ],
+  "range_calibration_history": {
+    "recentred": {
+      "paths": 184,
+      "inside_80pct_range": 0.995,
+      "below_range": 0.0,
+      "above_range": 0.005,
+      "first_start": "2005-04-30",
+      "last_start": "2020-07-31"
+    },
+    "as_happened": {
+      "paths": 184,
+      "inside_80pct_range": 0.984,
+      "below_range": 0.0,
+      "above_range": 0.016,
+      "first_start": "2005-04-30",
+      "last_start": "2020-07-31"
+    },
+    "calibrated_band": {
+      "percentiles": [
+        20.0,
+        80.0
+      ],
+      "inside_recentred": 0.821,
+      "inside_as_happened": 0.755,
+      "note": "paths overlap (184 starts, about four independent six-year windows), so this is thin evidence"
+    }
+  },
+  "reverse_stress": {
+    "worst_1pct": {
+      "facility_mean": 119831,
+      "stocks_cum_return_2028_2033": -0.331,
+      "worst_12_months": -0.309,
+      "five_year_yield_change_by_2031": -0.0019,
+      "five_year_yield_change_by_2033": -0.0003
+    },
+    "worst_5pct": {
+      "facility_mean": 135214,
+      "stocks_cum_return_2028_2033": -0.218,
+      "worst_12_months": -0.272,
+      "five_year_yield_change_by_2031": -0.0006,
+      "five_year_yield_change_by_2033": 0.0002
+    },
+    "all": {
+      "facility_mean": 201147,
+      "stocks_cum_return_2028_2033": 0.437,
+      "worst_12_months": -0.168,
+      "five_year_yield_change_by_2031": 0.0001,
+      "five_year_yield_change_by_2033": 0.0001
+    },
+    "prob_facility_below": {
+      "100000": 0.0003,
+      "120000": 0.0042,
+      "140000": 0.0301
+    }
+  }
+}

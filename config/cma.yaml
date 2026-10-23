@@ -1,0 +1,54 @@
+# Published 10-year capital market assumptions (nominal, geometric, USD) used to form
+# Black-Litterman views. Relative views are formed from each firm's own numbers, so
+# differences in vintage or methodology between firms largely cancel.
+as_of: 2026-10-22
+cash_long_run: 0.0375        # long-run T-bill assumption (current 3-month bill ~4.3%)
+# 13 firms that publish all three equity numbers (US / international developed / emerging markets);
+# Amundi and Northern Trust publish no international developed figure and are left out.
+# Source: Portfolio Lab, "Capital Market Assumptions 2026: 18 Firms Compared" (compiled from each
+# firm's publication; vintages vary, noted there).
+firms:
+  Research Affiliates: {us: 0.031, intl_dev: 0.077, em: 0.075}
+  Invesco:             {us: 0.047, intl_dev: 0.059, em: 0.085}
+  PGIM:                {us: 0.052, intl_dev: 0.067, em: 0.075}
+  Morningstar:         {us: 0.053, intl_dev: 0.075, em: 0.099}
+  Verus:               {us: 0.054, intl_dev: 0.068, em: 0.067}
+  Schwab:              {us: 0.059, intl_dev: 0.070, em: 0.081}
+  AQR:                 {us: 0.063, intl_dev: 0.069, em: 0.074}
+  Meketa:              {us: 0.064, intl_dev: 0.072, em: 0.071}
+  # J.P. Morgan 2027 LTCMA (Oct 19, 2026), USD compound returns: U.S. large cap, EAFE, EM equity
+  # (2026 edition: 0.067 / 0.075 / 0.078)
+  J.P. Morgan 2027:    {us: 0.075, intl_dev: 0.077, em: 0.071}
+  Callan:              {us: 0.073, intl_dev: 0.076, em: 0.082}
+  BNY Mellon:          {us: 0.076, intl_dev: 0.078, em: 0.081}
+  BlackRock:           {us: 0.090, intl_dev: 0.078, em: 0.088}
+  # Vanguard VCMM, run of Sep 30, 2026 (midpoints of published ranges 4.8-6.8%, 5.3-7.3%, 3.7-5.7%;
+  # vanguard.com "Setting realistic expectations", Oct 21, 2026). Jun 30 run: 0.052 / 0.055 / 0.030
+  Vanguard:            {us: 0.058, intl_dev: 0.063, em: 0.047}
+# Style and size views (fewer sources publish these)
+# Sources whose name starts with "History" are long-run averages (scripts/factor_evidence.py). They
+# count toward a view's size (the median) but not its spread: a view with one forecaster keeps the
+# single-source uncertainty, because a long-run average says little about the next ten years.
+us_value_minus_growth:
+  Vanguard (Dec 2025 run, via Morningstar): 0.035      # value 5.8-7.8% vs growth 2.3-4.3%
+  History, Kenneth French large value minus large growth, 1927-2026: 0.0224   # 1990-2026: -0.2%; 2007-2026: -3.2%
+us_small_minus_large:
+  J.P. Morgan 2027 LTCMA: 0.002                        # small 7.7% vs large 7.5% (Oct 19, 2026)
+  Vanguard (Dec 2025 run, via Morningstar): 0.017      # small 5.1-7.1% vs large 3.4-5.4%
+  History, Kenneth French small minus large, 1927-2026: 0.0100               # 1990-2026: -0.3%; 2007-2026: -1.4%
+view_std_floor: 0.015        # minimum uncertainty for any view
+single_source_std: 0.025     # uncertainty when only one firm publishes the view
+tau: 0.05
+# All views are relative; the market's level comes from the firms' consensus (delta). The posterior is
+# shifted so the market earns its prior return (growth.black_litterman.anchor_to_prior).
+anchor_market_to_consensus: true
+
+# Stock-selection view for the satellite, stated as alpha over its CAPM-implied (equilibrium) return
+# relative to its style benchmark. Evidence (scripts/factor_evidence.py, Kenneth French data to Aug
+# 2026): long-only CAPM alphas among large stocks, 1963-2026, are +1.4% for high profitability (quality),
+# +2.5% for 12-2 month winners (momentum) and +2.1% for the lowest-variance quintile (low risk); their
+# average, 1.96%, is cut by the 58% decay after publication that McLean and Pontiff (2016) measure.
+# The values gates and analyst judgments are given no alpha. Net: +0.82% a year, low confidence.
+satellite_view:
+  alpha: 0.0082
+  std: 0.025

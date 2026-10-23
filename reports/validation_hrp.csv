@@ -1,0 +1,6 @@
+rule,first_year,months,realised_vol
+"HRP, single linkage (used)",2019,93,0.1613
+"HRP, average linkage",2019,93,0.1616
+"HRP, Ward linkage",2019,93,0.1668
+Inverse variance,2019,93,0.1685
+Equal weight,2019,93,0.1825

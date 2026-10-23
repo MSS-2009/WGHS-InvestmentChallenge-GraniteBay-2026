@@ -1,0 +1,35 @@
+# Qualitative model: the client's two parameter lists mapped onto 11 scored dimensions.
+# Each dimension is scored 1-5 with a one-line rationale and its evidence (data fields used).
+# Parameter numbers refer to "Qualitative Model Parameters" (values list V1-V25, company list C1-C60).
+values:
+  innovation_creativity:   {params: [V1, V2, V3, V24], evidence: [R&D/revenue, product pipeline, business description]}
+  societal_utility:        {params: [V4, V12, V20, V22], evidence: [what the core product does, community impact]}
+  people_inclusion:        {params: [V7, V8, V16, V19], evidence: [ESG social score, labour/supply-chain controversies, hiring trend]}
+  trust_integrity:         {params: [V13, V14, V15, V17, V21], evidence: [controversy level, privacy/misinformation/customer-harm record]}
+  access_education_creators: {params: [V5, V6, V9, V10, V11, V23, V25], evidence: [accessibility, education, creator/small-business ecosystem, global reach]}
+strength:
+  management_capital_allocation: {params: [C1, C2, C3, C4, C5, C31, C32, C33], evidence: [ROIC level and trend, governance score, delivery vs guidance]}
+  moat_position:           {params: [C6, C7, C8, C9, C27], evidence: [margins vs peers, market share trend, industry structure]}
+  financial_quality:       {params: [C13, C14, C15, C20, C21, C22, C23, C24], evidence: [operating margin, ROE, debt/equity, FCF conversion]}
+  growth_innovation:       {params: [C10, C11, C12, C25, C26, C59], evidence: [revenue/earnings growth, R&D effectiveness, addressable market]}
+  sentiment_momentum:      {params: [C36-C46, C51-C55], evidence: [analyst consensus, EPS surprises, estimate revisions, 12-1 momentum]}
+  risk_flags:              {params: [C17, C18, C28, C29, C30, C47, C57], evidence: [regulatory, geopolitical, litigation, controversy events]}   # 5 = no material flags
+gates:
+  values_reject_if:
+    - core business in tobacco, gambling, controversial weapons or adult entertainment
+    - average values score below 3.0 (the company is not at least neutral on Laura's values)
+    - any values dimension scored 1
+  strength_reject_if:
+    - financial_quality <= 2
+    - risk_flags <= 1   # severe controversy without credible remediation (judged; refreshed by the news check)
+weights: {values: 0.35, strength: 0.65}   # final qualitative score, 1-5
+selection:
+  target_names: 35          # within the requested 30-50
+  max_sector_share: 0.20    # of satellite names
+  no_lookthrough_overweight: [tech_communication, china_taiwan]
+
+# Implementation of the satellite inside the growth sleeve
+implementation:
+  share_of_equity: 0.20         # carved out of VUG/VTV pro rata; candidates scored at 0/10/20/30%
+  hrp_lookback_months: 60
+  annual_replacements: 3        # names swapped at each annual review (one sell + one buy each)
