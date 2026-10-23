@@ -11,12 +11,22 @@ from math import fsum, isclose, isfinite
 from numbers import Integral, Real
 
 
+def _value_text(value) -> str:
+    try:
+        return repr(value)
+    except (ValueError, OverflowError):
+        return f"<{type(value).__name__}>"
+
+
 def _fraction(name: str, value: float) -> None:
     if isinstance(value, bool) or not isinstance(value, Real):
-        raise ValueError(f"{name} must be a finite fraction in [0, 1], got {value!r}")
-    x = float(value)
+        raise ValueError(f"{name} must be a finite fraction in [0, 1], got {_value_text(value)}")
+    try:
+        x = float(value)
+    except (OverflowError, TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be a finite fraction in [0, 1], got {_value_text(value)}") from exc
     if not isfinite(x) or not 0.0 <= x <= 1.0:
-        raise ValueError(f"{name} must be a finite fraction in [0, 1], got {value!r}")
+        raise ValueError(f"{name} must be a finite fraction in [0, 1], got {_value_text(value)}")
 
 
 @dataclass(frozen=True)
@@ -54,20 +64,28 @@ class Strategy:
             raise ValueError("region_weights must be a nonempty finite nonnegative vector summing to one") from exc
         if not raw_weights or any(isinstance(w, bool) or not isinstance(w, Real) for w in raw_weights):
             raise ValueError("region_weights must be a nonempty finite nonnegative vector summing to one")
-        weights = tuple(float(w) for w in raw_weights)
+        try:
+            weights = tuple(float(w) for w in raw_weights)
+            total = fsum(weights)
+        except (OverflowError, TypeError, ValueError) as exc:
+            raise ValueError("region_weights must be a nonempty finite nonnegative vector summing to one") from exc
         if (not all(isfinite(w) and w >= 0.0 for w in weights)
-                or not isclose(fsum(weights), 1.0, rel_tol=0.0, abs_tol=1e-8)):
+                or not isclose(total, 1.0, rel_tol=0.0, abs_tol=1e-8)):
             raise ValueError("region_weights must be a nonempty finite nonnegative vector summing to one")
-        object.__setattr__(self, "region_weights", weights)
+        object.__setattr__(self, "region_weights", tuple(w / total for w in weights))
 
-        if self.bond_vehicle not in {"VGIT", "IBTM"}:
-            raise ValueError(f"bond_vehicle must be 'VGIT' or 'IBTM', got {self.bond_vehicle!r}")
+        if not isinstance(self.bond_vehicle, str) or self.bond_vehicle not in {"VGIT", "IBTM"}:
+            raise ValueError(f"bond_vehicle must be 'VGIT' or 'IBTM', got {_value_text(self.bond_vehicle)}")
         if (isinstance(self.floor_year, bool) or not isinstance(self.floor_year, Integral)
                 or self.floor_year not in (2029, 2030, 2031, 2032)):
             raise ValueError("floor_year must be one of 2029, 2030, 2031, or 2032")
         if self.ratchet_trigger is not None:
+            try:
+                trigger = float(self.ratchet_trigger)
+            except (OverflowError, TypeError, ValueError) as exc:
+                raise ValueError("ratchet_trigger must be a finite nonnegative value") from exc
             if (isinstance(self.ratchet_trigger, bool) or not isinstance(self.ratchet_trigger, Real)
-                    or not isfinite(float(self.ratchet_trigger)) or self.ratchet_trigger < 0):
+                    or not isfinite(trigger) or trigger < 0):
                 raise ValueError("ratchet_trigger must be a finite nonnegative value")
 
     @property

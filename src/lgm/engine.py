@@ -11,12 +11,14 @@ Everything is vectorised over scenarios.
 """
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
+from numbers import Integral, Real
 
 import numpy as np
 
 from .asof import month_of
-from .esg import Scenarios
+from .esg import Scenarios, TAU_GRID
 from .strategies import Strategy
 
 M_2027, M_2028, M_2031, M_2033 = (month_of(y) for y in (2027, 2028, 2031, 2033))
@@ -91,6 +93,147 @@ def _ibtm_df(sc: Scenarios, m: int) -> np.ndarray:
 
 def growth_value(s: State, sc: Scenarios, m: int) -> np.ndarray:
     return s.eq.sum(1) + s.vgit + s.ibtm_face * _ibtm_df(sc, m) + s.cash
+
+
+def _finite_path(name: str, value, shape: tuple[int | None, ...], *,
+                 min_axes: tuple[int, ...] = (), minimum: bool = False) -> np.ndarray:
+    try:
+        raw = np.asarray(value)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError(f"scenarios.{name} must be a finite numeric array with shape {shape}") from exc
+    if raw.dtype.kind not in "iuf":
+        raise ValueError(f"scenarios.{name} must be a finite numeric array with shape {shape}")
+    try:
+        arr = np.asarray(value, dtype=float)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError(f"scenarios.{name} must be a finite numeric array with shape {shape}") from exc
+    valid_shape = arr.ndim == len(shape) and all(
+        expected is None or (actual >= expected if i in min_axes else actual == expected)
+        for i, (actual, expected) in enumerate(zip(arr.shape, shape))
+    )
+    if not valid_shape or not np.isfinite(arr).all() or (minimum and np.any(arr < 0.0)):
+        qualifier = "finite nonnegative" if minimum else "finite"
+        raise ValueError(f"scenarios.{name} must be a {qualifier} numeric array with shape {shape}")
+    return arr
+
+
+def _validate_state(state: State, n: int, K: int) -> None:
+    specs = {
+        "eq": ((n, K), True),
+        "vgit": ((n,), True),
+        "ibtm_face": ((n,), True),
+        "floor_face": ((n,), True),
+        "cash": ((n,), True),
+        "locked": ((n, N_PAY), False),
+        "costs": ((n,), True),
+    }
+    for name, (shape, nonnegative) in specs.items():
+        try:
+            raw = np.asarray(getattr(state, name))
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError(f"state.{name} must be a finite numeric array with shape {shape}") from exc
+        has_boolean = raw.dtype.kind == "b" or (
+            raw.dtype.kind == "O" and any(isinstance(x, (bool, np.bool_)) for x in raw.flat)
+        )
+        if has_boolean:
+            raise ValueError(f"state.{name} must be a finite numeric array with shape {shape}")
+        try:
+            arr = np.asarray(raw, dtype=float)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError(f"state.{name} must be a finite numeric array with shape {shape}") from exc
+        if arr.shape != shape or not np.isfinite(arr).all():
+            raise ValueError(f"state.{name} must be a finite numeric array with shape {shape}")
+        if nonnegative and np.any(arr < 0.0):
+            raise ValueError(f"state.{name} must be nonnegative")
+        if name == "locked" and np.any((arr < 0.0) | (arr > 1.0)):
+            raise ValueError("state.locked values must be fractions in [0, 1]")
+        setattr(state, name, arr)
+    for name in ("ratchet_ref", "ratchet_y"):
+        value = getattr(state, name)
+        if value is None:
+            continue
+        try:
+            raw = np.asarray(value)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError(f"state.{name} must be a finite numeric vector with shape ({n},)") from exc
+        has_boolean = raw.dtype.kind == "b" or (
+            raw.dtype.kind == "O" and any(isinstance(x, (bool, np.bool_)) for x in raw.flat)
+        )
+        if has_boolean:
+            raise ValueError(f"state.{name} must be a finite numeric vector with shape ({n},)")
+        try:
+            arr = np.asarray(raw, dtype=float)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError(f"state.{name} must be a finite numeric vector with shape ({n},)") from exc
+        if arr.shape != (n,) or not np.isfinite(arr).all():
+            raise ValueError(f"state.{name} must be a finite numeric vector with shape ({n},)")
+        if name == "ratchet_ref" and np.any(arr < 0.0):
+            raise ValueError("state.ratchet_ref must be nonnegative")
+        setattr(state, name, arr)
+
+
+def _real_config(name: str, value, *, lower: float | None = None,
+                 strict_lower: bool = False) -> float:
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, Real):
+        raise ValueError(f"cfg.{name} must be a finite real number")
+    try:
+        x = float(value)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError(f"cfg.{name} must be a finite real number") from exc
+    if not np.isfinite(x):
+        raise ValueError(f"cfg.{name} must be finite")
+    if lower is not None and (x <= lower if strict_lower else x < lower):
+        relation = ">" if strict_lower else ">="
+        raise ValueError(f"cfg.{name} must be {relation} {lower}")
+    return x
+
+
+def _validate_engine_config(cfg: EngineConfig, K: int) -> dict[int, float]:
+    for name in ("commissions", "compound_costs", "sell_at_settlement"):
+        if not isinstance(getattr(cfg, name), (bool, np.bool_)):
+            raise ValueError(f"cfg.{name} must be boolean")
+    if isinstance(cfg.extra_tickets, (bool, np.bool_)) or not isinstance(cfg.extra_tickets, Integral) or cfg.extra_tickets < 0:
+        raise ValueError("cfg.extra_tickets must be a nonnegative integer")
+    _real_config("extra_ticket_min", cfg.extra_ticket_min, lower=0.0)
+    _real_config("annual_cost", cfg.annual_cost, lower=0.0)
+    _real_config("kappa0", cfg.kappa0, lower=-1.0, strict_lower=True)
+    slope = _real_config("kappa_rate_slope", cfg.kappa_rate_slope)
+    if cfg.kappa_rate_ref is None:
+        if slope != 0.0:
+            raise ValueError("cfg.kappa_rate_ref is required when kappa_rate_slope is nonzero")
+    else:
+        _real_config("kappa_rate_ref", cfg.kappa_rate_ref)
+
+    raw_deposits = cfg.deposits
+    try:
+        pairs = tuple(raw_deposits.items()) if isinstance(raw_deposits, Mapping) else tuple(raw_deposits)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("cfg.deposits must be month and amount pairs") from exc
+    deposits: dict[int, float] = {}
+    for item in pairs:
+        try:
+            pair = tuple(item)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("cfg.deposits must be month and amount pairs") from exc
+        if (len(pair) != 2 or isinstance(pair[0], (bool, np.bool_))
+                or not isinstance(pair[0], Integral) or not 0 <= pair[0] <= M_2033):
+            raise ValueError(f"cfg.deposits entries need unique integer months in [0, {M_2033}]")
+        month = int(pair[0])
+        if month in deposits:
+            raise ValueError(f"cfg.deposits contains duplicate month {month}")
+        deposits[month] = _real_config(f"deposits[{month}]", pair[1], lower=0.0)
+
+    if cfg.fund_groups is not None:
+        try:
+            groups = tuple(tuple(group) for group in cfg.fund_groups)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("cfg.fund_groups must partition the equity indices") from exc
+        flat = [i for group in groups for i in group]
+        if (not groups or any(not group for group in groups)
+                or any(isinstance(i, (bool, np.bool_)) or not isinstance(i, Integral) for i in flat)
+                or len(flat) != K or set(map(int, flat)) != set(range(K))):
+            raise ValueError("cfg.fund_groups must partition the equity indices exactly once")
+    return deposits
 
 
 def _funds(w: np.ndarray, cfg: EngineConfig) -> list[np.ndarray]:
@@ -202,27 +345,48 @@ def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: Sta
     """Simulate from month sc.m0. With `state`, the events at month sc.m0 are taken as done
     (used to continue a scenario from its January 2031 position)."""
     cfg = cfg or EngineConfig()
-    eq_log = np.asarray(sc.eq_log)
-    if eq_log.ndim != 3:
-        raise ValueError(f"sc.eq_log must have shape (n, months, equities), got {eq_log.shape}")
+    m0 = getattr(sc, "m0", 0)
+    if isinstance(m0, bool) or not isinstance(m0, Integral) or not 0 <= m0 <= M_2033:
+        raise ValueError(f"scenario m0 must be an integer month from 0 through {M_2033}")
+    horizon = M_2033 - int(m0)
     n = sc.n
-    if eq_log.shape[0] != n:
-        raise ValueError(f"scenario beta paths have {n} rows but equity paths have {eq_log.shape[0]}")
+    if isinstance(n, bool) or not isinstance(n, Integral) or n <= 0:
+        raise ValueError("scenarios must contain a positive integer number of paths")
+    eq_log = _finite_path("eq_log", sc.eq_log, (int(n), None, None))
+    if eq_log.ndim != 3:
+        raise ValueError(f"scenarios.eq_log must have shape (n, months, equities), got {eq_log.shape}")
+    if eq_log.shape[1] < horizon or eq_log.shape[2] == 0:
+        raise ValueError(f"scenarios.eq_log must cover {horizon} months and at least one equity")
     K = eq_log.shape[2]
     if len(st.region_weights) != K:
         raise ValueError(f"strategy region_weights has {len(st.region_weights)} entries but scenarios have {K} equities")
     try:
         raw_eq_er = np.asarray(cfg.eq_er, dtype=object)
-        if any(isinstance(x, (bool, np.bool_)) for x in raw_eq_er.flat):
-            raise ValueError("boolean expense ratio")
-        eq_er = np.asarray(raw_eq_er, dtype=float)
+        if any(isinstance(x, (bool, np.bool_)) or not isinstance(x, Real) for x in raw_eq_er.flat):
+            raise ValueError("expense ratios must be real numbers")
+        eq_er = np.asarray([float(x) for x in raw_eq_er.flat], dtype=float).reshape(raw_eq_er.shape)
     except (TypeError, ValueError, OverflowError) as exc:
-        raise ValueError(f"cfg.eq_er must be a finite nonnegative vector with shape ({K},)") from exc
-    if eq_er.shape != (K,) or not np.isfinite(eq_er).all() or np.any(eq_er < 0.0):
-        raise ValueError(f"cfg.eq_er must be a finite nonnegative vector with shape ({K},)")
+        raise ValueError(f"cfg.eq_er must be a finite vector in [0, 12) with shape ({K},)") from exc
+    if eq_er.shape != (K,) or not np.isfinite(eq_er).all() or np.any((eq_er < 0.0) | (eq_er >= 12.0)):
+        raise ValueError(f"cfg.eq_er must be a finite vector in [0, 12) with shape ({K},)")
+    cfg.eq_er = tuple(eq_er)
+    deposits = _validate_engine_config(cfg, K)
+    _finite_path("beta", sc.beta, (int(n), horizon + 1, 3), min_axes=(1,))
+    _finite_path("infl", sc.infl, (int(n), horizon + 1), min_axes=(1,))
+    _finite_path("fx_log", sc.fx_log, (int(n), horizon + 1), min_axes=(1,))
+    _finite_path("tw_cost_log", sc.tw_cost_log, (int(n), horizon + 1), min_axes=(1,))
+    _finite_path("resid", sc.resid, (len(TAU_GRID),))
+    if isinstance(sc.rate_floor, (bool, np.bool_)) or not np.isscalar(sc.rate_floor):
+        raise ValueError("scenarios.rate_floor must be a finite scalar")
+    try:
+        rate_floor = float(sc.rate_floor)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("scenarios.rate_floor must be a finite scalar") from exc
+    if not np.isfinite(rate_floor):
+        raise ValueError("scenarios.rate_floor must be a finite scalar")
     s = state or State(np.zeros((n, K)), np.zeros(n), np.zeros(n), np.zeros(n), np.zeros(n), np.zeros((n, N_PAY)), np.zeros(n))
+    _validate_state(s, int(n), K)
     out: dict = {}
-    deposits = dict(cfg.deposits)
     for m in range(sc.m0, M_2033 + 1):
         if state is not None and m == sc.m0:
             pass
