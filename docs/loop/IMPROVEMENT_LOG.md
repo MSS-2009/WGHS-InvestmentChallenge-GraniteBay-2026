@@ -362,3 +362,5 @@ Equity volatility scales are now finite and nonnegative for all scenarios; negat
 flipped equity cross-correlations, while zero remains available for a deterministic-equity stress.
 Taiwan cost correlation inputs also reject booleans and nonnumeric values, which Python would otherwise
 coerce or fail on with an unhelpful low-level exception.
+Taiwan building-cost AR(1)/AR(2) persistence is now checked for stationarity before any draws, including
+when the caller supplies an explicit state that would otherwise bypass stationary initialization.

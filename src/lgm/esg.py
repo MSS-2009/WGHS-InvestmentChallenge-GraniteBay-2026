@@ -182,6 +182,24 @@ def _correlation(value: float | None, name: str) -> float:
     return rho
 
 
+def _tw_cost_ar_coefficients(value):
+    """Normalize scalar/AR(1)/AR(2) Taiwan cost persistence and require stationarity."""
+    if value is None:
+        return None
+    try:
+        raw = (value,) if np.isscalar(value) else tuple(value)
+        if not 1 <= len(raw) <= 2 or any(isinstance(x, (bool, np.bool_)) for x in raw):
+            raise ValueError("expected one or two numeric AR coefficients")
+        phi1 = float(raw[0])
+        phi2 = float(raw[1]) if len(raw) == 2 else 0.0
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError(f"tw_cost_phi must contain one or two numeric coefficients: {exc}") from exc
+    if (not np.isfinite([phi1, phi2]).all() or abs(phi2) >= 1.0
+            or phi1 + phi2 >= 1.0 or phi2 - phi1 >= 1.0):
+        raise ValueError(f"tw_cost_phi must define a stationary AR(1) or AR(2), got {value!r}")
+    return phi1, phi2
+
+
 def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
              start: dict | None = None, m0: int = 0) -> Scenarios:
     """Simulate n scenarios for p.months months. `start` overrides month-0 state
@@ -205,6 +223,7 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
         raise ValueError(f"eq_vol_scale must be finite and nonnegative, got {p.eq_vol_scale!r}")
     if garch is not None and eq_vol_scale == 0:
         raise ValueError(f"eq_vol_scale must be positive when eq_garch is enabled, got {p.eq_vol_scale!r}")
+    tw_cost_ar = _tw_cost_ar_coefficients(p.tw_cost_phi)
     if garch is not None and start is not None and "garch_h" in start:
         start_h = np.asarray(start["garch_h"], dtype=float)
         if not np.isfinite(start_h).all() or np.any(start_h < 0):
@@ -299,15 +318,8 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
         infl[:, m + 1] = p.infl_mu + p.infl_phi * (infl[:, m] - p.infl_mu) + shocks[:, m, K + 3]
     fx0 = 0.0 if start is None else start["fx_log"][:, None]
     fx_log = np.concatenate([np.zeros((n, 1)), np.cumsum(p.fx_drift / 12 + shocks[..., K + 4], axis=1)], axis=1) + fx0
-    if p.tw_cost_phi is not None:
-        if isinstance(p.tw_cost_phi, (int, float)):
-            phi1, phi2 = float(p.tw_cost_phi), 0.0
-        elif len(p.tw_cost_phi) == 1:
-            phi1, phi2 = float(p.tw_cost_phi[0]), 0.0
-        elif len(p.tw_cost_phi) == 2:
-            phi1, phi2 = float(p.tw_cost_phi[0]), float(p.tw_cost_phi[1])
-        else:
-            raise ValueError(f"tw_cost_phi must be scalar or 2-tuple, got {p.tw_cost_phi}")
+    if tw_cost_ar is not None:
+        phi1, phi2 = tw_cost_ar
 
         mu = float(np.log1p(p.tw_cost_growth) / 12.0)
 

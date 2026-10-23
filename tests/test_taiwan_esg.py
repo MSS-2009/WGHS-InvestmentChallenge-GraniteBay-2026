@@ -245,6 +245,16 @@ def test_taiwan_cost_correlation_rejects_invalid_coefficients(base_params, field
         simulate(p, n=20, seed=3)
 
 
+@pytest.mark.parametrize("coeff", [
+    1.0, -1.0, (0.2, 0.8), (0.2, -1.0), (1.2, 0.2), (-1.2, 0.2),
+    (np.nan, 0.2), (), (0.1, 0.2, 0.3), True, "invalid",
+])
+def test_taiwan_cost_ar_coefficients_must_be_stationary_even_with_explicit_state(base_params, coeff):
+    p = dc.replace(base_params, months=12, tw_cost_phi=coeff, tw_cost_state0=(0.0, 0.0))
+    with pytest.raises(ValueError, match="tw_cost_phi"):
+        simulate(p, n=20, seed=3)
+
+
 def test_variance_ratio_separates_iid_from_mean_reversion():
     from lgm.calibrate import variance_ratio, variance_ratio_test
 

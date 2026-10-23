@@ -204,6 +204,7 @@ is code, tested (`docs/loop/IMPROVEMENT_LOG.md` gives the effects):
 | `wins_rebalance.py` ignored the ladder check's shortfall | The cheapest top-up (6 IBTO) is ordered first (`tests/test_audit_fixes.py`) |
 | A Taiwan cost correlation with both CPI and USD/TWD would have diluted the first | Refused (`tests/test_taiwan_esg.py`); the headline uses only USD/TWD |
 | A non-finite, nonnumeric, boolean, or out-of-range Taiwan cost correlation could distort dependence or produce NaNs | Accept only finite numeric coefficients in [-1, 1] (`tests/test_taiwan_esg.py`) |
+| Nonstationary Taiwan building-cost AR coefficients could create explosive paths when an explicit state bypassed stationary initialization | Validate AR(1)/AR(2) stationarity before drawing (`tests/test_taiwan_esg.py`) |
 | Invalid Student-t degrees of freedom or a rate-tail share outside [0, 1] could produce NaNs | Validate ESG tail controls before drawing; positive infinity is the Gaussian limit (`tests/test_rate_tails.py`) |
 | Invalid GARCH coefficients, volatility scale, initial variance shape, or factor index could create non-finite paths or fail during broadcasting | Require stationary coefficients, a finite nonnegative scale (positive with GARCH), an integer equity factor, and scalar or path-sized finite starting variances (`tests/test_esg_v2.py`) |
 | `esg_params` took an `infl_phi` argument and ignored it | Removed; the fitted value is used, as before |
