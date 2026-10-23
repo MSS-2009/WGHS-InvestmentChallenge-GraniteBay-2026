@@ -379,3 +379,22 @@ finite numeric values with exact expected shapes.
 The calibrated Taiwan cost AR initial lags also reject non-finite or wrongly sized states before draws.
 Boolean equity-volatility scales and rate-tail shares are now rejected explicitly instead of coercing to
 zero/one, matching the existing strict checks for correlations and persistence.
+
+### Round 7: strategy and engine allocation guards
+
+The engine previously accepted strategy region weights that did not sum to one, which could create or
+destroy principal when investing. Strategies now require finite, nonnegative weights that sum to one
+within a small tolerance, then normalize them exactly. Fractions, supported bond vehicles, floor years,
+and ratchet thresholds also fail early when invalid.
+
+The engine now validates scenario path dimensions and finite values, plus continuation-state dimensions,
+holdings, locked fractions, and ratchet values. Configuration checks reject expense ratios that would
+turn monthly equity growth negative; negative ticket counts or recurring costs; duplicate, malformed, or
+negative deposits; incomplete or overlapping fund groups; and invalid rate-sensitive ladder prices.
+String rate floors and non-State continuation objects now produce clear input errors.
+
+No modeled result moved under the valid defaults. After the full report pipeline, the headline remains
+$196,989 median, $146,102 p5, $135,214 CVaR5, and $166,547 real median. The full test suite and pyflakes
+pass, and `doc_numbers.py` finds 0 of 126 figures missing. The known WInS check remains a nonfatal $133
+2034 shortfall, with a six-share IBTO top-up. The input guards were pushed to the personal fork on
+`improve` in commits `f9e5c7f`, `2dabbb3`, `138198a`, and `445d527`; upstream was not changed.
