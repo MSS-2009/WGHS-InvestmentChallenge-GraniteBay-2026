@@ -1,0 +1,286 @@
+"""Variant study comparing Taiwan cost processes, historical replay, and fitted monthly models.
+
+Outputs:
+- reports/taiwan_variants.csv
+- updates to config/taiwan.yaml
+"""
+from __future__ import annotations
+
+import dataclasses as dc
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+from lgm import backtest, engine
+from lgm.esg import simulate
+from lgm.growth.core import build_core
+from lgm.growth.scoring import esg_params
+from lgm.growth.universe import CORE
+from lgm.strategies import IPS
+
+ROOT = Path(__file__).resolve().parents[1]
+REPORT_PATH = ROOT / "reports" / "taiwan_variants.csv"
+CONFIG_PATH = ROOT / "config" / "taiwan.yaml"
+
+# AR(2) fitted parameters
+P1 = 0.6546
+P2 = -0.0939
+SIG_EPS = 0.007137
+
+# Latest Taiwan DGBAS readings (Aug and Sep 2026):
+# Aug 2026 dy: 0.00284974 (ann: 3.42%)
+# Sep 2026 dy: 0.00650706 (ann: 7.81%)
+Y_AUG_2026 = 0.00284974
+Y_SEP_2026 = 0.00650706
+
+DRIFTS = {
+    "full_sample": (0.0285, "35-year full sample (2.85%)"),
+    "last_20y": (0.0262, "Last 20 years (2.62%)"),
+    "last_10y": (0.0378, "Last 10 years (3.78%)"),
+}
+
+
+def main(n: int = 20_000, seed: int = 11):
+    # 1. Headline Portfolio Setup (identical to scripts/report_numbers.py)
+    r = build_core()
+    w = r["w_bl"]
+    er = np.array([g.expense_ratio for g in CORE])
+    geo = r["table"]["bl_geo_total"].values
+
+    st = dc.replace(IPS, region_weights=tuple(w))
+    cfg = engine.EngineConfig(eq_er=tuple(er), commissions=True)
+
+    base_p = esg_params(r["cal"], geo)
+
+    # 2. Legacy / Reference Variants
+    legacy_variants = {
+        "current": dc.replace(
+            base_p,
+            tw_cost_growth=0.04,
+            tw_cost_vol=0.015,
+            tw_cost_phi=None,
+            tw_cost_state0=None,
+            tw_cost_corr=None,
+        ),
+        "iid_dropin": dc.replace(
+            base_p,
+            tw_cost_growth=0.0285,
+            tw_cost_vol=0.0538,
+            tw_cost_phi=None,
+            tw_cost_state0=None,
+            tw_cost_corr=None,
+        ),
+    }
+
+    # If previous reports/taiwan_variants.csv exists, load round-2 rows to keep exact comparison
+    r2_rows = {}
+    if REPORT_PATH.exists():
+        df_old = pd.read_csv(REPORT_PATH)
+        for _, row in df_old.iterrows():
+            r2_rows[row["variant"]] = dict(row)
+
+    results = []
+    print("=" * 80)
+    print("TAIWAN COST SPECIFICATION VARIANTS (Monte Carlo, N = 20,000)")
+    print("=" * 80)
+
+    # Run legacy variants
+    for name, p in legacy_variants.items():
+        sc = simulate(p, n=n, seed=seed)
+        res = engine.run(st, sc, cfg)
+        nom_med = float(np.median(res["facility"]))
+        real = res["facility_real_tw2027"]
+        cg = np.expm1(sc.tw_cost_log[:, 74] - sc.tw_cost_log[:, 2])
+
+        row = {
+            "variant": name,
+            "nominal_median": round(nom_med, 1),
+            "real_p5": round(float(np.percentile(real, 5)), 1),
+            "real_p10": round(float(np.percentile(real, 10)), 1),
+            "real_median": round(float(np.median(real)), 1),
+            "real_p90": round(float(np.percentile(real, 90)), 1),
+            "real_p95": round(float(np.percentile(real, 95)), 1),
+            "cost_growth_72m_p5": round(float(np.percentile(cg, 5)), 4),
+            "cost_growth_72m_p50": round(float(np.median(cg)), 4),
+            "cost_growth_72m_p95": round(float(np.percentile(cg, 95)), 4),
+        }
+        results.append(row)
+        print(f"{name:28s} | NomMed: ${nom_med:>8.1f} | RealMed: ${row['real_median']:>8.1f} | "
+              f"CostGrowth: {row['cost_growth_72m_p50']*100:>5.2f}% [{row['cost_growth_72m_p5']*100:>5.2f}%, {row['cost_growth_72m_p95']*100:>5.2f}%]")
+
+    # Keep Round 2 rows if present for historical comparison
+    r2_keep_keys = ["persistent_from_mean", "persistent_from_today", "persistent_monthly_today"]
+    for k in r2_keep_keys:
+        if k in r2_rows:
+            results.append(r2_rows[k])
+            r_k = r2_rows[k]
+            print(f"{k:28s} | NomMed: ${r_k['nominal_median']:>8.1f} | RealMed: ${r_k['real_median']:>8.1f} | "
+                  f"CostGrowth: {r_k['cost_growth_72m_p50']*100:>5.2f}% [{r_k['cost_growth_72m_p5']*100:>5.2f}%, {r_k['cost_growth_72m_p95']*100:>5.2f}%] (Round 2)")
+
+    # 3. New Fitted Monthly AR(2) Process across the Three Drifts
+    print("\n" + "-" * 80)
+    print("FITTED MONTHLY AR(2) VARIANTS (from mean & from today across 3 drifts)")
+    print("-" * 80)
+
+    for d_key, (d_val, d_label) in DRIFTS.items():
+        # A. fitted_from_mean (stationary start)
+        p_mean = dc.replace(
+            base_p,
+            tw_cost_growth=d_val,
+            tw_cost_phi=(P1, P2),
+            tw_cost_sig_eps=SIG_EPS,
+            tw_cost_state0=None,
+            tw_cost_corr=None,
+        )
+        sc_m = simulate(p_mean, n=n, seed=seed)
+        res_m = engine.run(st, sc_m, cfg)
+        nom_m = float(np.median(res_m["facility"]))
+        real_m = res_m["facility_real_tw2027"]
+        cg_m = np.expm1(sc_m.tw_cost_log[:, 74] - sc_m.tw_cost_log[:, 2])
+
+        v_name_m = f"fitted_from_mean_{d_key}"
+        row_m = {
+            "variant": v_name_m,
+            "nominal_median": round(nom_m, 1),
+            "real_p5": round(float(np.percentile(real_m, 5)), 1),
+            "real_p10": round(float(np.percentile(real_m, 10)), 1),
+            "real_median": round(float(np.median(real_m)), 1),
+            "real_p90": round(float(np.percentile(real_m, 90)), 1),
+            "real_p95": round(float(np.percentile(real_m, 95)), 1),
+            "cost_growth_72m_p5": round(float(np.percentile(cg_m, 5)), 4),
+            "cost_growth_72m_p50": round(float(np.median(cg_m)), 4),
+            "cost_growth_72m_p95": round(float(np.percentile(cg_m, 95)), 4),
+        }
+        results.append(row_m)
+        print(f"{v_name_m:28s} | NomMed: ${nom_m:>8.1f} | RealMed: ${row_m['real_median']:>8.1f} | "
+              f"CostGrowth: {row_m['cost_growth_72m_p50']*100:>5.2f}% [{row_m['cost_growth_72m_p5']*100:>5.2f}%, {row_m['cost_growth_72m_p95']*100:>5.2f}%]")
+
+        # B. fitted_from_today (conditional start at Aug/Sep 2026)
+        p_today = dc.replace(
+            base_p,
+            tw_cost_growth=d_val,
+            tw_cost_phi=(P1, P2),
+            tw_cost_sig_eps=SIG_EPS,
+            tw_cost_state0=(Y_AUG_2026, Y_SEP_2026),
+            tw_cost_corr=None,
+        )
+        sc_t = simulate(p_today, n=n, seed=seed)
+        res_t = engine.run(st, sc_t, cfg)
+        nom_t = float(np.median(res_t["facility"]))
+        real_t = res_t["facility_real_tw2027"]
+        cg_t = np.expm1(sc_t.tw_cost_log[:, 74] - sc_t.tw_cost_log[:, 2])
+
+        v_name_t = f"fitted_from_today_{d_key}"
+        row_t = {
+            "variant": v_name_t,
+            "nominal_median": round(nom_t, 1),
+            "real_p5": round(float(np.percentile(real_t, 5)), 1),
+            "real_p10": round(float(np.percentile(real_t, 10)), 1),
+            "real_median": round(float(np.median(real_t)), 1),
+            "real_p90": round(float(np.percentile(real_t, 90)), 1),
+            "real_p95": round(float(np.percentile(real_t, 95)), 1),
+            "cost_growth_72m_p5": round(float(np.percentile(cg_t, 5)), 4),
+            "cost_growth_72m_p50": round(float(np.median(cg_t)), 4),
+            "cost_growth_72m_p95": round(float(np.percentile(cg_t, 95)), 4),
+        }
+        results.append(row_t)
+        print(f"{v_name_t:28s} | NomMed: ${nom_t:>8.1f} | RealMed: ${row_t['real_median']:>8.1f} | "
+              f"CostGrowth: {row_t['cost_growth_72m_p50']*100:>5.2f}% [{row_t['cost_growth_72m_p5']*100:>5.2f}%, {row_t['cost_growth_72m_p95']*100:>5.2f}%]")
+
+    # 4. Historical Replay (184 overlapping paths)
+    print("\n" + "=" * 80)
+    print("HISTORICAL REPLAY ON 184 OVERLAPPING 74-MONTH PATHS (2005-2026)")
+    print("=" * 80)
+
+    sc_h_4p, _ = backtest.history_paths([g.history for g in CORE], recentre=geo, real_tw_cost=False)
+    res_h_4p = engine.run(st, sc_h_4p, cfg)
+    real_4p = res_h_4p["facility_real_tw2027"]
+    cg_4p = np.expm1(sc_h_4p.tw_cost_log[:, 74] - sc_h_4p.tw_cost_log[:, 2])
+
+    sc_h_real, _ = backtest.history_paths([g.history for g in CORE], recentre=geo, real_tw_cost=True)
+    res_h_real = engine.run(st, sc_h_real, cfg)
+    real_real = res_h_real["facility_real_tw2027"]
+    cg_real = np.expm1(sc_h_real.tw_cost_log[:, 74] - sc_h_real.tw_cost_log[:, 2])
+
+    hist_rows = [
+        {
+            "variant": "historical_replay_4pct_line",
+            "nominal_median": round(float(np.median(res_h_4p["facility"])), 1),
+            "real_p5": round(float(np.percentile(real_4p, 5)), 1),
+            "real_p10": round(float(np.percentile(real_4p, 10)), 1),
+            "real_median": round(float(np.median(real_4p)), 1),
+            "real_p90": round(float(np.percentile(real_4p, 90)), 1),
+            "real_p95": round(float(np.percentile(real_4p, 95)), 1),
+            "cost_growth_72m_p5": round(float(np.percentile(cg_4p, 5)), 4),
+            "cost_growth_72m_p50": round(float(np.median(cg_4p)), 4),
+            "cost_growth_72m_p95": round(float(np.percentile(cg_4p, 95)), 4),
+        },
+        {
+            "variant": "historical_replay_real_cci",
+            "nominal_median": round(float(np.median(res_h_real["facility"])), 1),
+            "real_p5": round(float(np.percentile(real_real, 5)), 1),
+            "real_p10": round(float(np.percentile(real_real, 10)), 1),
+            "real_median": round(float(np.median(real_real)), 1),
+            "real_p90": round(float(np.percentile(real_real, 90)), 1),
+            "real_p95": round(float(np.percentile(real_real, 95)), 1),
+            "cost_growth_72m_p5": round(float(np.percentile(cg_real, 5)), 4),
+            "cost_growth_72m_p50": round(float(np.median(cg_real)), 4),
+            "cost_growth_72m_p95": round(float(np.percentile(cg_real, 95)), 4),
+        },
+    ]
+
+    for h in hist_rows:
+        results.append(h)
+        print(f"{h['variant']:28s} | NomMed: ${h['nominal_median']:>8.1f} | RealMed: ${h['real_median']:>8.1f} | "
+              f"CostGrowth: {h['cost_growth_72m_p50']*100:>5.2f}% [{h['cost_growth_72m_p5']*100:>5.2f}%, {h['cost_growth_72m_p95']*100:>5.2f}%]")
+
+    # 5. Save reports/taiwan_variants.csv
+    df_out = pd.DataFrame(results)
+    REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    df_out.to_csv(REPORT_PATH, index=False)
+    print(f"\nWrote {REPORT_PATH} with {len(df_out)} variants.")
+
+    # 6. Update config/taiwan.yaml
+    config_yaml = """# Taiwan Building-Cost Model Parameters and Calibrations
+# Calibrated from official DGBAS Construction Cost Index (1991-01 to 2026-09)
+# Generated by scripts/taiwan_variants.py; findings in docs/loop/r3_taiwan_findings.md
+
+# Option 1: Drop-in replacement for existing ESGParams (preserves i.i.d. architecture)
+# Uses historical 35-year drift (2.85%) and 12-month standard deviation (5.38%)
+iid_dropin:
+  tw_cost_growth: 0.0285   # Full sample mean annual growth (1991-2026)
+  tw_cost_vol: 0.0538      # 12-month standard deviation (std_12m=0.0538)
+  t_dof: null              # i.i.d. Gaussian increments as in existing esg.py
+
+# Option 2: Structurally fitted monthly AR(2) process (Recommended)
+# Captures empirical monthly autocorrelation (lag 1: 0.60, lag 2: 0.30)
+# and matches the variance-ratio profile across all horizons (1 to 72 months).
+fitted_monthly:
+  # Autoregressive persistence
+  tw_cost_phi: [0.6546, -0.0939]       # AR(2) coefficients fitted to monthly log changes
+  tw_cost_sig_eps: 0.007137             # Monthly innovation standard deviation (s_eps)
+
+  # Starting states (Aug and Sep 2026 actual DGBAS readings)
+  # Aug 2026: +0.2850% (+3.42% ann), Sep 2026: +0.6507% (+7.81% ann)
+  tw_cost_state0_today: [0.00284974, 0.00650706]
+  tw_cost_state0_mean: null             # Draw from unconditional stationary distribution
+
+  # Three candidate drift regimes (judgment for committee):
+  drifts:
+    full_sample_35y: 0.0285             # 35-year full sample (1991-2026) mean: 2.85%
+    last_20y: 0.0262                    # 20-year sample (2006-2026) mean: 2.62%
+    last_10y: 0.0378                    # 10-year post-recession sample (2016-2026) mean: 3.78%
+
+  # Cross-asset shock correlations (innovations):
+  correlations:
+    us_cpi: 0.4783                      # Joint commodity price shocks
+    usd_twd: -0.1256                    # FX pass-through
+    tw_cpi: 0.0754                      # Domestic consumer inflation
+"""
+    CONFIG_PATH.write_text(config_yaml)
+    print(f"Wrote {CONFIG_PATH}")
+
+
+if __name__ == "__main__":
+    main()

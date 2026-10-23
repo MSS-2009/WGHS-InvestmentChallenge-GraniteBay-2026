@@ -23,7 +23,8 @@ PROXY = {"EMXC": "EEM", "MCHI": "FXI"}     # longer histories for the two young 
 
 def history_paths(history_tickers: list[str], start: str = "2005-04-30", end: str = DATA_END,
                   months: int = engine.M_2033, recentre: np.ndarray | None = None,
-                  curve_date: str = CURVE_DATE) -> tuple[Scenarios, list[pd.Timestamp]]:
+                  curve_date: str = CURVE_DATE,
+                  real_tw_cost: bool = True) -> tuple[Scenarios, list[pd.Timestamp]]:
     tickers = [PROXY.get(t, t) for t in history_tickers]
     eq = np.log1p(yahoo.monthly_returns(tickers, start="2000-01-01")).loc[start:end]
     if recentre is not None:
@@ -53,7 +54,18 @@ def history_paths(history_tickers: list[str], start: str = "2005-04-30", end: st
         fxl.append(x - x[0])
         starts.append(s)
     n = len(starts)
-    tw = np.tile(np.arange(months + 1) / 12 * np.log1p(0.04), (n, 1))
+    if real_tw_cost:
+        from .data import taiwan
+        cci = taiwan.cci()
+        tw_log = np.log(cci)
+        tw_paths = []
+        for j in range(len(idx) - months):
+            path = idx[j:j + months + 1]
+            c = tw_log.reindex(path).ffill().values
+            tw_paths.append(c - c[0])
+        tw = np.array(tw_paths)
+    else:
+        tw = np.tile(np.arange(months + 1) / 12 * np.log1p(0.04), (n, 1))
     sc = Scenarios(beta=np.array(beta), eq_log=np.array(eql), infl=np.array(inf), fx_log=np.array(fxl),
                    tw_cost_log=tw, resid=resid)
     return sc, starts

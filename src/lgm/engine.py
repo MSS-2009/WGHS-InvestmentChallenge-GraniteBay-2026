@@ -38,6 +38,10 @@ class EngineConfig:
     extra_ticket_min: float = 10_000.0   # below this, a small top-up stays in the ETFs (no basket trades)
     annual_cost: float = 0.0      # recurring commissions per year (e.g. basket reconstitution)
     fund_groups: tuple | None = None  # equity slots traded as one fund, e.g. VTI = (0, 1, 2); None = each slot
+    compound_costs: bool = True   # commissions owed grow at the invested assets' return, as if paid when incurred
+    sell_at_settlement: bool = True  # Jan 2033: one sale ticket per fund still held (the contribution is paid in cash)
+    kappa_rate_slope: float = 0.0  # premium change per unit of the scenario's 5-year rate above `kappa_rate_ref`
+    kappa_rate_ref: float | None = None  # 5-year zero rate (cc) the premium kappa0 belongs to; required with a slope
 
 
 def pay_tau(m: float) -> np.ndarray:
@@ -45,9 +49,17 @@ def pay_tau(m: float) -> np.ndarray:
     return (M_2033 + 12 * np.arange(N_PAY) - m) / 12.0
 
 
-def kappa(m: float, cfg: EngineConfig) -> float:
-    """Premium scales with the ladder's average remaining time (reinvestment and fee drag)."""
-    return cfg.kappa0 * pay_tau(m).clip(0).mean() / pay_tau(M_2027).mean()
+def kappa(m: float, cfg: EngineConfig, sc: Scenarios | None = None) -> float | np.ndarray:
+    """Premium scales with the ladder's average remaining time (reinvestment and fee drag). With
+    `kappa_rate_slope` and scenarios, it also moves with the scenario's 5-year rate, (N, 1): cash awaiting
+    a payment is assumed to earn a fixed 3%, so the LP's premium rises with market rates
+    (`scripts/ladder_premium.py`)."""
+    k = cfg.kappa0 * pay_tau(m).clip(0).mean() / pay_tau(M_2027).mean()
+    if cfg.kappa_rate_slope == 0.0 or sc is None:
+        return k
+    if cfg.kappa_rate_ref is None:
+        raise ValueError("kappa_rate_slope needs kappa_rate_ref (today's 5-year zero rate)")
+    return k + cfg.kappa_rate_slope * (sc.zero_cc(m, 5.0) - cfg.kappa_rate_ref)
 
 
 @dataclass
@@ -59,6 +71,17 @@ class State:
     cash: np.ndarray          # (N,)
     locked: np.ndarray        # (N, K) fraction of each payment matched
     costs: np.ndarray         # (N,) commissions paid
+    ratchet_ref: np.ndarray | None = None
+    ratchet_y: np.ndarray | None = None
+
+
+def target_equity_share(st: Strategy, m: int) -> float:
+    """Target equity share at month m, interpolating linearly from Jan 2028 to Jan 2032 if glide path is set."""
+    if st.equity_share_end is None or m <= M_2028:
+        return st.equity_share
+    m_end = month_of(2032)
+    frac = min(max((m - M_2028) / (m_end - M_2028), 0.0), 1.0)
+    return st.equity_share + frac * (st.equity_share_end - st.equity_share)
 
 
 def _ibtm_df(sc: Scenarios, m: int) -> np.ndarray:
@@ -76,47 +99,51 @@ def _funds(w: np.ndarray, cfg: EngineConfig) -> list[np.ndarray]:
     return [np.array(g) for g in groups if w[list(g)].sum() > 0]
 
 
-def _invest(s: State, sc: Scenarios, m: int, st: Strategy, amount: np.ndarray, cfg: EngineConfig):
+def _invest(s: State, sc: Scenarios, m: int, st: Strategy, amount: np.ndarray, cfg: EngineConfig,
+            eq_target: float | None = None):
     """Invest `amount` at the strategy's target mix."""
+    eq_target = st.equity_share if eq_target is None else eq_target
     w = np.array(st.region_weights)
-    s.eq += np.outer(amount * st.equity_share, w)
-    bonds = amount * (1 - st.equity_share)
+    s.eq += np.outer(amount * eq_target, w)
+    bonds = amount * (1 - eq_target)
     if st.bond_vehicle == "VGIT":
         s.vgit += bonds
     else:
         s.ibtm_face += bonds / _ibtm_df(sc, m)
     if cfg.commissions:
-        tickets = len(_funds(w, cfg)) * (st.equity_share > 0) + (st.equity_share < 1)
+        tickets = len(_funds(w, cfg)) * (eq_target > 0) + (eq_target < 1)
         s.costs += np.where(amount > 0, COMMISSION_ETF * tickets, 0.0)
         s.costs += np.where(amount >= cfg.extra_ticket_min, COMMISSION_ETF * cfg.extra_tickets, 0.0)
 
 
-def _rebalance(s: State, sc: Scenarios, m: int, st: Strategy, cfg: EngineConfig, force: bool = False):
+def _rebalance(s: State, sc: Scenarios, m: int, st: Strategy, cfg: EngineConfig,
+               force: bool | np.ndarray = False, eq_target: float | None = None):
     df = _ibtm_df(sc, m)
     bonds = s.vgit + s.ibtm_face * df
     total = s.eq.sum(1) + bonds + s.cash
     eq_share = np.divide(s.eq.sum(1), total, out=np.zeros_like(total), where=total > 0)
     region = np.divide(s.eq, s.eq.sum(1, keepdims=True), out=np.zeros_like(s.eq), where=s.eq.sum(1, keepdims=True) > 0)
-    drift = np.abs(eq_share - st.equity_share) > st.band
+    target_eq = st.equity_share if eq_target is None else eq_target
+    drift = np.abs(eq_share - target_eq) > st.band
     target = np.array(st.region_weights)
     for f in _funds(target, cfg):
         drift |= (np.abs(region[:, f].sum(1) - target[f].sum()) > 0.05) & (s.eq.sum(1) > 0)
     do = drift | force
-    if not do.any():
+    if not np.any(do):
         return
     s.eq[do] = 0.0
     s.vgit[do] = 0.0
     s.ibtm_face[do] = 0.0
     s.cash[do] = 0.0
     amount = np.where(do, total, 0.0)
-    _invest(s, sc, m, st, amount, cfg)
+    _invest(s, sc, m, st, amount, cfg, eq_target=target_eq)
 
 
 def _lock(s: State, sc: Scenarios, m: int, target: float, budget: np.ndarray, cfg: EngineConfig) -> np.ndarray:
     """Raise every payment's matched fraction toward `target`, longest payment first, within budget.
     Returns money spent."""
     tau = pay_tau(m)
-    unit = PMT * sc.df(m, np.maximum(tau, 0)) * (1 + kappa(m, cfg))          # (N, K) cost of a full payment
+    unit = PMT * sc.df(m, np.maximum(tau, 0)) * (1 + kappa(m, cfg, sc))      # (N, K) cost of a full payment
     need = np.clip(target - s.locked, 0, None)                              # (N, K)
     spent = np.zeros(sc.n)
     left = budget.copy()
@@ -144,8 +171,14 @@ def _liquidate(s: State, sc: Scenarios, m: int, amount: np.ndarray):
     return np.minimum(amount, total)
 
 
+def _invested(s: State, sc: Scenarios, m: int) -> np.ndarray:
+    """Everything outside the reserve ladder: the growth sleeve plus the floor, at month m prices."""
+    return growth_value(s, sc, m) + s.floor_face * _ibtm_df(sc, m)
+
+
 def _step(s: State, sc: Scenarios, m: int, cfg: "EngineConfig"):
     """Advance one month: markets move, fees accrue."""
+    v0 = _invested(s, sc, m) if cfg.compound_costs else None
     s.eq *= np.exp(sc.eq_log[:, m - sc.m0, :]) * (1 - np.asarray(cfg.eq_er) / 12)
     if cfg.commissions and cfg.annual_cost and m >= M_2027:
         s.costs += cfg.annual_cost / 12
@@ -157,6 +190,11 @@ def _step(s: State, sc: Scenarios, m: int, cfg: "EngineConfig"):
     s.floor_face *= 1 - ER["IBTM"] / 12
     short = np.expm1(sc.zero_cc(m, [0.25])[:, 0])
     s.cash *= (1 + short) ** (1 / 12)
+    if v0 is not None:
+        # Commissions are settled from the portfolio in 2033; growing what is owed at the portfolio's
+        # own monthly return is the same as having paid each one when it was incurred.
+        v1 = _invested(s, sc, m + 1)
+        s.costs *= np.divide(v1, v0, out=np.ones_like(v0), where=v0 > 0)
 
 
 def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: State | None = None,
@@ -181,44 +219,84 @@ def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: Sta
             _invest(s, sc, m, st, cash_in - spent, cfg)
             if m == M_2028:
                 _rebalance(s, sc, m, st, cfg)
-        elif m in REBAL_MONTHS:
-            _rebalance(s, sc, m, st, cfg)
-        elif m == M_2031:
-            if st.lock_2031 > 0:
+                s.ratchet_ref = growth_value(s, sc, m).copy()
+                tau = max(IBTM_MATURITY_M - m, 0.0) / 12.0
+                s.ratchet_y = -np.log(_ibtm_df(sc, m)) / tau - ER["IBTM"]
+        elif m in REBAL_MONTHS or m == M_2031:
+            if m == M_2031 and st.lock_2031 > 0:
                 tau = pay_tau(m)
-                unit = PMT * sc.df(m, tau) * (1 + kappa(m, cfg))
+                unit = PMT * sc.df(m, tau) * (1 + kappa(m, cfg, sc))
                 need_cost = (np.clip(st.lock_2031 - s.locked, 0, None) * unit).sum(1)
                 raised = _liquidate(s, sc, m, need_cost)
                 _lock(s, sc, m, st.lock_2031, raised, cfg)
             g = growth_value(s, sc, m)
-            out["growth_2031"] = g.copy()
-            if st.floor_share_2031 > 0:
-                moved = _liquidate(s, sc, m, g * st.floor_share_2031)
+            if m == M_2031:
+                out["growth_2031"] = g.copy()
+                out["assets_2031"] = (g + s.floor_face * _ibtm_df(sc, m)).copy()
+
+            eq_target = target_equity_share(st, m)
+            r_move = np.zeros(n)
+            if st.ratchet_trigger is not None and st.ratchet_share > 0 and s.ratchet_ref is not None:
+                dt = (m - M_2028) / 12.0
+                ref = s.ratchet_ref * np.exp(s.ratchet_y * dt)
+                excess = np.maximum(g - st.ratchet_trigger * ref, 0.0)
+                r_move = st.ratchet_share * excess
+
+            g_rem = g - r_move
+            floor_share = st.effective_floor_share
+            is_floor_year = (m == month_of(st.floor_year)) and (floor_share > 0)
+            f_move = g_rem * floor_share if is_floor_year else np.zeros(n)
+            to_move = r_move + f_move
+
+            # Moving money into the floor and rebalancing the rest is one trade per fund: the forced
+            # rebalance charges a ticket for each fund and the sleeve's bond fund. The floor's IBTM needs
+            # its own ticket only when the sleeve holds VGIT.
+            floor_ticket = COMMISSION_ETF * (st.bond_vehicle == "VGIT")
+            if is_floor_year:
+                moved = _liquidate(s, sc, m, to_move)
                 s.floor_face += moved / _ibtm_df(sc, m)
-                _rebalance(s, sc, m, st, cfg, force=True)
+                _rebalance(s, sc, m, st, cfg, force=True, eq_target=eq_target)
                 if cfg.commissions:
-                    s.costs += COMMISSION_ETF * 4
+                    s.costs += floor_ticket
+            elif np.any(to_move > 0):
+                moved = _liquidate(s, sc, m, to_move)
+                s.floor_face += moved / _ibtm_df(sc, m)
+                _rebalance(s, sc, m, st, cfg, force=(to_move > 0), eq_target=eq_target)
+                if cfg.commissions:
+                    s.costs += np.where(to_move > 0, floor_ticket, 0.0)
             else:
-                _rebalance(s, sc, m, st, cfg)        # the January 2031 check every strategy gets
-            out["floor_2033"] = s.floor_face * (1 - ER["IBTM"] / 12) ** (M_2033 - m)  # value reaching Dec 2032
-            out["locked_2031"] = s.locked.mean(1)
-            if snapshot_2031:
-                out["state_2031"] = State(*(a.copy() for a in (s.eq, s.vgit, s.ibtm_face, s.floor_face, s.cash, s.locked, s.costs)))
+                _rebalance(s, sc, m, st, cfg, eq_target=eq_target)
+
+            if m == M_2031:
+                out["floor_2033"] = s.floor_face * (1 - ER["IBTM"] / 12) ** (M_2033 - m)  # value reaching Dec 2032
+                out["locked_2031"] = s.locked.mean(1)
+                if snapshot_2031:
+                    out["state_2031"] = State(
+                        *(a.copy() for a in (s.eq, s.vgit, s.ibtm_face, s.floor_face, s.cash, s.locked, s.costs)),
+                        ratchet_ref=None if s.ratchet_ref is None else s.ratchet_ref.copy(),
+                        ratchet_y=None if s.ratchet_y is None else s.ratchet_y.copy(),
+                    )
         if m == M_2033:
             break
         _step(s, sc, m, cfg)
     # January 2033 settlement
+    if cfg.commissions and cfg.sell_at_settlement:
+        # IBTM has matured into cash; each equity fund, VGIT and the extra names are sold
+        held = sum((s.eq[:, f].sum(1) > 0).astype(float) for f in _funds(np.array(st.region_weights), cfg))
+        s.costs += COMMISSION_ETF * (held + (s.vgit > 0) + np.where(s.eq.sum(1) > 0, cfg.extra_tickets, 0))
     assets = s.eq.sum(1) + s.vgit + s.ibtm_face + s.floor_face + s.cash - s.costs
-    open_cost = ((1 - s.locked) * PMT * sc.df(M_2033, pay_tau(M_2033)) * (1 + kappa(M_2033, cfg))).sum(1)
+    open_cost = ((1 - s.locked) * PMT * sc.df(M_2033, pay_tau(M_2033)) * (1 + kappa(M_2033, cfg, sc))).sum(1)
     funded = assets >= open_cost - 1e-6
     facility = np.maximum(assets - open_cost, 0.0)
     i33, i27 = M_2033 - sc.m0, max(M_2027 - sc.m0, 0)   # nested runs measure from their start
     real = facility * np.exp(sc.fx_log[:, i33] - sc.fx_log[:, i27]) / np.exp(sc.tw_cost_log[:, i33] - sc.tw_cost_log[:, i27])
     out.update({"funded": funded, "facility": facility, "contribution": facility * st.contribution_share,
                 "facility_real_tw2027": real, "assets_2033": assets, "open_cost_2033": open_cost,
-                "shortfall": np.maximum(open_cost - assets, 0.0), "locked_2033": s.locked.mean(1)})
+                "shortfall": np.maximum(open_cost - assets, 0.0), "locked_2033": s.locked.mean(1),
+                "costs_2033": s.costs.copy()})
     out.setdefault("floor_2033", np.zeros(n))
     out.setdefault("growth_2031", np.zeros(n))
+    out.setdefault("assets_2031", np.zeros(n))
     out.setdefault("lock_cost_2027", np.zeros(n))
     return out
 
@@ -236,23 +314,36 @@ def state_for(snap: State, i: int, n: int) -> State:
     """Scenario i's state repeated n times."""
     rep = lambda a: np.repeat(a[i:i + 1], n, axis=0)
     return State(rep(snap.eq), rep(snap.vgit), rep(snap.ibtm_face), rep(snap.floor_face), rep(snap.cash),
-                 rep(snap.locked), rep(snap.costs))
+                 rep(snap.locked), rep(snap.costs),
+                 ratchet_ref=None if snap.ratchet_ref is None else rep(snap.ratchet_ref),
+                 ratchet_y=None if snap.ratchet_y is None else rep(snap.ratchet_y))
 
 
 def conditional_2031(st: Strategy, sc: Scenarios, res: dict, params, i: int | None = None,
-                     n_inner: int = 4000, seed: int = 99, cfg: EngineConfig | None = None) -> dict:
+                     n_inner: int = 4000, seed: int = 99, cfg: EngineConfig | None = None,
+                     keep_drift: bool = True) -> dict:
     """What Laura could tell co-sponsors in January 2031: re-simulate 2031-2033 from one
     scenario's 2031 position. Default: the scenario with the median 2031 growth value."""
     from dataclasses import replace as dc_replace
 
     from .esg import simulate
 
-    g = res["growth_2031"]                          # rank on growth assets before the floor move
     if i is None:
-        i = int(np.argsort(g)[len(g) // 2])
+        # Rank on what the client holds in Jan 2031, before that month's floor move: growth assets
+        # plus any floor already bought (an earlier floor year, or ratchet moves). Without an
+        # earlier floor this equals growth_2031, so 2031-floor policies rank exactly as before.
+        rank_on = res.get("assets_2031", res["growth_2031"])
+        i = int(np.argsort(rank_on)[len(rank_on) // 2])
     start = {"beta": sc.beta[i, M_2031 - sc.m0], "infl": sc.infl[i, M_2031 - sc.m0],
              "fx_log": np.full(n_inner, sc.fx_log[i, M_2031 - sc.m0]),
              "tw_cost_log": np.full(n_inner, sc.tw_cost_log[i, M_2031 - sc.m0])}
+    if keep_drift and getattr(sc, "eq_drift_err", None) is not None:
+        start["eq_drift_err"] = sc.eq_drift_err[i]
+    if getattr(sc, "garch_h", None) is not None:
+        start["garch_h"] = sc.garch_h[i, M_2031 - sc.m0]
+    if getattr(sc, "tw_cost_infl", None) is not None:
+        idx = M_2031 - sc.m0
+        start["tw_cost_infl"] = (sc.tw_cost_infl[i, max(idx - 1, 0)], sc.tw_cost_infl[i, idx])
     p = dc_replace(params, months=M_2033 - M_2031)
     inner = simulate(p, n_inner, seed=seed, start=start, m0=M_2031)
     r = run(st, inner, cfg, state=state_for(res["state_2031"], i, n_inner))
@@ -260,3 +351,25 @@ def conditional_2031(st: Strategy, sc: Scenarios, res: dict, params, i: int | No
     return {"scenario": i, "floor": float(res["floor_2033"][i]), "growth_2031": float(res["growth_2031"][i]),
             "p10": float(np.percentile(f, 10)), "median": float(np.median(f)), "p90": float(np.percentile(f, 90)),
             "p5": float(np.percentile(f, 5)), "p95": float(np.percentile(f, 95)), "inner": f}
+
+
+def conditional_2031_band(st: Strategy, sc: Scenarios, res: dict, params, q: float = 0.5,
+                          width: float = 0.05, k: int = 21, n_inner: int = 3000, seed: int = 99,
+                          cfg: EngineConfig | None = None, percentiles=(5, 10, 20, 50, 80, 90, 95)) -> dict:
+    """The 2031 quote for a world at percentile q of Jan 2031 wealth, made stable: the median, across k
+    scenarios spread evenly over percentiles q-width..q+width, of each scenario's own quote. One
+    scenario alone is noisy: within the 45-55th percentile band the floor bought in Jan 2031 varies by
+    about +/-$4k with that month's interest rates."""
+    rank_on = res.get("assets_2031", res["growth_2031"])
+    order = np.argsort(rank_on)
+    n = len(order)
+    picks = [int(order[int(round(x * (n - 1)))]) for x in np.linspace(max(q - width, 0), min(q + width, 1), k)]
+    rows = [conditional_2031(st, sc, res, params, i=i, n_inner=n_inner, seed=seed, cfg=cfg) for i in picks]
+    floors = np.array([c["floor"] for c in rows])
+    out = {"scenarios": picks, "floor": float(np.median(floors)),
+           "floor_range": (float(floors.min()), float(floors.max())),
+           "growth_2031": float(np.median([c["growth_2031"] for c in rows]))}
+    for pc in percentiles:
+        out[f"p{pc:g}"] = float(np.median([np.percentile(c["inner"], pc) for c in rows]))
+    out["median"] = out.get("p50", float(np.median([c["median"] for c in rows])))
+    return out

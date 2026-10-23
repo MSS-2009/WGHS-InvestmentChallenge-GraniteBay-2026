@@ -104,6 +104,8 @@ def build_core(groups=CORE, cfg: dict | None = None, cal: dict | None = None) ->
     Q = to_arithmetic(P, Q_geo, cov)
     omega = np.diag([v[3] ** 2 for v in views])
     mu, cov_post = bl.posterior(cov, pi, P, Q, omega, cfg["tau"])
+    if cfg.get("anchor_market_to_consensus", True):
+        mu = bl.anchor_to_prior(mu, pi, w_mkt)
     mu_cov = cov_post - cov                         # uncertainty of the posterior mean
     # Constraints: stay within [0.5x, 2x] of market weight (+10pp cap); no look-through overweight
     # in tech/communication or in China+Taiwan (client background check, Section V).

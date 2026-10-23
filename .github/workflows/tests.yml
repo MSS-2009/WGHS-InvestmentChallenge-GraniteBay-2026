@@ -13,5 +13,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - run: pip install -e . pytest
+      - run: pip install -e . pytest pyflakes
+      - run: python -m pyflakes src scripts tests
       - run: python -m pytest          # uses the cached data in data/raw, no network

@@ -1,11 +1,12 @@
-"""Instruments allowed for the operating reserve under WInS rules.
+"""Instruments for the operating reserve.
 
 - `TreasuryBond`: an individual Treasury note or bond (semiannual coupons).
 - `TermFund`: an iShares iBonds term Treasury ETF. It holds Treasuries maturing in one
   calendar year and liquidates around December 15 of that year. We model it as a single
   payment at termination that grows at its yield less the expense ratio. Monthly income
   distributions are assumed reinvested in the fund (the fund's total return).
-TIPS and STRIPS are not permitted, so they are not modelled.
+- `TreasuryStrip`: a zero-coupon U.S. Treasury STRIP (principal or coupon strip).
+TIPS are not permitted under WInS rules; STRIPS are evaluated for the real-world reserve.
 """
 from __future__ import annotations
 
@@ -25,6 +26,7 @@ class TreasuryBond:
     coupon: float          # decimal, e.g. 0.05
     maturity: dt.date
     label: str = ""
+    clean_quote: float | None = None
 
     def coupon_dates(self, after: dt.date) -> list[dt.date]:
         """Each date counts back from maturity in whole half-years, so month-end maturities keep their
@@ -49,9 +51,13 @@ class TreasuryBond:
         return 100 * self.coupon / 2 * (settle - prev).days / (nxt - prev).days
 
     def dirty_price(self, curve: ZeroCurve) -> float:
+        if self.clean_quote is not None:
+            return float(self.clean_quote + self.accrued(curve.date))
         return float(sum(cf * curve.df(year_frac(curve.date, d)) for d, cf in self.cashflows(curve.date)))
 
     def clean_price(self, curve: ZeroCurve) -> float:
+        if self.clean_quote is not None:
+            return float(self.clean_quote)
         return self.dirty_price(curve) - self.accrued(curve.date)
 
     def ytm(self, dirty: float, settle: dt.date | str) -> float:
@@ -66,6 +72,47 @@ class TreasuryBond:
         p0 = self.dirty_price(curve)
         up, dn = self.dirty_price(curve.shifted(1)), self.dirty_price(curve.shifted(-1))
         return (dn - up) / (2 * p0 * 1e-4)
+
+
+@dataclass(frozen=True)
+class TreasuryStrip:
+    cusip: str
+    maturity: dt.date
+    price: float | None = None          # dollars per 100 face; None = price off zero curve
+    label: str = ""
+    strip_type: str = "STRIP"           # "I-STRIP" or "P-STRIP"
+
+    def cashflows(self, settle: dt.date | str) -> list[tuple[dt.date, float]]:
+        """Single cash flow of 100 face strictly after `settle`."""
+        settle = as_date(settle)
+        return [(self.maturity, 100.0)] if self.maturity > settle else []
+
+    def accrued(self, settle: dt.date | str) -> float:
+        return 0.0
+
+    def curve_price(self, curve: ZeroCurve) -> float:
+        t = year_frac(curve.date, self.maturity)
+        return float(100.0 * curve.df(t))
+
+    def dirty_price(self, curve: ZeroCurve) -> float:
+        return float(self.price) if self.price is not None else self.curve_price(curve)
+
+    def clean_price(self, curve: ZeroCurve) -> float:
+        return self.dirty_price(curve)
+
+    def ytm(self, dirty: float, settle: dt.date | str) -> float:
+        """Semiannual bond-equivalent yield."""
+        settle = as_date(settle)
+        t = year_frac(settle, self.maturity)
+        if t <= 0:
+            return 0.0
+        return 2.0 * ((100.0 / dirty) ** (1.0 / (2.0 * t)) - 1.0)
+
+    def mod_duration(self, curve: ZeroCurve) -> float:
+        p0 = self.curve_price(curve)
+        up = self.curve_price(curve.shifted(1))
+        dn = self.curve_price(curve.shifted(-1))
+        return (dn - up) / (2.0 * p0 * 1e-4)
 
 
 @dataclass(frozen=True)
