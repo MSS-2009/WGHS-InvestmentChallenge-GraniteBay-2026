@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from lgm import ladder as L
-from lgm.curve import ZeroCurve, bootstrap
+from lgm.curve import ParCurve, ZeroCurve, bootstrap
 from lgm.data.treasury import par_curve
 from lgm.instruments import PLANS_V2_BONDS, TermFund, TreasuryBond, ibonds_fund
 
@@ -45,6 +45,15 @@ def test_matured_term_fund_is_not_treated_as_future_cashflow(zc):
         L.build_matrix([fund], L.payment_schedule(), zc, 0.03)
 
 
+def test_future_premium_skips_expired_candidates(zc):
+    future_curve = ZeroCurve(dt.date(2031, 1, 1), zc.knots, zc.log_df)
+    candidates = [TermFund("OLD", dt.date(2030, 12, 15)), *L.wins_reserve_universe()]
+    premium = L.premium(future_curve, instruments=candidates)
+    assert np.isfinite(premium)
+    with pytest.raises(ValueError, match="at least one instrument with future cash flows"):
+        L.premium(future_curve, instruments=[TermFund("OLD", dt.date(2030, 12, 15))])
+
+
 def test_official_curves_match_documents():
     oct16 = par_curve("2026-10-16")
     for t, y in {5: 4.89, 7: 4.98, 10: 5.09, 20: 5.47}.items():
@@ -52,6 +61,29 @@ def test_official_curves_match_documents():
     sep28 = par_curve("2026-09-28")
     for t, y in {2: 4.92, 5: 5.06, 7: 5.15, 10: 5.24, 20: 5.60, 30: 5.56}.items():
         assert float(sep28.par_at(t)) * 100 == pytest.approx(y, abs=1e-9)
+
+
+def test_curve_objects_reject_malformed_tenors_and_knots():
+    with pytest.raises(ValueError, match="increasing positive tenors"):
+        ParCurve(dt.date(2026, 1, 1), np.array([1.0, 1.0]), np.array([0.04, 0.05]))
+    with pytest.raises(ValueError, match="increasing positive tenors"):
+        ParCurve(dt.date(2026, 1, 1), np.array([1.0, 2.0]), np.array([0.04, np.nan]))
+    with pytest.raises(ValueError, match="increasing nonnegative knots"):
+        ZeroCurve(dt.date(2026, 1, 1), np.array([1.0, 1.0]), np.array([-0.04, -0.05]))
+
+
+def test_curve_maturity_inputs_reject_past_and_nonfinite_values(zc):
+    with pytest.raises(ValueError, match="par maturity"):
+        par_curve("2026-10-20").par_at(-0.1)
+    for curve_call in (lambda: zc.df(-0.1), lambda: zc.zero(-0.1), lambda: zc.df(np.nan)):
+        with pytest.raises(ValueError, match="maturity"):
+            curve_call()
+
+
+@pytest.mark.parametrize("max_t", [0, 0.49, np.nan, np.inf, True])
+def test_bootstrap_rejects_invalid_horizons(max_t):
+    with pytest.raises(ValueError, match="max_t must be finite and at least 0.5"):
+        bootstrap(par_curve("2026-10-20"), max_t=max_t)
 
 
 def test_guide_zero_coupon_cost_oct16():

@@ -244,7 +244,13 @@ def premium(curve: ZeroCurve, reinvest: float = 0.03, instruments=None) -> float
     """Cost of the cheapest real-instrument ladder over the payments' zero-coupon value. This is the
     engine's `kappa0`; it grows as the assumed reinvestment rate for cash awaiting a payment falls."""
     pays = payment_schedule()
-    lp = solve(instruments or wins_reserve_universe(), pays, curve, reinvest)
+    universe = tuple(instruments) if instruments is not None else ()
+    if not universe:
+        universe = tuple(wins_reserve_universe())
+    active = [inst for inst in universe if _flows(inst, curve, curve.date)[0]]
+    if not active:
+        raise ValueError("premium needs at least one instrument with future cash flows")
+    lp = solve(active, pays, curve, reinvest)
     return lp.cost / zero_coupon_cost(curve, pays) - 1.0
 
 
