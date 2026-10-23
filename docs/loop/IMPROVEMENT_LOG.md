@@ -376,3 +376,4 @@ Nested simulation now checks required continuation keys and validates shared/per
 finite values before generating shocks, including optional drift and Taiwan AR state.
 Initial Nelson-Siegel factors, curve residuals, inflation levels, FX drift, and rate floor now require
 finite numeric values with exact expected shapes.
+The calibrated Taiwan cost AR initial lags also reject non-finite or wrongly sized states before draws.

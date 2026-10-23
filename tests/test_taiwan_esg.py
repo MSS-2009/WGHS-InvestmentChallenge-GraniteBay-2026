@@ -286,6 +286,18 @@ def test_zero_taiwan_cost_volatility_is_a_valid_deterministic_stress(base_params
     np.testing.assert_allclose(ar.tw_cost_log, expected, atol=1e-15)
 
 
+@pytest.mark.parametrize(("field", "state"), [
+    ("tw_cost_state0", (np.nan, 0.0)),
+    ("tw_cost_state0", (np.zeros(1), np.zeros(1))),
+    ("tw_cost_infl0", np.inf),
+])
+def test_taiwan_cost_initial_state_requires_finite_shared_or_path_values(base_params, field, state):
+    params = {"tw_cost_state0": None, "tw_cost_infl0": None, field: state}
+    p = dc.replace(base_params, tw_cost_phi=(0.65, -0.09), **params)
+    with pytest.raises(ValueError, match=field):
+        simulate(p, n=2, seed=3)
+
+
 def test_variance_ratio_separates_iid_from_mean_reversion():
     from lgm.calibrate import variance_ratio, variance_ratio_test
 

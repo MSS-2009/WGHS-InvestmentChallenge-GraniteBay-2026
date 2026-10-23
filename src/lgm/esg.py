@@ -224,6 +224,15 @@ def _path_state(value, n: int, name: str) -> np.ndarray:
     return state
 
 
+def _tw_cost_state(value, n: int, name: str):
+    """Normalize one lag state or the (two-lag) AR(2) state."""
+    if value is None:
+        return None
+    if isinstance(value, (tuple, list)) and len(value) == 2:
+        return tuple(_path_state(item, n, name) for item in value)
+    return _path_state(value, n, name)
+
+
 def _parameter_values(value, shape: tuple, name: str) -> np.ndarray:
     """Normalize finite numeric model parameters with an exact shape."""
     try:
@@ -272,11 +281,7 @@ def _prepare_start(start, n: int, n_equities: int):
     for key in ("tw_cost_state", "tw_cost_infl"):
         if key not in out:
             continue
-        state = out[key]
-        if isinstance(state, (tuple, list)) and len(state) == 2:
-            out[key] = tuple(_path_state(value, n, key) for value in state)
-        else:
-            out[key] = _path_state(state, n, key)
+        out[key] = _tw_cost_state(out[key], n, key)
     return out
 
 
@@ -415,6 +420,11 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
         if not np.isfinite(tw_cost_sig_eps) or tw_cost_sig_eps < 0.0:
             raise ValueError("tw_cost_sig_eps must be finite and nonnegative")
     start = _prepare_start(start, n, K)
+    tw_cost_initial_state = None
+    if tw_cost_ar is not None and start is None:
+        raw_cost_state = p.tw_cost_state0 if p.tw_cost_state0 is not None else p.tw_cost_infl0
+        name = "tw_cost_state0" if p.tw_cost_state0 is not None else "tw_cost_infl0"
+        tw_cost_initial_state = _tw_cost_state(raw_cost_state, n, name)
     if garch is not None and start is not None and "garch_h" in start:
         try:
             start_h = _state_values(start["garch_h"], "garch_h")
@@ -533,16 +543,12 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
             rho1 = phi1 / max(1.0 - phi2, 1e-12)
             cov_y = rho1 * var_y
 
-        state_in = None
+        state_in = tw_cost_initial_state
         if start is not None:
             if "tw_cost_state" in start:
                 state_in = start["tw_cost_state"]
             elif "tw_cost_infl" in start:
                 state_in = start["tw_cost_infl"]
-        elif p.tw_cost_state0 is not None:
-            state_in = p.tw_cost_state0
-        elif p.tw_cost_infl0 is not None:
-            state_in = p.tw_cost_infl0
 
         if state_in is None and sig_eps == 0.0:
             y_prev2 = np.full(n, mu)
