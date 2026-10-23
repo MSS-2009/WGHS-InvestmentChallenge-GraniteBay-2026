@@ -209,6 +209,23 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
     infl_dof = _dof(p.infl_dof, "infl_dof", allow_gaussian=True)
     fx_dof = _dof(p.fx_dof, "fx_dof", allow_gaussian=True)
     try:
+        raw_rate_phi = np.asarray(p.phi, dtype=object)
+        if any(isinstance(x, (bool, np.bool_)) for x in raw_rate_phi.flat):
+            raise ValueError("boolean coefficients are not numeric persistence inputs")
+        rate_phi = np.asarray(raw_rate_phi, dtype=float)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("phi must be a finite stationary length-3 rate-factor vector") from exc
+    if rate_phi.shape != (3,) or not np.isfinite(rate_phi).all() or np.any(np.abs(rate_phi) >= 1.0):
+        raise ValueError("phi must be a finite stationary length-3 rate-factor vector")
+    try:
+        if isinstance(p.infl_phi, (bool, np.bool_)):
+            raise ValueError("boolean coefficient")
+        infl_phi = float(p.infl_phi)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("infl_phi must be finite and stationary (absolute value < 1)") from exc
+    if not np.isfinite(infl_phi) or abs(infl_phi) >= 1.0:
+        raise ValueError("infl_phi must be finite and stationary (absolute value < 1)")
+    try:
         rate_shared = float(p.rate_shared)
     except (TypeError, ValueError) as exc:
         raise ValueError(f"rate_shared must be a finite fraction in [0, 1], got {p.rate_shared!r}") from exc
@@ -314,8 +331,8 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
         if beta_shift is not None:
             beta[:, 0] = beta[:, 0] + beta_shift
     for m in range(M):
-        beta[:, m + 1] = p.beta_mu + p.phi * (beta[:, m] - p.beta_mu) + shocks[:, m, K:K + 3]
-        infl[:, m + 1] = p.infl_mu + p.infl_phi * (infl[:, m] - p.infl_mu) + shocks[:, m, K + 3]
+        beta[:, m + 1] = p.beta_mu + rate_phi * (beta[:, m] - p.beta_mu) + shocks[:, m, K:K + 3]
+        infl[:, m + 1] = p.infl_mu + infl_phi * (infl[:, m] - p.infl_mu) + shocks[:, m, K + 3]
     fx0 = 0.0 if start is None else start["fx_log"][:, None]
     fx_log = np.concatenate([np.zeros((n, 1)), np.cumsum(p.fx_drift / 12 + shocks[..., K + 4], axis=1)], axis=1) + fx0
     if tw_cost_ar is not None:

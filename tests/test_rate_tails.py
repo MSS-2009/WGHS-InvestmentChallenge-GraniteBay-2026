@@ -33,6 +33,23 @@ def test_default_rate_tails_bit_for_bit_identical(base_params):
     np.testing.assert_array_equal(sc_gaussian.beta, sc_normal.beta)
 
 
+@pytest.mark.parametrize("phi", [
+    [0.9, 1.0, 0.9], [0.9, -1.0, 0.9], [0.9, np.nan, 0.9],
+    [0.9, np.inf, 0.9], [0.9, 0.8], "invalid", [False, False, False],
+])
+def test_rate_factor_persistence_requires_stationary_vector(base_params, phi):
+    p = dc.replace(base_params, phi=phi)
+    with pytest.raises(ValueError, match="phi must be a finite stationary length-3"):
+        esg.simulate(p, n=2, seed=4)
+
+
+@pytest.mark.parametrize("phi", [1.0, -1.0, np.nan, np.inf, "invalid", True])
+def test_inflation_persistence_requires_stationary_coefficient(base_params, phi):
+    p = dc.replace(base_params, infl_phi=phi)
+    with pytest.raises(ValueError, match="infl_phi must be finite and stationary"):
+        esg.simulate(p, n=2, seed=4)
+
+
 def test_covariance_preserved_across_options(base_params):
     """Covariance of shocks must match p.cov for all rate tail variants."""
     variants = [
