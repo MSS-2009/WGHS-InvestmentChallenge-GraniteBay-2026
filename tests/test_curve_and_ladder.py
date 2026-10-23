@@ -1,5 +1,6 @@
 import datetime as dt
 
+import numpy as np
 import pytest
 
 from lgm import ladder as L
@@ -54,3 +55,56 @@ def test_plans_v2_nine_rung_ladder_covers_ten_payments(zc):
           "UST 3.125% Nov-2041": 37700}
     surplus = L.check_coverage(universe, p2, L.payment_schedule(), zc, 0.03)
     assert min(surplus) > 0          # coupons collected 2027-2032 fund the 2033 payment
+
+
+@pytest.mark.parametrize(("kwargs", "message"), [
+    ({"n": 0}, "n must be a positive integer"),
+    ({"n": True}, "n must be a positive integer"),
+    ({"amount": 0}, "amount must be a finite positive"),
+    ({"amount": np.nan}, "amount must be a finite positive"),
+])
+def test_payment_schedule_rejects_invalid_count_or_amount(kwargs, message):
+    with pytest.raises(ValueError, match=message):
+        L.payment_schedule(**kwargs)
+
+
+def test_payment_schedule_clamps_leap_day_anniversaries():
+    payments = L.payment_schedule(first="2032-02-29", n=2, amount=1_000)
+    assert payments == [(dt.date(2032, 2, 29), 1_000), (dt.date(2033, 2, 28), 1_000)]
+
+
+def test_solver_accepts_one_shot_payment_generators(zc):
+    payments = L.payment_schedule(n=2)
+    result = L.solve([ibonds_fund("IBTM")], (p for p in payments), zc)
+    assert result.status == "optimal"
+    assert min(result.surplus) >= -1e-6
+
+
+def test_solver_rejects_unsorted_payments_and_invalid_reinvestment(zc):
+    payments = L.payment_schedule(n=2)
+    with pytest.raises(ValueError, match="strictly increasing"):
+        L.solve([ibonds_fund("IBTO")], payments[::-1], zc)
+    with pytest.raises(ValueError, match="greater than -100%"):
+        L.solve([ibonds_fund("IBTO")], payments, zc, reinvest=-1.0)
+
+
+def test_solver_rejects_duplicate_instrument_labels(zc):
+    bonds = [
+        TreasuryBond("one", 0.05, dt.date(2040, 1, 1), label="duplicate"),
+        TreasuryBond("two", 0.04, dt.date(2041, 1, 1), label="duplicate"),
+    ]
+    with pytest.raises(ValueError, match="labels must be unique"):
+        L.solve(bonds, L.payment_schedule(), zc)
+
+
+def test_solver_validates_constraint_labels_and_precedence(zc):
+    instruments = [ibonds_fund(t) for t in ("IBTM", "IBTO", "IBTP", "IBTQ", "IBTR")] + PLANS_V2_BONDS
+    payments = L.payment_schedule()
+    with pytest.raises(ValueError, match="unknown instrument label"):
+        L.solve(instruments, payments, zc, fixed={"missing": 100})
+    with pytest.raises(ValueError, match="below its minimum"):
+        L.solve(instruments, payments, zc, fixed={"IBTO": 1_000_000}, minimum={"IBTO": 1_000_001})
+
+    fixed = L.solve(instruments, payments, zc, fixed={"IBTO": 1_000_000}, minimum={"IBTO": 500_000})
+    assert fixed.status == "optimal"
+    assert fixed.holdings["IBTO"] == pytest.approx(1_000_000)

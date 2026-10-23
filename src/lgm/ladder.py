@@ -11,8 +11,11 @@ Solved with HiGHS (scipy.optimize.linprog). Only WInS-permitted instruments are 
 """
 from __future__ import annotations
 
+import calendar
 import datetime as dt
+from collections.abc import Mapping
 from dataclasses import dataclass, field
+from numbers import Integral, Real
 
 import numpy as np
 from scipy.optimize import linprog
@@ -20,6 +23,67 @@ from scipy.optimize import linprog
 from .curve import ZeroCurve
 from .dates import as_date, year_frac
 from .instruments import TermFund, TreasuryBond, TreasuryStrip
+
+
+def _payment_rows(payments) -> tuple[tuple[dt.date, float], ...]:
+    try:
+        rows = tuple(payments)
+    except TypeError as exc:
+        raise ValueError("payments must be a nonempty sequence of date and positive amount pairs") from exc
+    if not rows:
+        raise ValueError("payments must be a nonempty sequence of date and positive amount pairs")
+    out = []
+    for row in rows:
+        try:
+            date, amount = tuple(row)
+            date = as_date(date)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("payments must contain valid date and amount pairs") from exc
+        if isinstance(amount, (bool, np.bool_)) or not isinstance(amount, Real):
+            raise ValueError("payment amounts must be finite positive real numbers")
+        try:
+            amount = float(amount)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError("payment amounts must be finite positive real numbers") from exc
+        if not np.isfinite(amount) or amount <= 0.0:
+            raise ValueError("payment amounts must be finite positive real numbers")
+        if out and date <= out[-1][0]:
+            raise ValueError("payment dates must be strictly increasing")
+        out.append((date, amount))
+    return tuple(out)
+
+
+def _reinvestment_rate(value: float) -> float:
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, Real):
+        raise ValueError("reinvest must be a finite real rate greater than -100%")
+    try:
+        rate = float(value)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("reinvest must be a finite real rate greater than -100%") from exc
+    if not np.isfinite(rate) or rate <= -1.0:
+        raise ValueError("reinvest must be a finite real rate greater than -100%")
+    return rate
+
+
+def _constraint_dollars(name: str, values, labels: list[str]) -> dict[str, float]:
+    if values is None:
+        return {}
+    if not isinstance(values, Mapping):
+        raise ValueError(f"{name} must map instrument labels to nonnegative dollar amounts")
+    out = {}
+    for label, amount in values.items():
+        if label not in labels:
+            raise ValueError(f"{name} contains unknown instrument label {label!r}")
+        if isinstance(amount, (bool, np.bool_)) or not isinstance(amount, Real):
+            raise ValueError(f"{name}[{label!r}] must be a finite nonnegative dollar amount")
+        try:
+            amount = float(amount)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError(f"{name}[{label!r}] must be a finite nonnegative dollar amount") from exc
+        if not np.isfinite(amount) or amount < 0.0:
+            raise ValueError(f"{name}[{label!r}] must be a finite nonnegative dollar amount")
+        out[label] = amount
+    return out
 
 
 @dataclass
@@ -33,7 +97,23 @@ class LadderResult:
 
 def payment_schedule(first: str = "2033-01-01", n: int = 10, amount: float = 50_000.0) -> list[tuple[dt.date, float]]:
     d0 = as_date(first)
-    return [(dt.date(d0.year + k, d0.month, d0.day), amount) for k in range(n)]
+    if isinstance(n, (bool, np.bool_)) or not isinstance(n, Integral) or n < 1:
+        raise ValueError("n must be a positive integer")
+    if isinstance(amount, (bool, np.bool_)) or not isinstance(amount, Real):
+        raise ValueError("amount must be a finite positive real number")
+    try:
+        amount = float(amount)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("amount must be a finite positive real number") from exc
+    if not np.isfinite(amount) or amount <= 0.0:
+        raise ValueError("amount must be a finite positive real number")
+    rows = []
+    for k in range(int(n)):
+        year = d0.year + k
+        day = min(d0.day, calendar.monthrange(year, d0.month)[1])
+        date = dt.date(year, d0.month, day)
+        rows.append((date, amount))
+    return list(_payment_rows(rows))
 
 
 def _flows(inst, curve: ZeroCurve, settle: dt.date):
@@ -47,12 +127,23 @@ def _flows(inst, curve: ZeroCurve, settle: dt.date):
 
 
 def build_matrix(instruments, payments, curve: ZeroCurve, reinvest: float):
+    instruments = tuple(instruments)
+    payments = _payment_rows(payments)
+    reinvest = _reinvestment_rate(reinvest)
+    if not isinstance(curve, ZeroCurve):
+        raise ValueError("curve must be a curve.ZeroCurve instance")
     settle = curve.date
     pay_dates = [as_date(d) for d, _ in payments]
     A = np.zeros((len(payments), len(instruments)))
     prices, labels, scale = [], [], []
     for j, inst in enumerate(instruments):
         flows, price, label, unit = _flows(inst, curve, settle)
+        if not isinstance(label, str) or not label:
+            raise ValueError("every instrument must have a nonempty string label")
+        if label in labels:
+            raise ValueError(f"instrument labels must be unique; duplicate label {label!r}")
+        if not np.isfinite(price) or price <= 0.0 or not np.isfinite(unit) or unit <= 0.0:
+            raise ValueError(f"instrument {label!r} must have a finite positive price and unit scale")
         prices.append(price)
         labels.append(label)
         scale.append(unit)
@@ -61,6 +152,8 @@ def build_matrix(instruments, payments, curve: ZeroCurve, reinvest: float):
             if k is None:
                 continue  # arrives after the last payment: no credit (conservative)
             A[k, j] += (cf / unit) * (1 + reinvest) ** year_frac(d, pay_dates[k])
+    if not np.isfinite(A).all() or np.any(A < 0.0):
+        raise ValueError("instrument cash flows must produce a finite nonnegative ladder matrix")
     return A, np.array(prices), labels, scale
 
 
@@ -68,7 +161,14 @@ def solve(instruments, payments, curve: ZeroCurve, reinvest: float = 0.03,
           fixed: dict[str, float] | None = None, minimum: dict[str, float] | None = None) -> LadderResult:
     """Cheapest cash-flow-matched portfolio. `fixed` pins dollar amounts by label; `minimum`
     sets dollar floors (e.g. to force one rung per payment for a simpler ladder)."""
+    instruments = tuple(instruments)
+    payments = _payment_rows(payments)
     A, p, labels, _ = build_matrix(instruments, payments, curve, reinvest)
+    fixed = _constraint_dollars("fixed", fixed, labels)
+    minimum = _constraint_dollars("minimum", minimum, labels)
+    for label in fixed.keys() & minimum.keys():
+        if minimum[label] > fixed[label]:
+            raise ValueError(f"fixed amount for {label!r} is below its minimum")
     K, J = A.shape
     L = np.array([a for _, a in payments])
     pay_dates = [as_date(d) for d, _ in payments]
@@ -89,7 +189,7 @@ def solve(instruments, payments, curve: ZeroCurve, reinvest: float = 0.03,
                 bounds[j] = (units, units)
     if minimum:
         for j, lab in enumerate(labels):
-            if lab in minimum:
+            if lab in minimum and lab not in fixed:
                 bounds[j] = (minimum[lab] / p[j], None)
     res = linprog(c, A_eq=Aeq, b_eq=L, bounds=bounds, method="highs")
     if not res.success:
@@ -102,6 +202,14 @@ def solve(instruments, payments, curve: ZeroCurve, reinvest: float = 0.03,
 
 def check_coverage(instruments, dollars: dict[str, float], payments, curve: ZeroCurve, reinvest: float = 0.03):
     """Given fixed dollar holdings, return the surplus after each payment (negative = shortfall)."""
+    instruments = tuple(instruments)
+    payments = _payment_rows(payments)
+    if not isinstance(curve, ZeroCurve):
+        raise ValueError("curve must be a curve.ZeroCurve instance")
+    reinvest = _reinvestment_rate(reinvest)
+    dollars = _constraint_dollars("dollars", dollars, [
+        _flows(inst, curve, curve.date)[2] for inst in instruments
+    ])
     A, p, labels, _ = build_matrix(instruments, payments, curve, reinvest)
     x = np.array([dollars.get(lab, 0.0) / pj for lab, pj in zip(labels, p)])
     pay_dates = [as_date(d) for d, _ in payments]
@@ -116,6 +224,9 @@ def check_coverage(instruments, dollars: dict[str, float], payments, curve: Zero
 
 def zero_coupon_cost(curve: ZeroCurve, payments, as_of: dt.date | str | None = None) -> float:
     """Value of the payments on the zero curve. `as_of` re-bases times (guide convention)."""
+    payments = _payment_rows(payments)
+    if not isinstance(curve, ZeroCurve):
+        raise ValueError("curve must be a curve.ZeroCurve instance")
     base = as_date(as_of) if as_of else curve.date
     return float(sum(a * curve.df(year_frac(base, d)) for d, a in payments))
 
@@ -141,13 +252,21 @@ def idle_cash_days(instruments, units: dict[str, float], payments, curve: ZeroCu
     Cash received strictly before payment T_k idles until T_k.
     Any surplus remaining after T_k idles from T_k to T_{k+1}.
     """
+    instruments = tuple(instruments)
+    payments = _payment_rows(payments)
+    reinvest = _reinvestment_rate(reinvest)
+    if not isinstance(curve, ZeroCurve):
+        raise ValueError("curve must be a curve.ZeroCurve instance")
     settle = curve.date
     pay_dates = [as_date(d) for d, _ in payments]
     K = len(payments)
     inst_by_label = {}
     for inst in instruments:
         _, _, label, _ = _flows(inst, curve, settle)
+        if label in inst_by_label:
+            raise ValueError(f"instrument labels must be unique; duplicate label {label!r}")
         inst_by_label[label] = inst
+    units = _constraint_dollars("units", units, list(inst_by_label))
 
     total_dollar_days = 0.0
     surplus = 0.0

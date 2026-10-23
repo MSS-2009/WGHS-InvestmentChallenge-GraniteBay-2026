@@ -414,3 +414,8 @@ The conditional 2031 quote helpers now validate scenario indices, snapshot requi
 bands, sample counts, seed values, and percentile outputs before drawing nested paths. The engine also
 rejects wrong strategy/configuration types, invalid continuation-state indices, and non-boolean snapshot
 or drift flags with direct errors. These checks do not alter valid model outputs.
+
+The cash-flow ladder solver now normalizes one-shot payment iterables, requires strictly ordered positive
+payments and a reinvestment rate above -100%, and rejects duplicate instrument labels and unknown
+constraints. A fixed amount now remains fixed when a compatible minimum is also provided; contradictory
+fixed/minimum bounds fail explicitly. Annual schedules from leap day roll to February 28 in non-leap years.
