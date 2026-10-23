@@ -118,6 +118,22 @@ def test_engine_rejects_wrong_continuation_state_type():
         engine.run(IPS, _valid_scenario(), state={})
 
 
+def test_engine_rejects_wrong_strategy_and_configuration_types():
+    with pytest.raises(ValueError, match="strategies.Strategy"):
+        engine.run(object(), _valid_scenario())
+    with pytest.raises(ValueError, match="engine.EngineConfig"):
+        engine.run(IPS, _valid_scenario(), cfg={})
+
+
+def test_state_for_rejects_out_of_range_scenario_indices():
+    state = engine.State(
+        eq=np.zeros((2, 3)), vgit=np.zeros(2), ibtm_face=np.zeros(2), floor_face=np.zeros(2),
+        cash=np.zeros(2), locked=np.zeros((2, engine.N_PAY)), costs=np.zeros(2),
+    )
+    with pytest.raises(ValueError, match="integer scenario index"):
+        engine.state_for(state, -1, 4)
+
+
 @pytest.mark.parametrize(("field", "value", "message"), [
     ("eq", np.full((2, 3), -1.0), "state.eq must be nonnegative"),
     ("locked", np.full((2, engine.N_PAY), 1.01), "state.locked values"),

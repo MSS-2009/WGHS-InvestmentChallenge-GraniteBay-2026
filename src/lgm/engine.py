@@ -242,6 +242,14 @@ def _validate_engine_config(cfg: EngineConfig, K: int) -> dict[int, float]:
     return deposits
 
 
+def _engine_config(cfg: EngineConfig | None) -> EngineConfig:
+    if cfg is None:
+        return EngineConfig()
+    if not isinstance(cfg, EngineConfig):
+        raise ValueError("cfg must be an engine.EngineConfig instance or None")
+    return cfg
+
+
 def _funds(w: np.ndarray, cfg: EngineConfig) -> list[np.ndarray]:
     """Index sets of the equity funds actually held (one ticket and one drift check each)."""
     groups = cfg.fund_groups or [(i,) for i in range(len(w))]
@@ -350,7 +358,9 @@ def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: Sta
         snapshot_2031: bool = False) -> dict:
     """Simulate from month sc.m0. With `state`, the events at month sc.m0 are taken as done
     (used to continue a scenario from its January 2031 position)."""
-    cfg = cfg or EngineConfig()
+    if not isinstance(st, Strategy):
+        raise ValueError("st must be a strategies.Strategy instance")
+    cfg = _engine_config(cfg)
     m0 = getattr(sc, "m0", 0)
     if isinstance(m0, bool) or not isinstance(m0, Integral) or not 0 <= m0 <= M_2033:
         raise ValueError(f"scenario m0 must be an integer month from 0 through {M_2033}")
@@ -514,11 +524,58 @@ def summarize(res: dict[str, np.ndarray]) -> dict[str, float]:
 
 def state_for(snap: State, i: int, n: int) -> State:
     """Scenario i's state repeated n times."""
+    n = _positive_integer("n", n)
+    if not isinstance(snap, State):
+        raise ValueError("snap must be an engine.State instance")
+    if (isinstance(i, (bool, np.bool_)) or not isinstance(i, Integral)
+            or np.asarray(snap.eq).ndim < 1 or not 0 <= i < np.asarray(snap.eq).shape[0]):
+        raise ValueError("i must be an integer scenario index present in snap")
+    i = int(i)
     rep = lambda a: np.repeat(a[i:i + 1], n, axis=0)
     return State(rep(snap.eq), rep(snap.vgit), rep(snap.ibtm_face), rep(snap.floor_face), rep(snap.cash),
                  rep(snap.locked), rep(snap.costs),
                  ratchet_ref=None if snap.ratchet_ref is None else rep(snap.ratchet_ref),
                  ratchet_y=None if snap.ratchet_y is None else rep(snap.ratchet_y))
+
+
+def _positive_integer(name: str, value) -> int:
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, Integral) or value < 1:
+        raise ValueError(f"{name} must be a positive integer")
+    return int(value)
+
+
+def _quote_seed(seed) -> int | None:
+    if seed is None:
+        return None
+    if isinstance(seed, (bool, np.bool_)) or not isinstance(seed, Integral) or seed < 0:
+        raise ValueError("seed must be a nonnegative integer or None")
+    return int(seed)
+
+
+def _conditional_rank(sc: Scenarios, res: dict) -> tuple[int, np.ndarray]:
+    if not isinstance(res, Mapping):
+        raise ValueError("res must be a mapping returned by engine.run")
+    n = getattr(sc, "n", None)
+    if isinstance(n, (bool, np.bool_)) or not isinstance(n, Integral) or n < 1:
+        raise ValueError("scenarios must contain a positive integer number of paths")
+    n = int(n)
+    if not isinstance(res.get("state_2031"), State):
+        raise ValueError("res must include state_2031; call engine.run(..., snapshot_2031=True)")
+    for name in ("floor_2033", "growth_2031"):
+        try:
+            values = np.asarray(res[name], dtype=float)
+        except (KeyError, TypeError, ValueError, OverflowError) as exc:
+            raise ValueError(f"res[{name!r}] must be a finite vector with shape ({n},)") from exc
+        if values.shape != (n,) or not np.isfinite(values).all():
+            raise ValueError(f"res[{name!r}] must be a finite vector with shape ({n},)")
+    rank = res.get("assets_2031", res["growth_2031"])
+    try:
+        rank = np.asarray(rank, dtype=float)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError(f"res['assets_2031'] must be a finite vector with shape ({n},)") from exc
+    if rank.shape != (n,) or not np.isfinite(rank).all():
+        raise ValueError(f"res['assets_2031'] must be a finite vector with shape ({n},)")
+    return n, rank
 
 
 def conditional_2031(st: Strategy, sc: Scenarios, res: dict, params, i: int | None = None,
@@ -530,12 +587,23 @@ def conditional_2031(st: Strategy, sc: Scenarios, res: dict, params, i: int | No
 
     from .esg import simulate
 
+    if not isinstance(st, Strategy):
+        raise ValueError("st must be a strategies.Strategy instance")
+    cfg = _engine_config(cfg)
+    if not isinstance(keep_drift, (bool, np.bool_)):
+        raise ValueError("keep_drift must be boolean")
+    n_inner = _positive_integer("n_inner", n_inner)
+    seed = _quote_seed(seed)
+    n, rank_on = _conditional_rank(sc, res)
     if i is None:
         # Rank on what the client holds in Jan 2031, before that month's floor move: growth assets
         # plus any floor already bought (an earlier floor year, or ratchet moves). Without an
         # earlier floor this equals growth_2031, so 2031-floor policies rank exactly as before.
-        rank_on = res.get("assets_2031", res["growth_2031"])
         i = int(np.argsort(rank_on)[len(rank_on) // 2])
+    elif isinstance(i, (bool, np.bool_)) or not isinstance(i, Integral) or not 0 <= i < n:
+        raise ValueError(f"i must be an integer scenario index in [0, {n})")
+    else:
+        i = int(i)
     start = {"beta": sc.beta[i, M_2031 - sc.m0], "infl": sc.infl[i, M_2031 - sc.m0],
              "fx_log": np.full(n_inner, sc.fx_log[i, M_2031 - sc.m0]),
              "tw_cost_log": np.full(n_inner, sc.tw_cost_log[i, M_2031 - sc.m0])}
@@ -573,7 +641,39 @@ def conditional_2031_band(st: Strategy, sc: Scenarios, res: dict, params, q: flo
     scenarios spread evenly over percentiles q-width..q+width, of each scenario's own quote. One
     scenario alone is noisy: within the 45-55th percentile band the floor bought in Jan 2031 varies by
     about +/-$4k with that month's interest rates."""
-    rank_on = res.get("assets_2031", res["growth_2031"])
+    def finite_real(name, value):
+        if isinstance(value, (bool, np.bool_)) or not isinstance(value, Real):
+            raise ValueError(f"{name} must be a finite real number")
+        try:
+            value = float(value)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError(f"{name} must be a finite real number") from exc
+        if not np.isfinite(value):
+            raise ValueError(f"{name} must be a finite real number")
+        return value
+
+    q = finite_real("q", q)
+    width = finite_real("width", width)
+    if not 0.0 <= q <= 1.0:
+        raise ValueError("q must be in [0, 1]")
+    if not 0.0 <= width <= 1.0:
+        raise ValueError("width must be in [0, 1]")
+    n_inner = _positive_integer("n_inner", n_inner)
+    k = _positive_integer("k", k)
+    seed = _quote_seed(seed)
+    if not isinstance(st, Strategy):
+        raise ValueError("st must be a strategies.Strategy instance")
+    cfg = _engine_config(cfg)
+    n, rank_on = _conditional_rank(sc, res)
+    if k > n:
+        raise ValueError(f"k must be no greater than the number of scenarios ({n})")
+    try:
+        raw_percentiles = tuple(percentiles)
+    except TypeError as exc:
+        raise ValueError("percentiles must be a nonempty sequence of unique values in [0, 100]") from exc
+    pcs = tuple(finite_real("percentiles", pc) for pc in raw_percentiles)
+    if not pcs or any(not 0.0 <= pc <= 100.0 for pc in pcs) or len(set(pcs)) != len(pcs):
+        raise ValueError("percentiles must be a nonempty sequence of unique values in [0, 100]")
     order = np.argsort(rank_on)
     n = len(order)
     picks = [int(order[int(round(x * (n - 1)))]) for x in np.linspace(max(q - width, 0), min(q + width, 1), k)]

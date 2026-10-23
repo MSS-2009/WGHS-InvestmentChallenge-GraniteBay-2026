@@ -409,3 +409,8 @@ A Linux CI run also exposed a platform-dependent tie-order assertion in the 2030
 test now checks the invariant directly: `growth_2031` is constant, and the conditional selector chooses
 the exact median index by `assets_2031`. It no longer assumes that an arbitrary tied index must miss the
 median floor by a fixed dollar percentage.
+
+The conditional 2031 quote helpers now validate scenario indices, snapshot requirements, percentile
+bands, sample counts, seed values, and percentile outputs before drawing nested paths. The engine also
+rejects wrong strategy/configuration types, invalid continuation-state indices, and non-boolean drift
+flags with direct errors. These checks do not alter valid model outputs.
