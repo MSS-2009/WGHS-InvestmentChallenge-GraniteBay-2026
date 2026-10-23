@@ -202,8 +202,24 @@ def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: Sta
     """Simulate from month sc.m0. With `state`, the events at month sc.m0 are taken as done
     (used to continue a scenario from its January 2031 position)."""
     cfg = cfg or EngineConfig()
+    eq_log = np.asarray(sc.eq_log)
+    if eq_log.ndim != 3:
+        raise ValueError(f"sc.eq_log must have shape (n, months, equities), got {eq_log.shape}")
     n = sc.n
-    K = sc.eq_log.shape[2]
+    if eq_log.shape[0] != n:
+        raise ValueError(f"scenario beta paths have {n} rows but equity paths have {eq_log.shape[0]}")
+    K = eq_log.shape[2]
+    if len(st.region_weights) != K:
+        raise ValueError(f"strategy region_weights has {len(st.region_weights)} entries but scenarios have {K} equities")
+    try:
+        raw_eq_er = np.asarray(cfg.eq_er, dtype=object)
+        if any(isinstance(x, (bool, np.bool_)) for x in raw_eq_er.flat):
+            raise ValueError("boolean expense ratio")
+        eq_er = np.asarray(raw_eq_er, dtype=float)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError(f"cfg.eq_er must be a finite nonnegative vector with shape ({K},)") from exc
+    if eq_er.shape != (K,) or not np.isfinite(eq_er).all() or np.any(eq_er < 0.0):
+        raise ValueError(f"cfg.eq_er must be a finite nonnegative vector with shape ({K},)")
     s = state or State(np.zeros((n, K)), np.zeros(n), np.zeros(n), np.zeros(n), np.zeros(n), np.zeros((n, N_PAY)), np.zeros(n))
     out: dict = {}
     deposits = dict(cfg.deposits)

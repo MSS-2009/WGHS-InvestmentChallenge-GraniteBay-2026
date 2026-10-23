@@ -7,6 +7,16 @@ risk, so they are the most expensive to leave open.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from math import fsum, isclose, isfinite
+from numbers import Integral, Real
+
+
+def _fraction(name: str, value: float) -> None:
+    if isinstance(value, bool) or not isinstance(value, Real):
+        raise ValueError(f"{name} must be a finite fraction in [0, 1], got {value!r}")
+    x = float(value)
+    if not isfinite(x) or not 0.0 <= x <= 1.0:
+        raise ValueError(f"{name} must be a finite fraction in [0, 1], got {value!r}")
 
 
 @dataclass(frozen=True)
@@ -28,6 +38,37 @@ class Strategy:
     floor_share: float | None = None
     ratchet_trigger: float | None = None
     ratchet_share: float = 0.0
+
+    def __post_init__(self) -> None:
+        for name in ("lock_2027", "lock_2028", "lock_2031", "equity_share", "band",
+                     "floor_share_2031", "contribution_share", "ratchet_share"):
+            _fraction(name, getattr(self, name))
+        for name in ("equity_share_end", "floor_share"):
+            value = getattr(self, name)
+            if value is not None:
+                _fraction(name, value)
+
+        try:
+            raw_weights = tuple(self.region_weights)
+        except TypeError as exc:
+            raise ValueError("region_weights must be a nonempty finite nonnegative vector summing to one") from exc
+        if not raw_weights or any(isinstance(w, bool) or not isinstance(w, Real) for w in raw_weights):
+            raise ValueError("region_weights must be a nonempty finite nonnegative vector summing to one")
+        weights = tuple(float(w) for w in raw_weights)
+        if (not all(isfinite(w) and w >= 0.0 for w in weights)
+                or not isclose(fsum(weights), 1.0, rel_tol=0.0, abs_tol=1e-8)):
+            raise ValueError("region_weights must be a nonempty finite nonnegative vector summing to one")
+        object.__setattr__(self, "region_weights", weights)
+
+        if self.bond_vehicle not in {"VGIT", "IBTM"}:
+            raise ValueError(f"bond_vehicle must be 'VGIT' or 'IBTM', got {self.bond_vehicle!r}")
+        if (isinstance(self.floor_year, bool) or not isinstance(self.floor_year, Integral)
+                or self.floor_year not in (2029, 2030, 2031, 2032)):
+            raise ValueError("floor_year must be one of 2029, 2030, 2031, or 2032")
+        if self.ratchet_trigger is not None:
+            if (isinstance(self.ratchet_trigger, bool) or not isinstance(self.ratchet_trigger, Real)
+                    or not isfinite(float(self.ratchet_trigger)) or self.ratchet_trigger < 0):
+                raise ValueError("ratchet_trigger must be a finite nonnegative value")
 
     @property
     def effective_floor_share(self) -> float:
