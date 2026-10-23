@@ -40,4 +40,4 @@ def test_2031_floor_and_range(setup):
 def test_ips_contribution_rule(setup):
     _, sc = setup
     r = engine.run(IPS, sc)
-    assert np.allclose(r["contribution"], 0.85 * r["facility"])
+    assert np.allclose(r["contribution"], IPS.contribution_share * r["facility"])

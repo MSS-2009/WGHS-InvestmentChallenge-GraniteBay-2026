@@ -22,7 +22,6 @@ from lgm.strategies import IPS
 
 OUT = Path(__file__).resolve().parents[1] / "reports"
 BASELINE_FUNDS = ((0, 1, 2), (3, 4, 5, 6), (7, 8))
-SATELLITE_SHARE = 0.20
 
 
 def basket(w_mkt, keys, total):
@@ -44,12 +43,8 @@ def main(n: int = 20_000):
     # 1. The core: weights, expected return, risk, fee, concentration, dollar targets
     arith = float(w @ (t["bl_excess"].values + rf))
     vol = float(np.sqrt(w @ cov @ w))
-    fund = [i for i, g in enumerate(CORE) if g.key in ("us_growth", "us_value")]
-    laura = w.copy()
-    laura[fund] -= SATELLITE_SHARE * w[fund] / w[fund].sum()
     out["core"] = {
         "weights": {g.etf: round(float(x), 4) for g, x in zip(CORE, w)},
-        "laura_weights_with_satellite": {g.etf: round(float(x), 4) for g, x in zip(CORE, laura)} | {"SATELLITE": SATELLITE_SHARE},
         "regions": {"US": round(float(w[:3].sum()), 4), "developed": round(float(w[3:7].sum()), 4), "emerging": round(float(w[7:].sum()), 4)},
         "expected_geometric_net": round(arith - 0.5 * vol ** 2 - float(w @ er), 4),
         "market_expected_geometric_net": round(float(w_mkt @ (t["pi_excess"].values + rf)) - 0.5 * float(w_mkt @ cov @ w_mkt) - float(w_mkt @ er), 4),
@@ -60,7 +55,7 @@ def main(n: int = 20_000):
         "delta": round(float(r["delta"]), 3),
         "market_geometric_prior": round(float(r["mkt_geo"]), 4),   # what delta is set to make the market earn
         "views": {name: round(float(q), 4) for name, _, q, *_ in r["views"]},   # geometric, before conversion
-        "dollars_laura_90k": {g.etf: int(round(90_000 * x, -2)) for g, x in zip(CORE, laura)} | {"SATELLITE": int(90_000 * SATELLITE_SHARE)},
+        "dollars_laura_90k": {g.etf: int(round(90_000 * x, -2)) for g, x in zip(CORE, w)},
         "dollars_wins_60k": {g.etf: int(round(60_000 * x, -2)) for g, x in zip(CORE, w)},
     }
 
@@ -84,6 +79,7 @@ def main(n: int = 20_000):
     p = esg_params(r["cal"], beliefs["bl"])
     sc = simulate(p, n=n, seed=11)
     st = dc.replace(IPS, region_weights=tuple(w))
+    share = st.contribution_share
     cfg = engine.EngineConfig(eq_er=tuple(er))
     res = engine.run(st, sc, cfg, snapshot_2031=True)
     out["plan"] = {k: round(v, 1) for k, v in engine.summarize(res).items()}
@@ -103,11 +99,11 @@ def main(n: int = 20_000):
                                          percentiles=sorted({5, 10, 50, 90, 95, lo, hi}))
         quotes[label] = {"growth_2031": round(c["growth_2031"], 1), "floor_dec_2032": round(c["floor"], 1),
                          "floor_dec_2032_band": [round(x, 1) for x in c["floor_range"]],
-                         "guaranteed_contribution": round(0.85 * c["floor"], 1),
+                         "guaranteed_contribution": round(share * c["floor"], 1),
                          "facility_p10": round(c["p10"], 1), "facility_p90": round(c["p90"], 1),
-                         "contribution_range": [round(0.85 * c["p10"], -2), round(0.85 * c["p90"], -2)],
-                         "contribution_range_calibrated": [round(0.85 * c[f"p{lo:g}"], -2),
-                                                           round(0.85 * c[f"p{hi:g}"], -2)]}
+                         "contribution_range": [round(share * c["p10"], -2), round(share * c["p90"], -2)],
+                         "contribution_range_calibrated": [round(share * c[f"p{lo:g}"], -2),
+                                                           round(share * c[f"p{hi:g}"], -2)]}
     out["quotes_2031"] = quotes
 
     # 4. Stress tests

@@ -102,9 +102,9 @@ S6 = Strategy("S6 Bond-first, equity surplus", lock_2027=1.0, lock_2028=1.0, loc
               equity_share=1.0, note="Plans v2 P4")
 S9 = Strategy("S9 Bond-first, 60/40 surplus, 60% floor", lock_2027=1.0, lock_2028=1.0, lock_2031=1.0,
               equity_share=0.6, floor_share_2031=0.6, note="Plans v2 P5")
-# This IPS: S9 with the growth sleeve's bonds in IBTM (matures with the facility date)
-# and 85% of the facility fund committed, 15% kept for flexibility.
-IPS = replace(S9, name="IPS: lock, 60/40 with IBTM, 60% floor, 85% contribution",
-              bond_vehicle="IBTM", contribution_share=0.85, note="Exemplar IPS")
+# This IPS: S9 with the growth sleeve's bonds in IBTM (matures with the facility date), 80% of the
+# growth sleeve moved into IBTM in Jan 2031, and 80% of the facility fund committed, 20% kept for flexibility.
+IPS = replace(S9, name="IPS: lock, 60/40 with IBTM, 80% floor, 80% contribution",
+              bond_vehicle="IBTM", floor_share_2031=0.8, contribution_share=0.80, note="Exemplar IPS")
 
 PLANS_V2 = [S1, S2, S8, S6, S9]

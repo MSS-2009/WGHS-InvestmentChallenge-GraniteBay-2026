@@ -51,8 +51,8 @@ def main(n: int = 20_000):
         c = engine.conditional_2031_band(st, sc, r, p, q=0.5, n_inner=3000, cfg=cfg)   # same world as report_numbers.py
         frontier.append({"floor_share": f, "median": round(float(np.median(fac))), "p5": round(float(np.percentile(fac, 5))),
                          "p95": round(float(np.percentile(fac, 95))),
-                         "secured_2031_typical": round(0.85 * c["floor"]),
-                         "range_2031_typical": [round(0.85 * c["p10"], -2), round(0.85 * c["p90"], -2)],
+                         "secured_2031_typical": round(base.contribution_share * c["floor"]),
+                         "range_2031_typical": [round(base.contribution_share * c["p10"], -2), round(base.contribution_share * c["p90"], -2)],
                          **{f"ce_gamma{g}": round(certainty_equivalent(fac, g)) for g in GAMMAS}})
     out["floor_frontier"] = frontier
     out["best_floor_by_gamma"] = {g: max(frontier, key=lambda row: row[f"ce_gamma{g}"])["floor_share"] for g in GAMMAS}
@@ -63,7 +63,7 @@ def main(n: int = 20_000):
     out["contribution_share"] = [{"share": c, "contribution_median": round(c * float(np.median(fac))),
                                   "contribution_p5": round(c * float(np.percentile(fac, 5))),
                                   "kept_median": round((1 - c) * float(np.median(fac))),
-                                  "kept_p5": round((1 - c) * float(np.percentile(fac, 5)))} for c in (0.75, 0.85, 0.95)]
+                                  "kept_p5": round((1 - c) * float(np.percentile(fac, 5)))} for c in (0.70, 0.75, 0.80, 0.85, 0.90)]
 
     # 3. Range calibration on real history (returns re-centred on the model's expectations, and as they happened).
     # For each path, record where its real January 2033 result fell in the distribution quoted in January 2031
