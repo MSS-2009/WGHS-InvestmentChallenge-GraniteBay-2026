@@ -208,6 +208,43 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
     rate_dof = _dof(p.rate_dof, "rate_dof", allow_gaussian=True)
     infl_dof = _dof(p.infl_dof, "infl_dof", allow_gaussian=True)
     fx_dof = _dof(p.fx_dof, "fx_dof", allow_gaussian=True)
+    K = len(p.eq_geo)
+    try:
+        raw_shock_cov = np.asarray(p.cov, dtype=object)
+        if any(isinstance(x, (bool, np.bool_)) for x in raw_shock_cov.flat):
+            raise ValueError("boolean matrix")
+        shock_cov = np.asarray(raw_shock_cov, dtype=float)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("cov must be a finite symmetric positive-definite matrix of shape (K+5, K+5)") from exc
+    if shock_cov.shape != (K + 5, K + 5) or not np.isfinite(shock_cov).all():
+        raise ValueError("cov must be a finite symmetric positive-definite matrix of shape (K+5, K+5)")
+    if not np.allclose(shock_cov, shock_cov.T, rtol=1e-10, atol=1e-14):
+        raise ValueError("cov must be symmetric")
+    try:
+        chol = np.linalg.cholesky(shock_cov)
+    except np.linalg.LinAlgError as exc:
+        raise ValueError("cov must be positive definite") from exc
+
+    eq_mu_root = None
+    if p.eq_mu_cov is not None:
+        try:
+            raw_eq_mu_cov = np.asarray(p.eq_mu_cov, dtype=object)
+            if any(isinstance(x, (bool, np.bool_)) for x in raw_eq_mu_cov.flat):
+                raise ValueError("boolean matrix")
+            eq_mu_cov = np.asarray(raw_eq_mu_cov, dtype=float)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError("eq_mu_cov must be a finite symmetric positive-semidefinite K-by-K matrix") from exc
+        if eq_mu_cov.shape != (K, K) or not np.isfinite(eq_mu_cov).all():
+            raise ValueError("eq_mu_cov must be a finite symmetric positive-semidefinite K-by-K matrix")
+        if not np.allclose(eq_mu_cov, eq_mu_cov.T, rtol=1e-10, atol=1e-14):
+            raise ValueError("eq_mu_cov must be symmetric")
+        eq_mu_cov = (eq_mu_cov + eq_mu_cov.T) / 2.0
+        mu_vals, mu_vecs = np.linalg.eigh(eq_mu_cov)
+        psd_tol = 1e-12 * max(1.0, float(np.max(np.abs(mu_vals))))
+        if mu_vals.min() < -psd_tol:
+            raise ValueError("eq_mu_cov must be positive semidefinite")
+        eq_mu_root = mu_vecs @ np.diag(np.sqrt(np.maximum(mu_vals, 0.0)))
+
     try:
         raw_rate_phi = np.asarray(p.phi, dtype=object)
         if any(isinstance(x, (bool, np.bool_)) for x in raw_rate_phi.flat):
@@ -277,7 +314,7 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
             raise ValueError(f"starting garch_h must be a scalar or have shape ({n},), got {start_h.shape}")
 
     rng = np.random.default_rng(seed)
-    M, k = p.months, p.cov.shape[0]
+    M, k = p.months, shock_cov.shape[0]
     half = (n + 1) // 2 if antithetic else n
     z = rng.standard_normal((half, M, k))
     if rate_dof is None and rate_shared == 0.0 and infl_dof is None and fx_dof is None:
@@ -304,9 +341,7 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
                 z[..., sl] *= w
     if antithetic:
         z = np.concatenate([z, -z], axis=0)[:n]
-    chol = np.linalg.cholesky(p.cov)
     shocks = z @ chol.T                                       # (n, M, K+5)
-    K = len(p.eq_geo)
     shocks[..., :K] *= eq_vol_scale
 
     garch_h = None
@@ -334,12 +369,9 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
             eq_drift_err = np.tile(err, (n, 1))
         else:
             eq_drift_err = err
-    elif p.eq_mu_cov is not None:
-        vals, vecs = np.linalg.eigh(p.eq_mu_cov)
-        vals = np.maximum(vals, 0.0)
-        chol_mu = vecs @ np.diag(np.sqrt(vals))
+    elif eq_mu_root is not None:
         z_mu = rng.standard_normal((half, K))
-        err_half = z_mu @ chol_mu.T
+        err_half = z_mu @ eq_mu_root.T
         if antithetic:
             eq_drift_err = np.concatenate([err_half, -err_half], axis=0)[:n]
         else:

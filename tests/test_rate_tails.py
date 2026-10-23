@@ -50,6 +50,47 @@ def test_inflation_persistence_requires_stationary_coefficient(base_params, phi)
         esg.simulate(p, n=2, seed=4)
 
 
+@pytest.mark.parametrize("bad_cov", [
+    np.full((8, 8), np.nan), np.diag([-1.0] + [1.0] * 7), np.eye(7), np.eye(8, dtype=bool),
+])
+def test_monthly_shock_covariance_rejects_invalid_matrices(base_params, bad_cov):
+    p = dc.replace(base_params, cov=bad_cov)
+    with pytest.raises(ValueError, match="cov"):
+        esg.simulate(p, n=2, seed=4)
+
+
+def test_monthly_shock_covariance_rejects_asymmetry(base_params):
+    cov = base_params.cov.copy()
+    cov[0, 1] += 1e-4
+    p = dc.replace(base_params, cov=cov)
+    with pytest.raises(ValueError, match="cov must be symmetric"):
+        esg.simulate(p, n=2, seed=4)
+
+
+def test_expected_return_covariance_rejects_invalid_matrices(base_params):
+    k = len(base_params.eq_geo)
+    asymmetric = np.eye(k) * 1e-4
+    asymmetric[0, 1] = 1e-3
+    invalid = [
+        np.eye(k - 1),
+        asymmetric,
+        np.diag([-1e-4] + [1e-4] * (k - 1)),
+        np.full((k, k), np.nan),
+        np.eye(k, dtype=bool),
+    ]
+    for cov in invalid:
+        p = dc.replace(base_params, eq_mu_cov=cov)
+        with pytest.raises(ValueError, match="eq_mu_cov"):
+            esg.simulate(p, n=2, seed=4)
+
+
+def test_zero_expected_return_covariance_is_a_valid_degenerate_case(base_params):
+    cov = np.zeros((len(base_params.eq_geo), len(base_params.eq_geo)))
+    sc = esg.simulate(dc.replace(base_params, eq_mu_cov=cov), n=4, seed=4)
+    assert sc.eq_drift_err is not None
+    np.testing.assert_array_equal(sc.eq_drift_err, np.zeros_like(sc.eq_drift_err))
+
+
 def test_covariance_preserved_across_options(base_params):
     """Covariance of shocks must match p.cov for all rate tail variants."""
     variants = [
