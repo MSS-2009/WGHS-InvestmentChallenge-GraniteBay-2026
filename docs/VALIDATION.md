@@ -205,7 +205,7 @@ is code, tested (`docs/loop/IMPROVEMENT_LOG.md` gives the effects):
 | A Taiwan cost correlation with both CPI and USD/TWD would have diluted the first | Refused (`tests/test_taiwan_esg.py`); the headline uses only USD/TWD |
 | A non-finite or out-of-range Taiwan cost correlation could distort variance or produce NaNs | Reject coefficients outside [-1, 1] (`tests/test_taiwan_esg.py`) |
 | Invalid Student-t degrees of freedom or a rate-tail share outside [0, 1] could produce NaNs | Validate ESG tail controls before drawing; positive infinity is the Gaussian limit (`tests/test_rate_tails.py`) |
-| Invalid GARCH coefficients, initial variance, or factor index could create non-finite volatility paths | Require a stationary GARCH(1,1) and a valid equity factor; validate initial conditional variances (`tests/test_esg_v2.py`) |
+| Invalid GARCH coefficients, volatility scale, initial variance shape, or factor index could create non-finite paths or fail during broadcasting | Require stationary coefficients, a positive finite scale, an integer equity factor, and scalar or path-sized finite starting variances (`tests/test_esg_v2.py`) |
 | `esg_params` took an `infl_phi` argument and ignored it | Removed; the fitted value is used, as before |
 | The equity correlation target was changed on an argument, not a test | Tested out of sample and reverted (`scripts/corr_shrink_oos.py`) |
 | Doc sentences gone stale as figures moved: "up from 1.74" when δ was 1.74, "$-0.2k below" for a base that was above, 99.5% given for both calibration samples | Rewritten, each with a check in `scripts/doc_numbers.py`; negatives now print as -$x |

@@ -146,6 +146,8 @@ def _garch_parameters(value, n_equities: int):
             alpha, beta = float(value.alpha), float(value.beta)
             h0 = float(getattr(value, "h0", 1.0))
             raw_idx = getattr(value, "factor_idx", 0)
+        if isinstance(raw_idx, (bool, np.bool_)) or not isinstance(raw_idx, (int, np.integer)):
+            raise ValueError("factor_idx must be an integer")
         factor_idx = int(raw_idx)
     except (AttributeError, IndexError, KeyError, TypeError, ValueError, OverflowError) as exc:
         raise ValueError(f"eq_garch configuration is invalid: {exc}") from exc
@@ -190,12 +192,22 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
     if not np.isfinite(rate_shared) or not 0.0 <= rate_shared <= 1.0:
         raise ValueError(f"rate_shared must be a finite fraction in [0, 1], got {p.rate_shared!r}")
     garch = _garch_parameters(p.eq_garch, len(p.eq_geo))
-    if garch is not None and (not np.isfinite(p.eq_vol_scale) or p.eq_vol_scale <= 0):
-        raise ValueError(f"eq_vol_scale must be finite and positive when eq_garch is enabled, got {p.eq_vol_scale}")
+    eq_vol_scale = p.eq_vol_scale
+    if garch is not None:
+        try:
+            eq_vol_scale = float(p.eq_vol_scale)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError(
+                f"eq_vol_scale must be finite and positive when eq_garch is enabled, got {p.eq_vol_scale!r}"
+            ) from exc
+        if not np.isfinite(eq_vol_scale) or eq_vol_scale <= 0:
+            raise ValueError(f"eq_vol_scale must be finite and positive when eq_garch is enabled, got {p.eq_vol_scale!r}")
     if garch is not None and start is not None and "garch_h" in start:
         start_h = np.asarray(start["garch_h"], dtype=float)
         if not np.isfinite(start_h).all() or np.any(start_h < 0):
             raise ValueError("starting garch_h must contain finite nonnegative variances")
+        if start_h.ndim > 1 or (start_h.ndim == 1 and start_h.shape != (n,)):
+            raise ValueError(f"starting garch_h must be a scalar or have shape ({n},), got {start_h.shape}")
 
     rng = np.random.default_rng(seed)
     M, k = p.months, p.cov.shape[0]
@@ -228,7 +240,7 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
     chol = np.linalg.cholesky(p.cov)
     shocks = z @ chol.T                                       # (n, M, K+5)
     K = len(p.eq_geo)
-    shocks[..., :K] *= p.eq_vol_scale
+    shocks[..., :K] *= eq_vol_scale
 
     garch_h = None
     if garch is not None:
@@ -237,11 +249,11 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
         garch_h = np.ones((n, M))
         if start is not None and "garch_h" in start:
             start_h = np.asarray(start["garch_h"])
-            garch_h[:, 0] = start_h if start_h.ndim > 0 else np.full(n, float(start_h))
+            garch_h[:, 0] = start_h
         else:
             garch_h[:, 0] = h0
 
-        var0 = p.cov[factor_idx, factor_idx] * (p.eq_vol_scale ** 2)
+        var0 = p.cov[factor_idx, factor_idx] * (eq_vol_scale ** 2)
         for m in range(M):
             shocks[:, m, :K] *= np.sqrt(garch_h[:, m, None])
             if m < M - 1:

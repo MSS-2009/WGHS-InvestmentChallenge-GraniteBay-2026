@@ -354,3 +354,7 @@ as Gaussian. Tests preserve the legacy default bit-for-bit and cover invalid val
 The optional GARCH path now requires finite, stationary coefficients, a positive initial variance,
 and an in-range equity factor; invalid starting conditional variances also fail early. Calibrated GARCH
 paths and the default model are unaffected.
+
+The follow-up edge-case pass now rejects boolean or floating-point factor indices, malformed/non-numeric
+volatility scales, and starting variance arrays whose shape cannot map unambiguously to simulation paths.
+Scalar continuation state and one value per path remain supported and produce identical paths when equal.
