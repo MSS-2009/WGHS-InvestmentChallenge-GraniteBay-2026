@@ -3,87 +3,87 @@
   "floor_frontier": [
     {
       "floor_share": 0.0,
-      "median": 199953,
-      "p5": 140314,
-      "p95": 290982,
+      "median": 199856,
+      "p5": 140221,
+      "p95": 290883,
       "secured_2031_typical": 0,
       "range_2031_typical": [
-        144800.0,
-        201600.0
+        136000.0,
+        190900.0
       ],
-      "ce_gamma2": 195814,
-      "ce_gamma4": 186541,
-      "ce_gamma8": 169365
+      "ce_gamma2": 195738,
+      "ce_gamma4": 186482,
+      "ce_gamma8": 169336
     },
     {
       "floor_share": 0.2,
-      "median": 199192,
+      "median": 199157,
       "p5": 142722,
-      "p95": 282380,
-      "secured_2031_typical": 33479,
+      "p95": 282269,
+      "secured_2031_typical": 31438,
       "range_2031_typical": [
-        148400.0,
-        194600.0
+        140200.0,
+        184400.0
       ],
-      "ce_gamma2": 195401,
-      "ce_gamma4": 187222,
-      "ce_gamma8": 171875
+      "ce_gamma2": 195336,
+      "ce_gamma4": 187172,
+      "ce_gamma8": 171853
     },
     {
       "floor_share": 0.4,
-      "median": 198133,
-      "p5": 144633,
-      "p95": 276026,
-      "secured_2031_typical": 66958,
+      "median": 198055,
+      "p5": 144612,
+      "p95": 275749,
+      "secured_2031_typical": 62877,
       "range_2031_typical": [
-        153100.0,
-        187500.0
+        143700.0,
+        177000.0
       ],
-      "ce_gamma2": 194900,
-      "ce_gamma4": 187591,
-      "ce_gamma8": 173716
+      "ce_gamma2": 194844,
+      "ce_gamma4": 187548,
+      "ce_gamma8": 173699
     },
     {
       "floor_share": 0.6,
-      "median": 196989,
-      "p5": 146102,
-      "p95": 270262,
-      "secured_2031_typical": 100437,
+      "median": 196896,
+      "p5": 146058,
+      "p95": 270175,
+      "secured_2031_typical": 94315,
       "range_2031_typical": [
-        157300.0,
-        180700.0
+        147600.0,
+        169400.0
       ],
-      "ce_gamma2": 194142,
-      "ce_gamma4": 187477,
-      "ce_gamma8": 174701
+      "ce_gamma2": 194094,
+      "ce_gamma4": 187442,
+      "ce_gamma8": 174691
     },
     {
       "floor_share": 0.8,
-      "median": 195755,
-      "p5": 146324,
-      "p95": 266201,
-      "secured_2031_typical": 133916,
+      "median": 195682,
+      "p5": 146288,
+      "p95": 266097,
+      "secured_2031_typical": 125754,
       "range_2031_typical": [
-        161800.0,
-        173300.0
+        151800.0,
+        162600.0
       ],
-      "ce_gamma2": 193118,
-      "ce_gamma4": 186868,
-      "ce_gamma8": 174826
+      "ce_gamma2": 193079,
+      "ce_gamma4": 186842,
+      "ce_gamma8": 174823
     },
     {
       "floor_share": 1.0,
-      "median": 195015,
-      "p5": 146253,
-      "p95": 263762,
-      "secured_2031_typical": 167395,
+      "median": 194966,
+      "p5": 146294,
+      "p95": 263682,
+      "secured_2031_typical": 157192,
       "range_2031_typical": [
-        166700.0,
-        166700.0
+        156500.0,
+        156500.0
       ],
-      "ce_gamma2": 192379,
-      "ce_gamma4": 186316,
-      "ce_gamma8": 174651
+      "ce_gamma2": 192349,
+      "ce_gamma4": 186299,
+      "ce_gamma8": 174656
     }
   ],
   "best_floor_by_gamma": {
@@ -93,32 +93,46 @@
   },
   "contribution_share": [
     {
+      "share": 0.7,
+      "contribution_median": 136977,
+      "contribution_p5": 102402,
+      "kept_median": 58705,
+      "kept_p5": 43886
+    },
+    {
       "share": 0.75,
-      "contribution_median": 147742,
-      "contribution_p5": 109576,
-      "kept_median": 49247,
-      "kept_p5": 36525
+      "contribution_median": 146761,
+      "contribution_p5": 109716,
+      "kept_median": 48920,
+      "kept_p5": 36572
+    },
+    {
+      "share": 0.8,
+      "contribution_median": 156545,
+      "contribution_p5": 117031,
+      "kept_median": 39136,
+      "kept_p5": 29258
     },
     {
       "share": 0.85,
-      "contribution_median": 167441,
-      "contribution_p5": 124187,
-      "kept_median": 29548,
-      "kept_p5": 21915
+      "contribution_median": 166330,
+      "contribution_p5": 124345,
+      "kept_median": 29352,
+      "kept_p5": 21943
     },
     {
-      "share": 0.95,
-      "contribution_median": 187140,
-      "contribution_p5": 138797,
-      "kept_median": 9849,
-      "kept_p5": 7305
+      "share": 0.9,
+      "contribution_median": 176114,
+      "contribution_p5": 131659,
+      "kept_median": 19568,
+      "kept_p5": 14629
     }
   ],
   "range_calibration_history": {
     "recentred": {
       "paths": 184,
-      "inside_80pct_range": 0.995,
-      "below_range": 0.0,
+      "inside_80pct_range": 0.989,
+      "below_range": 0.005,
       "above_range": 0.005,
       "first_start": "2005-04-30",
       "last_start": "2020-07-31"
@@ -143,30 +157,30 @@
   },
   "reverse_stress": {
     "worst_1pct": {
-      "facility_mean": 119831,
-      "stocks_cum_return_2028_2033": -0.331,
-      "worst_12_months": -0.309,
-      "five_year_yield_change_by_2031": -0.0019,
-      "five_year_yield_change_by_2033": -0.0003
+      "facility_mean": 120808,
+      "stocks_cum_return_2028_2033": -0.288,
+      "worst_12_months": -0.304,
+      "five_year_yield_change_by_2031": -0.0021,
+      "five_year_yield_change_by_2033": -0.0012
     },
     "worst_5pct": {
-      "facility_mean": 135214,
-      "stocks_cum_return_2028_2033": -0.218,
-      "worst_12_months": -0.272,
-      "five_year_yield_change_by_2031": -0.0006,
-      "five_year_yield_change_by_2033": 0.0002
+      "facility_mean": 135926,
+      "stocks_cum_return_2028_2033": -0.172,
+      "worst_12_months": -0.27,
+      "five_year_yield_change_by_2031": -0.0009,
+      "five_year_yield_change_by_2033": -0.0007
     },
     "all": {
-      "facility_mean": 201147,
-      "stocks_cum_return_2028_2033": 0.437,
+      "facility_mean": 199616,
+      "stocks_cum_return_2028_2033": 0.436,
       "worst_12_months": -0.168,
       "five_year_yield_change_by_2031": 0.0001,
       "five_year_yield_change_by_2033": 0.0001
     },
     "prob_facility_below": {
       "100000": 0.0003,
-      "120000": 0.0042,
-      "140000": 0.0301
+      "120000": 0.0037,
+      "140000": 0.0283
     }
   }
 }
