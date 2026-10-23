@@ -1,10 +1,21 @@
 # State of the team's WInS account. Update after every trading session; the WInS scripts read it.
-as_of: 2026-10-21
-cash: 38813.97                 # cash after the Oct 21 trades
+as_of: 2026-10-23
+cash: 5748.76                  # cash after the Oct 23 trades
 keep_cash: 6000.0              # buffer left uninvested (commissions, rounding)
-growth_funds_to_sell:          # growth funds bought on Oct 21 that the IPS excludes (shares)
-  ESGV: 252
-  VSGX: 290
+growth_funds_to_sell: {}       # ESGV and VSGX were sold on Oct 23
+
+# Growth sleeve bought on Oct 23 (shares and fill price); weights come from reports/report_numbers.json
+growth_funds:
+  VTV:  {shares: 73, price: 226.52}
+  VGK:  {shares: 102, price: 86.20}
+  VUG:  {shares: 100, price: 86.77}
+  VB:   {shares: 24, price: 286.41}
+  EMXC: {shares: 46, price: 91.18}
+  BBJP: {shares: 48, price: 75.75}
+  BBCA: {shares: 20, price: 104.70}
+  EPP:  {shares: 28, price: 55.07}
+  MCHI: {shares: 21, price: 49.09}
+  IBTM: {shares: 1616, price: 22.04}
 
 # Reserve ladder held in WInS, at the IPS's two-thirds WInS scale (payments of $33,333)
 ladder:
@@ -15,8 +26,8 @@ ladder:
     T-BOND 4.375% Nov-2039: 30000
     T-BOND 4.250% Nov-2040: 31000
     T-BOND 3.125% Nov-2041: 33000
-  funds:                       # iBonds term funds: shares and fill price
-    IBTO: {shares: 604, price: 23.20}
+  funds:                       # iBonds term funds: shares and average fill price
+    IBTO: {shares: 610, price: 23.2018}   # 604 at 23.20 (Oct 21) + 6 at 23.38 (Oct 23)
     IBTP: {shares: 752, price: 24.32}
     IBTQ: {shares: 726, price: 23.94}
     IBTR: {shares: 695, price: 23.75}

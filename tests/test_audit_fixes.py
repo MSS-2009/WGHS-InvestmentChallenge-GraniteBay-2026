@@ -121,3 +121,14 @@ def test_rounding_residue_pays_no_commission():
                      locked=np.zeros((3, 10)), costs=z.copy())
     engine._invest(s, sc, engine.M_2027, S9, np.array([1e-10, -1e-10, 5_000.0]), engine.EngineConfig())
     assert s.costs[0] == 0 and s.costs[1] == 0 and s.costs[2] == engine.COMMISSION_ETF * 4
+
+
+def test_current_wins_account_covers_every_payment_at_zero_interest(capsys):
+    """After the Oct 23 trades (6 more IBTO), the ladder held meets every payment with cash earning 0%."""
+    lc = _script("wins_ladder_check")
+    acct = yaml.safe_load((ROOT / "config" / "wins_account.yaml").read_text())
+    assert acct["ladder"]["funds"]["IBTO"]["shares"] == 610 and acct["growth_funds_to_sell"] == {}
+    assert min(lc.coverage(0.0, acct)["surplus"]) >= 0
+    assert lc.main(0.0, acct) == 0
+    _script("wins_rebalance").main(account=acct)
+    assert "nothing left to invest" in capsys.readouterr().out
