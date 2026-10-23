@@ -123,6 +123,8 @@ def test_engine_rejects_wrong_strategy_and_configuration_types():
         engine.run(object(), _valid_scenario())
     with pytest.raises(ValueError, match="engine.EngineConfig"):
         engine.run(IPS, _valid_scenario(), cfg={})
+    with pytest.raises(ValueError, match="snapshot_2031 must be boolean"):
+        engine.run(IPS, _valid_scenario(), snapshot_2031="false")
 
 
 def test_state_for_rejects_out_of_range_scenario_indices():

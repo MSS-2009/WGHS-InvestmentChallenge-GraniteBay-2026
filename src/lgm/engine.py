@@ -361,6 +361,8 @@ def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: Sta
     if not isinstance(st, Strategy):
         raise ValueError("st must be a strategies.Strategy instance")
     cfg = _engine_config(cfg)
+    if not isinstance(snapshot_2031, (bool, np.bool_)):
+        raise ValueError("snapshot_2031 must be boolean")
     m0 = getattr(sc, "m0", 0)
     if isinstance(m0, bool) or not isinstance(m0, Integral) or not 0 <= m0 <= M_2033:
         raise ValueError(f"scenario m0 must be an integer month from 0 through {M_2033}")

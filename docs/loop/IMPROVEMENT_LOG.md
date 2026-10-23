@@ -412,5 +412,5 @@ median floor by a fixed dollar percentage.
 
 The conditional 2031 quote helpers now validate scenario indices, snapshot requirements, percentile
 bands, sample counts, seed values, and percentile outputs before drawing nested paths. The engine also
-rejects wrong strategy/configuration types, invalid continuation-state indices, and non-boolean drift
-flags with direct errors. These checks do not alter valid model outputs.
+rejects wrong strategy/configuration types, invalid continuation-state indices, and non-boolean snapshot
+or drift flags with direct errors. These checks do not alter valid model outputs.
