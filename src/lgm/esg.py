@@ -200,13 +200,79 @@ def _tw_cost_ar_coefficients(value):
     return phi1, phi2
 
 
+def _state_values(value, name: str) -> np.ndarray:
+    """Convert continuation state to finite numeric values, rejecting boolean pseudo-numbers."""
+    try:
+        raw = np.asarray(value, dtype=object)
+        if any(isinstance(x, (bool, np.bool_)) for x in raw.flat):
+            raise ValueError("boolean values are not valid state data")
+        state = np.asarray(raw, dtype=float)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError(f"start[{name!r}] must contain finite numeric values") from exc
+    if not np.isfinite(state).all():
+        raise ValueError(f"start[{name!r}] must contain finite numeric values")
+    return state
+
+
+def _path_state(value, n: int, name: str) -> np.ndarray:
+    """Normalize a shared scalar or one finite value per scenario."""
+    state = _state_values(value, name)
+    if state.ndim == 0:
+        return np.full(n, float(state))
+    if state.shape != (n,):
+        raise ValueError(f"start[{name!r}] must be a scalar or have shape ({n},), got {state.shape}")
+    return state
+
+
+def _prepare_start(start, n: int, n_equities: int):
+    """Validate and normalize the nested-simulation state contract."""
+    if start is None:
+        return None
+    if not isinstance(start, dict):
+        raise ValueError("start must be a mapping of continuation state")
+    required = {"beta", "infl", "fx_log", "tw_cost_log"}
+    missing = required.difference(start)
+    if missing:
+        raise ValueError(f"start is missing required state keys: {', '.join(sorted(missing))}")
+    out = dict(start)
+    beta = _state_values(out["beta"], "beta")
+    if beta.shape not in ((3,), (n, 3)):
+        raise ValueError(f"start['beta'] must have shape (3,) or ({n}, 3), got {beta.shape}")
+    out["beta"] = beta
+    out["infl"] = _path_state(out["infl"], n, "infl")
+    out["fx_log"] = _path_state(out["fx_log"], n, "fx_log")
+    out["tw_cost_log"] = _path_state(out["tw_cost_log"], n, "tw_cost_log")
+
+    if "beta_shift" in out:
+        shift = _state_values(out["beta_shift"], "beta_shift")
+        if shift.ndim != 0 and shift.shape not in ((3,), (n, 3)):
+            raise ValueError(f"start['beta_shift'] must be scalar, (3,), or ({n}, 3), got {shift.shape}")
+        out["beta_shift"] = shift
+    if "eq_drift_err" in out:
+        err = _state_values(out["eq_drift_err"], "eq_drift_err")
+        if err.shape not in ((n_equities,), (n, n_equities)):
+            raise ValueError(
+                f"start['eq_drift_err'] must have shape ({n_equities},) or ({n}, {n_equities}), got {err.shape}"
+            )
+        out["eq_drift_err"] = err
+    for key in ("tw_cost_state", "tw_cost_infl"):
+        if key not in out:
+            continue
+        state = out[key]
+        if isinstance(state, (tuple, list)) and len(state) == 2:
+            out[key] = tuple(_path_state(value, n, key) for value in state)
+        else:
+            out[key] = _path_state(state, n, key)
+    return out
+
+
 def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
              start: dict | None = None, m0: int = 0) -> Scenarios:
     """Simulate n scenarios for p.months months.
 
-    `start` supplies continuation state. Beta and inflation accept shared values or one value per
-    scenario; FX and cost-index levels are scenario vectors. Optional drift, GARCH, and Taiwan AR
-    states accept shared values or scenario-wise values as appropriate.
+    `start` supplies continuation state. Beta accepts a shared vector or one vector per scenario;
+    inflation, FX, and cost-index levels accept shared scalars or one value per scenario. Optional
+    drift, GARCH, and Taiwan AR states accept shared values or scenario-wise values as appropriate.
     """
     if isinstance(n, (bool, np.bool_)) or not isinstance(n, (int, np.integer)) or n < 1:
         raise ValueError(f"n must be a positive integer, got {n!r}")
@@ -327,8 +393,12 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
             raise ValueError("tw_cost_sig_eps must be finite and nonnegative") from exc
         if not np.isfinite(tw_cost_sig_eps) or tw_cost_sig_eps < 0.0:
             raise ValueError("tw_cost_sig_eps must be finite and nonnegative")
+    start = _prepare_start(start, n, K)
     if garch is not None and start is not None and "garch_h" in start:
-        start_h = np.asarray(start["garch_h"], dtype=float)
+        try:
+            start_h = _state_values(start["garch_h"], "garch_h")
+        except ValueError as exc:
+            raise ValueError("starting garch_h must contain finite nonnegative variances") from exc
         if not np.isfinite(start_h).all() or np.any(start_h < 0):
             raise ValueError("starting garch_h must contain finite nonnegative variances")
         if start_h.ndim > 1 or (start_h.ndim == 1 and start_h.shape != (n,)):

@@ -372,3 +372,5 @@ Both shock and expected-return covariance inputs are checked for dimensions, fin
 the appropriate positive-definiteness condition before draws; zero expected-return covariance remains valid.
 Simulation counts and horizons now require positive integers, continuation month indices must be
 nonnegative integers, and annual equity geometric returns must be finite and above -100%.
+Nested simulation now checks required continuation keys and validates shared/per-path state shapes and
+finite values before generating shocks, including optional drift and Taiwan AR state.

@@ -13,6 +13,15 @@ from lgm.growth.universe import CORE
 from lgm.strategies import IPS
 
 
+def _start_state(p, n):
+    return {
+        "beta": np.tile(p.beta0, (n, 1)),
+        "infl": np.full(n, p.infl0),
+        "fx_log": np.zeros(n),
+        "tw_cost_log": np.zeros(n),
+    }
+
+
 def test_eq_mu_cov_none_reproduces_exact():
     """Setting eq_mu_cov=None reproduces baseline scenarios exactly."""
     core = build_core()
@@ -233,13 +242,13 @@ def test_zero_equity_volatility_scale_is_a_valid_stress_without_garch():
     np.testing.assert_array_equal(sc.eq_log, np.broadcast_to(expected, sc.eq_log.shape))
 
 
-@pytest.mark.parametrize("start_h", [-0.1, np.nan, np.inf])
+@pytest.mark.parametrize("start_h", [-0.1, np.nan, np.inf, True])
 def test_garch_rejects_invalid_starting_variances(start_h):
     core = build_core()
     p = esg_params(core["cal"], core["table"]["bl_geo_total"].values)
     p.eq_garch = (0.1, 0.2, 1.0)
     with pytest.raises(ValueError, match="starting garch_h"):
-        simulate(p, n=2, seed=1, start={"garch_h": start_h})
+        simulate(p, n=2, seed=1, start={**_start_state(p, 2), "garch_h": start_h})
 
 
 @pytest.mark.parametrize("start_h", [np.ones(1), np.ones((2, 1))])
@@ -248,19 +257,14 @@ def test_garch_rejects_misshaped_starting_variances(start_h):
     p = esg_params(core["cal"], core["table"]["bl_geo_total"].values)
     p.eq_garch = (0.1, 0.2, 1.0)
     with pytest.raises(ValueError, match="starting garch_h must be a scalar or have shape"):
-        simulate(p, n=2, seed=1, start={"garch_h": start_h})
+        simulate(p, n=2, seed=1, start={**_start_state(p, 2), "garch_h": start_h})
 
 
 def test_garch_starting_variance_scalar_and_path_vector_are_equivalent():
     core = build_core()
     p = esg_params(core["cal"], core["table"]["bl_geo_total"].values)
     p.eq_garch = (0.1, 0.2, 1.0)
-    start = {
-        "beta": np.tile(p.beta0, (4, 1)),
-        "infl": np.full(4, p.infl0),
-        "fx_log": np.zeros(4),
-        "tw_cost_log": np.zeros(4),
-    }
+    start = _start_state(p, 4)
     scalar = simulate(p, n=4, seed=6, start={**start, "garch_h": 0.7})
     vector = simulate(p, n=4, seed=6, start={**start, "garch_h": np.full(4, 0.7)})
     np.testing.assert_array_equal(scalar.eq_log, vector.eq_log)

@@ -39,6 +39,35 @@ def test_scenario_count_must_be_positive_integer(base_params, n):
         esg.simulate(base_params, n=n)
 
 
+def _valid_start(p, n):
+    return {
+        "beta": np.tile(p.beta0, (n, 1)),
+        "infl": np.full(n, p.infl0),
+        "fx_log": np.zeros(n),
+        "tw_cost_log": np.zeros(n),
+    }
+
+
+@pytest.mark.parametrize(("key", "value", "message"), [
+    ("beta", np.zeros(2), r"start\['beta'\]"),
+    ("beta", np.full((2, 3), np.nan), r"start\['beta'\]"),
+    ("infl", np.zeros(1), r"start\['infl'\]"),
+    ("fx_log", np.inf, r"start\['fx_log'\]"),
+    ("tw_cost_log", np.zeros((2, 1)), r"start\['tw_cost_log'\]"),
+    ("eq_drift_err", np.zeros(2), r"start\['eq_drift_err'\]"),
+])
+def test_continuation_state_rejects_invalid_values_and_shapes(base_params, key, value, message):
+    start = _valid_start(base_params, 2)
+    start[key] = value
+    with pytest.raises(ValueError, match=message):
+        esg.simulate(base_params, n=2, start=start)
+
+
+def test_continuation_state_requires_core_fields(base_params):
+    with pytest.raises(ValueError, match="start is missing required state keys"):
+        esg.simulate(base_params, n=2, start={"beta": base_params.beta0})
+
+
 @pytest.mark.parametrize("months", [0, -1, 1.5, True, "12"])
 def test_horizon_must_be_positive_integer(base_params, months):
     p = dc.replace(base_params, months=months)

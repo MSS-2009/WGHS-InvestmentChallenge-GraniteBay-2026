@@ -211,6 +211,7 @@ is code, tested (`docs/loop/IMPROVEMENT_LOG.md` gives the effects):
 | Nonstationary Nelson-Siegel or inflation persistence could make simulated levels explode | Require finite rate-factor AR coefficients with absolute values below one and a stationary inflation AR coefficient (`tests/test_rate_tails.py`) |
 | Asymmetric, non-finite, or invalid covariance matrices could be partially ignored by Cholesky/eigendecomposition | Validate shock covariance as symmetric positive-definite and expected-return covariance as symmetric positive-semidefinite (`tests/test_rate_tails.py`) |
 | Invalid sample counts, horizons, or annual geometric returns could fail during allocation or produce NaN equity drift | Require positive integer counts/horizon and finite equity returns above -100% (`tests/test_rate_tails.py`) |
+| Malformed nested-simulation state could broadcast silently or fail deep in path generation | Require the four core continuation fields and validate optional drift/GARCH/Taiwan state shapes and finiteness (`tests/test_rate_tails.py`, `tests/test_esg_v2.py`) |
 | `esg_params` took an `infl_phi` argument and ignored it | Removed; the fitted value is used, as before |
 | The equity correlation target was changed on an argument, not a test | Tested out of sample and reverted (`scripts/corr_shrink_oos.py`) |
 | Doc sentences gone stale as figures moved: "up from 1.74" when δ was 1.74, "$-0.2k below" for a base that was above, 99.5% given for both calibration samples | Rewritten, each with a check in `scripts/doc_numbers.py`; negatives now print as -$x |
