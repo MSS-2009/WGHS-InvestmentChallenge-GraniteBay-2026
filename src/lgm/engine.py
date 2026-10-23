@@ -56,12 +56,19 @@ def kappa(m: float, cfg: EngineConfig, sc: Scenarios | None = None) -> float | n
     `kappa_rate_slope` and scenarios, it also moves with the scenario's 5-year rate, (N, 1): cash awaiting
     a payment is assumed to earn a fixed 3%, so the LP's premium rises with market rates
     (`scripts/ladder_premium.py`)."""
-    k = cfg.kappa0 * pay_tau(m).clip(0).mean() / pay_tau(M_2027).mean()
-    if cfg.kappa_rate_slope == 0.0 or sc is None:
-        return k
-    if cfg.kappa_rate_ref is None:
-        raise ValueError("kappa_rate_slope needs kappa_rate_ref (today's 5-year zero rate)")
-    return k + cfg.kappa_rate_slope * (sc.zero_cc(m, 5.0) - cfg.kappa_rate_ref)
+    k0 = _real_config("kappa0", cfg.kappa0, lower=-1.0, strict_lower=True)
+    k = k0 * pay_tau(m).clip(0).mean() / pay_tau(M_2027).mean()
+    slope = _real_config("kappa_rate_slope", cfg.kappa_rate_slope)
+    if slope == 0.0 or sc is None:
+        result = k
+    else:
+        if cfg.kappa_rate_ref is None:
+            raise ValueError("kappa_rate_slope needs kappa_rate_ref (today's 5-year zero rate)")
+        ref = _real_config("kappa_rate_ref", cfg.kappa_rate_ref)
+        result = k + slope * (sc.zero_cc(m, 5.0) - ref)
+    if not np.isfinite(result).all() or np.any(np.asarray(result) <= -1.0):
+        raise ValueError("scenario ladder premium must be finite and greater than -100%")
+    return result
 
 
 @dataclass
@@ -96,7 +103,7 @@ def growth_value(s: State, sc: Scenarios, m: int) -> np.ndarray:
 
 
 def _finite_path(name: str, value, shape: tuple[int | None, ...], *,
-                 min_axes: tuple[int, ...] = (), minimum: bool = False) -> np.ndarray:
+                 min_axes: tuple[int, ...] = ()) -> np.ndarray:
     try:
         raw = np.asarray(value)
     except (TypeError, ValueError, OverflowError) as exc:
@@ -111,9 +118,8 @@ def _finite_path(name: str, value, shape: tuple[int | None, ...], *,
         expected is None or (actual >= expected if i in min_axes else actual == expected)
         for i, (actual, expected) in enumerate(zip(arr.shape, shape))
     )
-    if not valid_shape or not np.isfinite(arr).all() or (minimum and np.any(arr < 0.0)):
-        qualifier = "finite nonnegative" if minimum else "finite"
-        raise ValueError(f"scenarios.{name} must be a {qualifier} numeric array with shape {shape}")
+    if not valid_shape or not np.isfinite(arr).all():
+        raise ValueError(f"scenarios.{name} must be a finite numeric array with shape {shape}")
     return arr
 
 
