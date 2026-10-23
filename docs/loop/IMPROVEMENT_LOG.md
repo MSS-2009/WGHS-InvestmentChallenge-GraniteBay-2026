@@ -404,3 +404,8 @@ their accumulated 2027 levels, but the real-facility calculation treated the nes
 January 2027. Nested scenarios now carry their January 2027 baselines through continuation, and the engine
 requires those baselines when starting after that date. This leaves the full-horizon headline unchanged
 and fixes the nested real-dollar output.
+
+A Linux CI run also exposed a platform-dependent tie-order assertion in the 2030-floor ranking test. The
+test now checks the invariant directly: `growth_2031` is constant, and the conditional selector chooses
+the exact median index by `assets_2031`. It no longer assumes that an arbitrary tied index must miss the
+median floor by a fixed dollar percentage.
