@@ -374,3 +374,5 @@ Simulation counts and horizons now require positive integers, continuation month
 nonnegative integers, and annual equity geometric returns must be finite and above -100%.
 Nested simulation now checks required continuation keys and validates shared/per-path state shapes and
 finite values before generating shocks, including optional drift and Taiwan AR state.
+Initial Nelson-Siegel factors, curve residuals, inflation levels, FX drift, and rate floor now require
+finite numeric values with exact expected shapes.

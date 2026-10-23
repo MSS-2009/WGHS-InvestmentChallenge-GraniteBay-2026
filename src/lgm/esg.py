@@ -224,6 +224,20 @@ def _path_state(value, n: int, name: str) -> np.ndarray:
     return state
 
 
+def _parameter_values(value, shape: tuple, name: str) -> np.ndarray:
+    """Normalize finite numeric model parameters with an exact shape."""
+    try:
+        raw = np.asarray(value, dtype=object)
+        if any(isinstance(x, (bool, np.bool_)) for x in raw.flat):
+            raise ValueError("boolean values are not valid model parameters")
+        values = np.asarray(raw, dtype=float)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError(f"{name} must contain finite numeric values with shape {shape}") from exc
+    if values.shape != shape or not np.isfinite(values).all():
+        raise ValueError(f"{name} must contain finite numeric values with shape {shape}")
+    return values
+
+
 def _prepare_start(start, n: int, n_equities: int):
     """Validate and normalize the nested-simulation state contract."""
     if start is None:
@@ -281,6 +295,13 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
         raise ValueError(f"months must be a positive integer, got {p.months!r}")
     if (isinstance(m0, (bool, np.bool_)) or not isinstance(m0, (int, np.integer)) or m0 < 0):
         raise ValueError(f"m0 must be a nonnegative integer, got {m0!r}")
+    beta0 = _parameter_values(p.beta0, (3,), "beta0")
+    beta_mu = _parameter_values(p.beta_mu, (3,), "beta_mu")
+    resid = _parameter_values(p.resid, TAU_GRID.shape, "resid")
+    infl0 = float(_parameter_values(p.infl0, (), "infl0"))
+    infl_mu = float(_parameter_values(p.infl_mu, (), "infl_mu"))
+    fx_drift = float(_parameter_values(p.fx_drift, (), "fx_drift"))
+    rate_floor = float(_parameter_values(p.rate_floor, (), "rate_floor"))
     t_dof = _dof(p.t_dof, "t_dof")
     rate_dof = _dof(p.rate_dof, "rate_dof", allow_gaussian=True)
     infl_dof = _dof(p.infl_dof, "infl_dof", allow_gaussian=True)
@@ -475,17 +496,17 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
 
     beta = np.empty((n, M + 1, 3))
     infl = np.empty((n, M + 1))
-    beta[:, 0] = p.beta0 if start is None else start["beta"]
-    infl[:, 0] = p.infl0 if start is None else start["infl"]
+    beta[:, 0] = beta0 if start is None else start["beta"]
+    infl[:, 0] = infl0 if start is None else start["infl"]
     if start is not None:
         beta_shift = start.get("beta_shift")
         if beta_shift is not None:
             beta[:, 0] = beta[:, 0] + beta_shift
     for m in range(M):
-        beta[:, m + 1] = p.beta_mu + rate_phi * (beta[:, m] - p.beta_mu) + shocks[:, m, K:K + 3]
-        infl[:, m + 1] = p.infl_mu + infl_phi * (infl[:, m] - p.infl_mu) + shocks[:, m, K + 3]
+        beta[:, m + 1] = beta_mu + rate_phi * (beta[:, m] - beta_mu) + shocks[:, m, K:K + 3]
+        infl[:, m + 1] = infl_mu + infl_phi * (infl[:, m] - infl_mu) + shocks[:, m, K + 3]
     fx0 = 0.0 if start is None else start["fx_log"][:, None]
-    fx_log = np.concatenate([np.zeros((n, 1)), np.cumsum(p.fx_drift / 12 + shocks[..., K + 4], axis=1)], axis=1) + fx0
+    fx_log = np.concatenate([np.zeros((n, 1)), np.cumsum(fx_drift / 12 + shocks[..., K + 4], axis=1)], axis=1) + fx0
     if tw_cost_ar is not None:
         phi1, phi2 = tw_cost_ar
 
@@ -583,4 +604,4 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
         tw0 = 0.0 if start is None else start["tw_cost_log"][:, None]
         tw_cost_log = np.concatenate([np.zeros((n, 1)), np.cumsum(tw, axis=1)], axis=1) + tw0
         tw_cost_infl = None
-    return Scenarios(beta, eq_log, infl, fx_log, tw_cost_log, p.resid, p.rate_floor, m0, eq_drift_err, garch_h, tw_cost_infl)
+    return Scenarios(beta, eq_log, infl, fx_log, tw_cost_log, resid, rate_floor, m0, eq_drift_err, garch_h, tw_cost_infl)

@@ -75,6 +75,21 @@ def test_horizon_must_be_positive_integer(base_params, months):
         esg.simulate(p, n=2)
 
 
+@pytest.mark.parametrize(("field", "value"), [
+    ("beta0", np.array([np.nan, 0.0, 0.0])),
+    ("beta_mu", np.zeros(2)),
+    ("resid", np.zeros(2)),
+    ("infl0", np.inf),
+    ("infl_mu", "invalid"),
+    ("fx_drift", True),
+    ("rate_floor", np.nan),
+])
+def test_initial_curve_and_inflation_parameters_must_be_finite_and_well_shaped(base_params, field, value):
+    p = dc.replace(base_params, **{field: value})
+    with pytest.raises(ValueError, match=field):
+        esg.simulate(p, n=2)
+
+
 @pytest.mark.parametrize("m0", [-1, 1.5, True, "0"])
 def test_start_month_must_be_nonnegative_integer(base_params, m0):
     with pytest.raises(ValueError, match="m0 must be a nonnegative integer"):
