@@ -106,6 +106,18 @@ def test_engine_rejects_boolean_scenario_paths():
         engine.run(IPS, sc)
 
 
+def test_engine_rejects_string_rate_floor():
+    sc = _valid_scenario()
+    sc.rate_floor = "-0.005"
+    with pytest.raises(ValueError, match="scenarios.rate_floor"):
+        engine.run(IPS, sc)
+
+
+def test_engine_rejects_wrong_continuation_state_type():
+    with pytest.raises(ValueError, match="engine.State"):
+        engine.run(IPS, _valid_scenario(), state={})
+
+
 @pytest.mark.parametrize(("field", "value", "message"), [
     ("eq", np.full((2, 3), -1.0), "state.eq must be nonnegative"),
     ("locked", np.full((2, engine.N_PAY), 1.01), "state.locked values"),

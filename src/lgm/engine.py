@@ -382,7 +382,7 @@ def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: Sta
     _finite_path("fx_log", sc.fx_log, (int(n), horizon + 1), min_axes=(1,))
     _finite_path("tw_cost_log", sc.tw_cost_log, (int(n), horizon + 1), min_axes=(1,))
     _finite_path("resid", sc.resid, (len(TAU_GRID),))
-    if isinstance(sc.rate_floor, (bool, np.bool_)) or not np.isscalar(sc.rate_floor):
+    if isinstance(sc.rate_floor, (bool, np.bool_)) or not isinstance(sc.rate_floor, Real):
         raise ValueError("scenarios.rate_floor must be a finite scalar")
     try:
         rate_floor = float(sc.rate_floor)
@@ -390,7 +390,12 @@ def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: Sta
         raise ValueError("scenarios.rate_floor must be a finite scalar") from exc
     if not np.isfinite(rate_floor):
         raise ValueError("scenarios.rate_floor must be a finite scalar")
-    s = state or State(np.zeros((n, K)), np.zeros(n), np.zeros(n), np.zeros(n), np.zeros(n), np.zeros((n, N_PAY)), np.zeros(n))
+    s = state if state is not None else State(
+        np.zeros((n, K)), np.zeros(n), np.zeros(n), np.zeros(n), np.zeros(n),
+        np.zeros((n, N_PAY)), np.zeros(n),
+    )
+    if not isinstance(s, State):
+        raise ValueError("state must be an engine.State instance or None")
     _validate_state(s, int(n), K)
     out: dict = {}
     for m in range(sc.m0, M_2033 + 1):
