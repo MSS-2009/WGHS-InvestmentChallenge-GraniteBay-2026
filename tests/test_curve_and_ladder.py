@@ -6,7 +6,7 @@ import pytest
 from lgm import ladder as L
 from lgm.curve import ZeroCurve, bootstrap
 from lgm.data.treasury import par_curve
-from lgm.instruments import PLANS_V2_BONDS, TreasuryBond, ibonds_fund
+from lgm.instruments import PLANS_V2_BONDS, TermFund, TreasuryBond, ibonds_fund
 
 
 @pytest.fixture(scope="module")
@@ -22,6 +22,27 @@ def test_bootstrap_reprices_par_bonds(zc):
         mat = dt.date(2026 + t, 10, 20)
         b = TreasuryBond("x", c, mat)
         assert b.dirty_price(zc) == pytest.approx(100.0, abs=0.02)
+
+
+def test_matured_treasury_bond_has_no_future_cashflows(zc):
+    bond = TreasuryBond("expired", 0.05, dt.date(2025, 11, 15))
+    assert bond.cashflows(zc.date) == []
+    assert bond.accrued(zc.date) == 0.0
+    assert bond.dirty_price(zc) == 0.0
+    quoted = TreasuryBond("expired-quoted", 0.05, dt.date(2025, 11, 15), clean_quote=99.0)
+    assert quoted.clean_price(zc) == quoted.dirty_price(zc) == 0.0
+    with pytest.raises(ValueError, match="yield is undefined for a matured"):
+        bond.ytm(100.0, zc.date)
+    with pytest.raises(ValueError, match="duration is undefined for a matured"):
+        bond.mod_duration(zc)
+
+
+def test_matured_term_fund_is_not_treated_as_future_cashflow(zc):
+    fund = TermFund("OLD", dt.date(2025, 12, 15))
+    assert fund.growth_factor(zc) == 0.0
+    assert fund.cashflows(zc.date, zc) == []
+    with pytest.raises(ValueError, match="no future cash flows"):
+        L.build_matrix([fund], L.payment_schedule(), zc, 0.03)
 
 
 def test_official_curves_match_documents():

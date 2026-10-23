@@ -69,19 +69,19 @@ def _constraint_dollars(name: str, values, labels: list[str]) -> dict[str, float
     if values is None:
         return {}
     if not isinstance(values, Mapping):
-        raise ValueError(f"{name} must map instrument labels to nonnegative dollar amounts")
+        raise ValueError(f"{name} must map instrument labels to finite nonnegative amounts")
     out = {}
     for label, amount in values.items():
         if label not in labels:
             raise ValueError(f"{name} contains unknown instrument label {label!r}")
         if isinstance(amount, (bool, np.bool_)) or not isinstance(amount, Real):
-            raise ValueError(f"{name}[{label!r}] must be a finite nonnegative dollar amount")
+            raise ValueError(f"{name}[{label!r}] must be a finite nonnegative amount")
         try:
             amount = float(amount)
         except (TypeError, ValueError, OverflowError) as exc:
-            raise ValueError(f"{name}[{label!r}] must be a finite nonnegative dollar amount") from exc
+            raise ValueError(f"{name}[{label!r}] must be a finite nonnegative amount") from exc
         if not np.isfinite(amount) or amount < 0.0:
-            raise ValueError(f"{name}[{label!r}] must be a finite nonnegative dollar amount")
+            raise ValueError(f"{name}[{label!r}] must be a finite nonnegative amount")
         out[label] = amount
     return out
 
@@ -142,6 +142,8 @@ def build_matrix(instruments, payments, curve: ZeroCurve, reinvest: float):
             raise ValueError("every instrument must have a nonempty string label")
         if label in labels:
             raise ValueError(f"instrument labels must be unique; duplicate label {label!r}")
+        if not flows:
+            raise ValueError(f"instrument {label!r} has no future cash flows at the curve date")
         if not np.isfinite(price) or price <= 0.0 or not np.isfinite(unit) or unit <= 0.0:
             raise ValueError(f"instrument {label!r} must have a finite positive price and unit scale")
         prices.append(price)
@@ -262,9 +264,11 @@ def idle_cash_days(instruments, units: dict[str, float], payments, curve: ZeroCu
     K = len(payments)
     inst_by_label = {}
     for inst in instruments:
-        _, _, label, _ = _flows(inst, curve, settle)
+        flows, _, label, _ = _flows(inst, curve, settle)
         if label in inst_by_label:
             raise ValueError(f"instrument labels must be unique; duplicate label {label!r}")
+        if not flows:
+            raise ValueError(f"instrument {label!r} has no future cash flows at the curve date")
         inst_by_label[label] = inst
     units = _constraint_dollars("units", units, list(inst_by_label))
 

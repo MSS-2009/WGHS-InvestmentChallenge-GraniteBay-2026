@@ -41,21 +41,31 @@ class TreasuryBond:
         """Cash flows per 100 face strictly after `settle`."""
         settle = as_date(settle)
         flows = [(d, 100 * self.coupon / 2) for d in self.coupon_dates(settle)]
+        if not flows:
+            return []
         flows[-1] = (flows[-1][0], flows[-1][1] + 100.0)
         return flows
 
     def accrued(self, settle: dt.date | str) -> float:
         settle = as_date(settle)
-        nxt = self.coupon_dates(settle)[0]
+        dates = self.coupon_dates(settle)
+        if not dates:
+            return 0.0
+        nxt = dates[0]
         prev = add_months(nxt, -6)
         return 100 * self.coupon / 2 * (settle - prev).days / (nxt - prev).days
 
     def dirty_price(self, curve: ZeroCurve) -> float:
+        flows = self.cashflows(curve.date)
+        if not flows:
+            return 0.0
         if self.clean_quote is not None:
             return float(self.clean_quote + self.accrued(curve.date))
-        return float(sum(cf * curve.df(year_frac(curve.date, d)) for d, cf in self.cashflows(curve.date)))
+        return float(sum(cf * curve.df(year_frac(curve.date, d)) for d, cf in flows))
 
     def clean_price(self, curve: ZeroCurve) -> float:
+        if not self.cashflows(curve.date):
+            return 0.0
         if self.clean_quote is not None:
             return float(self.clean_quote)
         return self.dirty_price(curve) - self.accrued(curve.date)
@@ -63,6 +73,8 @@ class TreasuryBond:
     def ytm(self, dirty: float, settle: dt.date | str) -> float:
         """Semiannual bond-equivalent yield for a dirty price."""
         flows = self.cashflows(settle)
+        if not flows:
+            raise ValueError("yield is undefined for a matured Treasury bond")
         ts = np.array([year_frac(settle, d) for d, _ in flows])
         cfs = np.array([cf for _, cf in flows])
         f = lambda y: float(np.sum(cfs / (1 + y / 2) ** (2 * ts))) - dirty
@@ -70,6 +82,8 @@ class TreasuryBond:
 
     def mod_duration(self, curve: ZeroCurve) -> float:
         p0 = self.dirty_price(curve)
+        if p0 <= 0.0:
+            raise ValueError("duration is undefined for a matured Treasury bond")
         up, dn = self.dirty_price(curve.shifted(1)), self.dirty_price(curve.shifted(-1))
         return (dn - up) / (2 * p0 * 1e-4)
 
@@ -125,10 +139,14 @@ class TermFund:
     def growth_factor(self, curve: ZeroCurve) -> float:
         """Value at termination of $1 invested on the curve date."""
         t = year_frac(curve.date, self.termination)
+        if t <= 0.0:
+            return 0.0
         y = float(curve.zero(t)) if self.ytm is None else self.ytm
         return (1 + y - self.expense_ratio) ** t
 
     def cashflows(self, settle: dt.date | str, curve: ZeroCurve) -> list[tuple[dt.date, float]]:
+        if self.termination <= as_date(settle):
+            return []
         return [(self.termination, self.growth_factor(curve))]
 
 

@@ -419,3 +419,5 @@ The cash-flow ladder solver now normalizes one-shot payment iterables, requires 
 payments and a reinvestment rate above -100%, and rejects duplicate instrument labels and unknown
 constraints. A fixed amount now remains fixed when a compatible minimum is also provided; contradictory
 fixed/minimum bounds fail explicitly. Annual schedules from leap day roll to February 28 in non-leap years.
+Matured bonds and term funds now expose no future cash flows, and the ladder rejects expired instruments
+instead of treating stale prices or empty flows as valid holdings.
