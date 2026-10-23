@@ -123,6 +123,13 @@ def test_inflation_persistence_requires_stationary_coefficient(base_params, phi)
         esg.simulate(p, n=2, seed=4)
 
 
+@pytest.mark.parametrize("share", [True, False, -0.1, 1.1, np.nan, np.inf, "invalid", None])
+def test_rate_shared_requires_a_numeric_fraction(base_params, share):
+    p = dc.replace(base_params, rate_shared=share)
+    with pytest.raises(ValueError, match="rate_shared"):
+        esg.simulate(p, n=2, seed=4)
+
+
 @pytest.mark.parametrize("bad_cov", [
     np.full((8, 8), np.nan), np.diag([-1.0] + [1.0] * 7), np.eye(7), np.eye(8, dtype=bool),
 ])

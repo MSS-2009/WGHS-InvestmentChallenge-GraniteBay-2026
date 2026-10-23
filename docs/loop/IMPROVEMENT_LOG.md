@@ -377,3 +377,5 @@ finite values before generating shocks, including optional drift and Taiwan AR s
 Initial Nelson-Siegel factors, curve residuals, inflation levels, FX drift, and rate floor now require
 finite numeric values with exact expected shapes.
 The calibrated Taiwan cost AR initial lags also reject non-finite or wrongly sized states before draws.
+Boolean equity-volatility scales and rate-tail shares are now rejected explicitly instead of coercing to
+zero/one, matching the existing strict checks for correlations and persistence.

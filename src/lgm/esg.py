@@ -375,13 +375,17 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
         raise ValueError("infl_phi must be finite and stationary (absolute value < 1)") from exc
     if not np.isfinite(infl_phi) or abs(infl_phi) >= 1.0:
         raise ValueError("infl_phi must be finite and stationary (absolute value < 1)")
+    if isinstance(p.rate_shared, (bool, np.bool_)):
+        raise ValueError(f"rate_shared must be a finite fraction in [0, 1], got {p.rate_shared!r}")
     try:
         rate_shared = float(p.rate_shared)
-    except (TypeError, ValueError) as exc:
+    except (TypeError, ValueError, OverflowError) as exc:
         raise ValueError(f"rate_shared must be a finite fraction in [0, 1], got {p.rate_shared!r}") from exc
     if not np.isfinite(rate_shared) or not 0.0 <= rate_shared <= 1.0:
         raise ValueError(f"rate_shared must be a finite fraction in [0, 1], got {p.rate_shared!r}")
     garch = _garch_parameters(p.eq_garch, len(p.eq_geo))
+    if isinstance(p.eq_vol_scale, (bool, np.bool_)):
+        raise ValueError(f"eq_vol_scale must be finite and nonnegative, got {p.eq_vol_scale!r}")
     try:
         eq_vol_scale = float(p.eq_vol_scale)
     except (TypeError, ValueError, OverflowError) as exc:
