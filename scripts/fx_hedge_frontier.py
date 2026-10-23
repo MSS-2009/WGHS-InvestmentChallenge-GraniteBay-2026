@@ -2,7 +2,7 @@
 
 Usage: python scripts/fx_hedge_frontier.py [n_scenarios]
 Headline scenarios and the IPS, under two beliefs about USD/TWD: the headline's random walk (no drift;
-the forward is a biased forecast, docs/loop/r4_fx_findings.md) and the forward as an unbiased forecast
+the forward is a biased forecast, scripts/fx_drift_study.py) and the forward as an unbiased forecast
 (spot drifts at the forward premium). In January 2027 a share h of the expected facility
 (h x the median facility, in USD) is sold forward for Taiwan dollars, delivered in January 2033, at
 today's actual forward premium (CBC 180-day, -2.28% a year, from reports/fx_forward_check.csv; rolling

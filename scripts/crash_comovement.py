@@ -1,4 +1,4 @@
-"""Do rates fall when stocks crash? Tests the 'crash co-movement' gap left by docs/loop/r4_rates_findings.md.
+"""Do rates fall when stocks crash? Tests whether stock crashes come with falling rates (scripts/rate_tails.py).
 
 Usage: python scripts/crash_comovement.py
 History: the 60/30/10 VTI/VEA/VWO core and VTI alone against the monthly change in the 5-year zero

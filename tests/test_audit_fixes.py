@@ -1,4 +1,4 @@
-"""Regression tests for the October 21, 2026 audit (WGHS_AUDIT.md) and the fixes that followed it."""
+"""Regression tests for the October 21, 2026 code audit and the fixes that followed it."""
 import copy
 import dataclasses as dc
 import datetime as dt

@@ -1,11 +1,13 @@
 """Check that the figures docs/MODEL.md and docs/VALIDATION.md quote match the reports they come from.
 
-Usage: python scripts/doc_numbers.py [--fix]
+Usage: python scripts/doc_numbers.py [--fix [--write]]
 Each check reads one figure from a committed report, formats it the way the docs write it, and looks
 for that text in the doc. A model change that moves a number then fails tests/test_doc_numbers.py
 until the doc is updated, instead of leaving a stale figure behind. Run scripts/run_all.py first.
 Exit status 1 if any figure is missing. With --fix, each missing figure whose old version (the same
-text with any numbers) appears exactly once in its doc is rewritten in place; the rest are listed.
+text with any numbers) appears exactly once in its doc is shown as old -> new; add --write to apply
+those changes. Review them first: --fix copies whatever the committed reports say, so run it only
+right after scripts/run_all.py, and only for numbers, never for wording.
 """
 import json
 import re
@@ -88,8 +90,6 @@ def decision_rows() -> list[str]:
     sat = pd.read_csv(R / "satellite_scoring.csv").set_index(["beliefs", "commissions", "candidate"])
     s20 = sat.loc[("Black-Litterman posterior", "$25 (WInS)", "Core + 20% satellite"), "median_vs_core"]
     s20f = sat.loc[("Black-Litterman posterior", "none", "Core + 20% satellite"), "median_vs_core"]
-    sr = pd.read_csv(R / "strips_reserve.csv").set_index(["universe", "reinvestment_rate"])
-    sx, w3, w0 = sr.loc[("STRIPS (ask quotes)", 0.0)], sr.loc[("WInS universe", 0.03)], sr.loc[("WInS universe", 0.0)]
     return [
         f"| Growth mix and 2031 floor | {alt.equity_share:.0%} equity with a {alt.floor_share:.0%} floor instead of the IPS's "
         f"{ips.equity_share:.0%} and {ips.floor_share:.0%}: median {d(alt['median'] - ips['median'])}, 5th percentile "
@@ -108,11 +108,6 @@ def decision_rows() -> list[str]:
         f"Evidence supports the long-run average | Taiwan building costs |",
         f"| Stock satellite | {d(s20)} median at 20% with WInS commissions, {d(s20f)} without | A values choice, "
         f"not a return one | Part 2b |",
-        f"| Reserve outside WInS | STRIPS need no reinvestment assumption and, at the retail ask, cost about what the "
-        f"WInS ladder costs assuming 3% ({sx.cost_over_zero / sx.zero_coupon_value:+.2%} vs "
-        f"{w3.cost_over_zero / w3.zero_coupon_value:+.2%} over zero-coupon value): {k(w0.cost - sx.cost)} cheaper than "
-        f"making the WInS ladder certain, {d(sx.median_facility - w0.median_facility)} of median | Only if WInS rules do "
-        f"not bind | `scripts/strips_reserve.py` |",
     ]
 
 
@@ -510,9 +505,10 @@ def pattern(text: str) -> re.Pattern:
     return re.compile(_literal(head) + "".join(f"({NUMBER})" if i % 2 else _literal(x) for i, x in enumerate(parts)))
 
 
-def fix() -> list[tuple[str, str, str]]:
+def fix(write: bool = True) -> list[tuple[str, str, str]]:
     """Rewrite each stale figure found exactly once, number by number, so the doc keeps its own line
-    breaks; return the ones that could not be placed."""
+    breaks; print every change; return the ones that could not be placed. Nothing is written unless
+    `write` is true."""
     paths = {"MODEL": ROOT / "docs" / "MODEL.md", "VALIDATION": ROOT / "docs" / "VALIDATION.md"}
     texts = {d: p.read_text() for d, p in paths.items()}
     left = []
@@ -525,9 +521,11 @@ def fix() -> list[tuple[str, str, str]]:
         t = texts[doc]
         for g in range(len(new), 0, -1):            # right to left, so earlier spans stay valid
             t = t[:m.start(g)] + new[g - 1] + t[m.end(g):]
+        print(f"{doc} {what}: {_flat(m.group(0))!r} -> {_flat(t[m.start():m.end() + len(t) - len(texts[doc])])!r}")
         texts[doc] = t
-    for d, p in paths.items():
-        p.write_text(texts[d])
+    if write:
+        for d, p in paths.items():
+            p.write_text(texts[d])
     return left
 
 
@@ -538,8 +536,12 @@ def missing() -> list[tuple[str, str, str]]:
 
 def main() -> int:
     if "--fix" in sys.argv:
-        for doc, what, text in fix():
+        write = "--write" in sys.argv
+        for doc, what, text in fix(write=write):
             print(f"could not place: {doc} {what}: {text!r}")
+        if not write:
+            print("dry run: nothing written; check each change above, then rerun with --fix --write")
+            return 0
     bad = missing()
     for doc, what, text in checks():
         print(f"{'MISSING' if (doc, what, text) in bad else 'ok':8s} {doc:10s} {what}: {text!r}")

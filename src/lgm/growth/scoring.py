@@ -37,7 +37,7 @@ def latest_inflation(month_end: str = DATA_END) -> float:
 
 def taiwan_cost_params(drift_key: str = "full_sample_35y") -> dict:
     """ESGParams fields for the fitted monthly AR(2) Taiwan building-cost process (config/taiwan.yaml,
-    docs/loop/r3_taiwan_findings.md), started from the Aug and Sep 2026 DGBAS readings."""
+    scripts/taiwan_validation.py), started from the Aug and Sep 2026 DGBAS readings."""
     import yaml
 
     from ..asof import CFG
@@ -52,7 +52,7 @@ def esg_params(cal: dict, eq_geo: np.ndarray, curve_date: str = CURVE_DATE,
                phi: np.ndarray | None = None, infl_mu: float | None = None) -> ESGParams:
     """Inflation starts at the latest CPI reading and reverts toward market breakeven inflation unless
     `infl_mu` is given. Rate-factor persistence is bias-corrected (`calibrate.kendall_corrected`); rate
-    shocks are Gaussian while equities keep Student-t(5) tails (docs/loop/r4_rates_findings.md); Taiwan
+    shocks are Gaussian while equities keep Student-t(5) tails (scripts/rate_tails.py); Taiwan
     building costs follow the fitted AR(2)."""
     from ..profiles import _cal
 
