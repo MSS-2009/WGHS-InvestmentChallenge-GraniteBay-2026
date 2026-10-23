@@ -2,7 +2,7 @@
 
 Outputs:
 - reports/taiwan_variants.csv
-- updates to config/taiwan.yaml
+- reports/taiwan_variants_proposal.yaml (a proposal; config/taiwan.yaml is edited by hand)
 """
 from __future__ import annotations
 
@@ -21,7 +21,9 @@ from lgm.strategies import IPS
 
 ROOT = Path(__file__).resolve().parents[1]
 REPORT_PATH = ROOT / "reports" / "taiwan_variants.csv"
-CONFIG_PATH = ROOT / "config" / "taiwan.yaml"
+# A proposal for review, never the live config: the headline reads keys these templates omit
+# (fitted_monthly, usd_twd_innovation_corr), so overwriting config/taiwan.yaml broke every headline script.
+CONFIG_PATH = ROOT / "reports" / "taiwan_variants_proposal.yaml"
 
 # AR(2) fitted parameters
 P1 = 0.6546

@@ -28,12 +28,13 @@ NS_TABLE = "{urn:oasis:names:tc:opendocument:xmlns:table:1.0}"
 def _get(url: str, path: Path, refresh: bool, marker: bytes) -> Path:
     """Download unless cached; validates the response before overwriting the cache file."""
     if refresh or not path.exists():
-        # DGBAS servers use certificates from the Taiwan Government Root CA.
-        # Fall back gracefully if local certificate stores lack Taiwan GRCA.
+        # DGBAS servers use certificates from the Taiwan Government Root CA (GRCA), which many trust stores
+        # lack. Certificate checks stay on: add GRCA to the bundle (REQUESTS_CA_BUNDLE) or keep the cached file.
         try:
             r = requests.get(url, timeout=60, headers={"User-Agent": "Mozilla/5.0"})
-        except requests.exceptions.SSLError:
-            r = requests.get(url, timeout=60, headers={"User-Agent": "Mozilla/5.0"}, verify=False)
+        except requests.exceptions.SSLError as e:
+            raise RuntimeError(f"{url}: certificate not trusted; add the Taiwan GRCA root to REQUESTS_CA_BUNDLE "
+                               f"or use the cached {path.name}") from e
         r.raise_for_status()
         if marker not in r.content:
             raise ValueError(f"unexpected response from {url}: marker {marker!r} not found")

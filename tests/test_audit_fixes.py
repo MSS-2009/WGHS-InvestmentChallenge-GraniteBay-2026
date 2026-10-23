@@ -110,3 +110,13 @@ def test_wins_orders_include_the_ladder_top_up(capsys):
     assert buys.get("IBTO", 0) >= 6                 # the 2034 payment is $189 short at 0% interest
     left = float(out.rsplit("about $", 1)[1].split()[0].replace(",", ""))
     assert left > 0
+
+
+def test_rounding_residue_pays_no_commission():
+    """A deposit spent entirely on the ladder leaves about 1e-10 of rounding; it must not buy ten tickets."""
+    sc = simulate(cs_team(), n=3, seed=1)
+    z = np.zeros(3)
+    s = engine.State(eq=np.zeros((3, 3)), vgit=z.copy(), ibtm_face=z.copy(), floor_face=z.copy(), cash=z.copy(),
+                     locked=np.zeros((3, 10)), costs=z.copy())
+    engine._invest(s, sc, engine.M_2027, S9, np.array([1e-10, -1e-10, 5_000.0]), engine.EngineConfig())
+    assert s.costs[0] == 0 and s.costs[1] == 0 and s.costs[2] == engine.COMMISSION_ETF * 4

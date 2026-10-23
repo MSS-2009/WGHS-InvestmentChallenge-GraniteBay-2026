@@ -70,7 +70,7 @@ class Strategy:
         except (OverflowError, TypeError, ValueError) as exc:
             raise ValueError("region_weights must be a nonempty finite nonnegative vector summing to one") from exc
         if (not all(isfinite(w) and w >= 0.0 for w in weights)
-                or not isclose(total, 1.0, rel_tol=0.0, abs_tol=1e-8)):
+                or not isclose(total, 1.0, rel_tol=0.0, abs_tol=1e-3)):   # weights rounded to 4 decimals sum to 1 +/- 0.0005
             raise ValueError("region_weights must be a nonempty finite nonnegative vector summing to one")
         object.__setattr__(self, "region_weights", tuple(w / total for w in weights))
 

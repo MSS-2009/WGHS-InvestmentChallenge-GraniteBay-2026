@@ -2,7 +2,7 @@
 
 Outputs:
 - reports/taiwan_costs.json
-- config/taiwan.yaml
+- reports/taiwan_costs_proposal.yaml (a proposal; config/taiwan.yaml is edited by hand)
 """
 from __future__ import annotations
 
@@ -16,7 +16,9 @@ from lgm.data import fed, fred, taiwan
 
 ROOT = Path(__file__).resolve().parents[1]
 REPORT_PATH = ROOT / "reports" / "taiwan_costs.json"
-CONFIG_PATH = ROOT / "config" / "taiwan.yaml"
+# A proposal for review, never the live config: the headline reads keys these templates omit
+# (fitted_monthly, usd_twd_innovation_corr), so overwriting config/taiwan.yaml broke every headline script.
+CONFIG_PATH = ROOT / "reports" / "taiwan_costs_proposal.yaml"
 
 
 def compute_sample_stats(s_monthly: pd.Series, s_12m: pd.Series) -> dict[str, float]:

@@ -43,6 +43,10 @@ def main(refresh: bool = False):
         orders.append(("Buy", lab, n, n * close))
         cash -= n * close + COMMISSION
     invest = cash - acct["keep_cash"]
+    if invest < 1_000:
+        print(f"account as of {acct['as_of']}: ${cash:,.0f} cash, ${acct['keep_cash']:,.0f} kept for commissions; "
+              "nothing left to invest, no orders")
+        return
     shares = whole_shares(w, px[w.index], 0.6 * invest)
     ibtm = int(0.4 * invest // px["IBTM"])
     orders += [("Buy", t, int(n), n * px[t]) for t, n in shares.items() if n > 0] + [("Buy", "IBTM", ibtm, ibtm * px["IBTM"])]

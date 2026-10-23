@@ -25,9 +25,7 @@ FWD_JSON_PATH = RAW / "cbc_forward_rates.json"
 
 def _fetch_rates(refresh: bool = False, url: str = API_URL, path: Path = JSON_PATH) -> dict:
     if refresh or not path.exists():
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
+        ctx = ssl.create_default_context()           # certificate checks stay on (see taiwan._get)
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
         with urllib.request.urlopen(req, context=ctx, timeout=60) as r:
             content = r.read()

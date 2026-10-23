@@ -169,3 +169,9 @@ def test_engine_rejects_malformed_continuation_state(field, value, message):
 def test_engine_rejects_invalid_configuration_that_can_distort_capital(cfg, message):
     with pytest.raises(ValueError, match=message):
         engine.run(IPS, _valid_scenario(), cfg)
+
+
+def test_weights_rounded_for_a_report_are_accepted_and_renormalised():
+    w = (0.1628, 0.3104, 0.1284, 0.1656, 0.0679, 0.0287, 0.0385, 0.0784, 0.0192)   # sums to 0.9999
+    st = Strategy("rounded", region_weights=w)
+    assert sum(st.region_weights) == pytest.approx(1.0, abs=1e-12)

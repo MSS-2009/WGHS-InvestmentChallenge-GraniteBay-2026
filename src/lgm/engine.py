@@ -28,6 +28,7 @@ IBTM_MATURITY_M = month_of(2032, 12) + 0.5      # Dec 15, 2032
 ER = {"eq": np.array([0.0003, 0.0003, 0.0006]), "VGIT": 0.0003, "IBTM": 0.0007}
 VGIT_TAU, VGIT_DUR, VGIT_CONV = 5.5, 5.1, 31.0
 COMMISSION_ETF, COMMISSION_BOND = 25.0, 10.0
+MIN_TRADE = 1.0                 # dollars; smaller amounts are left as they are, untraded
 
 
 @dataclass
@@ -268,8 +269,10 @@ def _invest(s: State, sc: Scenarios, m: int, st: Strategy, amount: np.ndarray, c
     else:
         s.ibtm_face += bonds / _ibtm_df(sc, m)
     if cfg.commissions:
+        # A leftover below $1 (e.g. 1e-10 of rounding when the whole deposit went to the ladder) is not a
+        # trade: charging tickets for it made results depend on floating-point noise.
         tickets = len(_funds(w, cfg)) * (eq_target > 0) + (eq_target < 1)
-        s.costs += np.where(amount > 0, COMMISSION_ETF * tickets, 0.0)
+        s.costs += np.where(amount >= MIN_TRADE, COMMISSION_ETF * tickets, 0.0)
         s.costs += np.where(amount >= cfg.extra_ticket_min, COMMISSION_ETF * cfg.extra_tickets, 0.0)
 
 
