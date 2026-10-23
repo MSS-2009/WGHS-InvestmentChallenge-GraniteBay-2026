@@ -1,5 +1,8 @@
 """Tests for ESG v2 enhancements: expected-return uncertainty and volatility clustering."""
+import dataclasses as dc
+
 import numpy as np
+import pytest
 
 from lgm import engine
 from lgm.calibrate import calibrate_cma_dispersion, calibrate_equity_garch
@@ -185,3 +188,46 @@ def test_eq_garch_autocorrelation_clustering():
     # Positive at lags 1, 2, 3
     assert mean_ac[1] > 0.03
     assert mean_ac[2] > 0.02
+
+
+@pytest.mark.parametrize("spec", [
+    (0.1,), (-0.1, 0.2), (0.1, -0.2), (0.5, 0.5), (np.nan, 0.2), (0.1, 0.2, 0.0),
+    {"alpha": 0.1, "beta": 0.2, "factor_idx": 99},
+    {"alpha": 0.1, "beta": 0.2, "factor_idx": 0.5},
+])
+def test_invalid_garch_configurations_are_rejected(spec):
+    core = build_core()
+    p = esg_params(core["cal"], core["table"]["bl_geo_total"].values)
+    p.eq_garch = spec
+    with pytest.raises(ValueError, match="eq_garch"):
+        simulate(p, n=2, seed=1)
+
+
+@pytest.mark.parametrize("scale", [0.0, -1.0, np.nan])
+def test_garch_requires_positive_equity_volatility_scale(scale):
+    core = build_core()
+    p = esg_params(core["cal"], core["table"]["bl_geo_total"].values)
+    p.eq_garch = (0.1, 0.2, 1.0)
+    p.eq_vol_scale = scale
+    with pytest.raises(ValueError, match="eq_vol_scale"):
+        simulate(p, n=2, seed=1)
+
+
+@pytest.mark.parametrize("start_h", [-0.1, np.nan, np.inf])
+def test_garch_rejects_invalid_starting_variances(start_h):
+    core = build_core()
+    p = esg_params(core["cal"], core["table"]["bl_geo_total"].values)
+    p.eq_garch = (0.1, 0.2, 1.0)
+    with pytest.raises(ValueError, match="starting garch_h"):
+        simulate(p, n=2, seed=1, start={"garch_h": start_h})
+
+
+def test_garch_tuple_and_mapping_configs_match():
+    core = build_core()
+    params = esg_params(core["cal"], core["table"]["bl_geo_total"].values)
+    p_tuple = dc.replace(params, eq_garch=(0.1, 0.7, 1.0))
+    p_mapping = dc.replace(params, eq_garch={"alpha": 0.1, "beta": 0.7, "h0": 1.0, "factor_idx": 0})
+    a = simulate(p_tuple, n=100, seed=4)
+    b = simulate(p_mapping, n=100, seed=4)
+    np.testing.assert_array_equal(a.eq_log, b.eq_log)
+    np.testing.assert_array_equal(a.garch_h, b.garch_h)

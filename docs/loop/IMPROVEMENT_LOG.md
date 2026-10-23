@@ -350,3 +350,7 @@ The tail controls (`t_dof`, `rate_dof`, `infl_dof`, `fx_dof`, and `rate_shared`)
 freedom that cannot define a unit-variance Student-t and invalid mixing shares before consuming random
 draws. Unknown tail names no longer fall through to inherited behavior; positive infinity is handled
 as Gaussian. Tests preserve the legacy default bit-for-bit and cover invalid values.
+
+The optional GARCH path now requires finite, stationary coefficients, a positive initial variance,
+and an in-range equity factor; invalid starting conditional variances also fail early. Calibrated GARCH
+paths and the default model are unaffected.

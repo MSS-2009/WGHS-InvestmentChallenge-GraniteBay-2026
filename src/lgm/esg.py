@@ -127,6 +127,35 @@ def _dof(value, name: str, *, allow_gaussian: bool = False) -> float | None:
     return dof
 
 
+def _garch_parameters(value, n_equities: int):
+    """Normalize and validate the optional stationary GARCH(1,1) configuration."""
+    if value is None:
+        return None
+    try:
+        if isinstance(value, (tuple, list)):
+            if len(value) not in (2, 3):
+                raise ValueError("expected (alpha, beta[, h0])")
+            alpha, beta = float(value[0]), float(value[1])
+            h0 = float(value[2]) if len(value) == 3 else 1.0
+            raw_idx = 0
+        elif isinstance(value, dict):
+            alpha, beta = float(value["alpha"]), float(value["beta"])
+            h0 = float(value.get("h0", 1.0))
+            raw_idx = value.get("factor_idx", 0)
+        else:
+            alpha, beta = float(value.alpha), float(value.beta)
+            h0 = float(getattr(value, "h0", 1.0))
+            raw_idx = getattr(value, "factor_idx", 0)
+        factor_idx = int(raw_idx)
+    except (AttributeError, IndexError, KeyError, TypeError, ValueError, OverflowError) as exc:
+        raise ValueError(f"eq_garch configuration is invalid: {exc}") from exc
+    if factor_idx != raw_idx or not 0 <= factor_idx < n_equities:
+        raise ValueError(f"eq_garch factor_idx must be an integer in [0, {n_equities}), got {raw_idx!r}")
+    if not np.isfinite([alpha, beta, h0]).all() or alpha < 0 or beta < 0 or alpha + beta >= 1 or h0 <= 0:
+        raise ValueError("eq_garch requires finite alpha,beta >= 0, alpha + beta < 1, and h0 > 0")
+    return alpha, beta, h0, factor_idx
+
+
 def _block_mixing(dof, w_eq, rng: np.random.Generator, shape: tuple):
     """Use Gaussian at inf, a block-specific t draw for finite dof, or legacy equity mixing at None."""
     if isinstance(dof, (int, float, np.number)) and np.isposinf(dof):
@@ -160,6 +189,13 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
         raise ValueError(f"rate_shared must be a finite fraction in [0, 1], got {p.rate_shared!r}") from exc
     if not np.isfinite(rate_shared) or not 0.0 <= rate_shared <= 1.0:
         raise ValueError(f"rate_shared must be a finite fraction in [0, 1], got {p.rate_shared!r}")
+    garch = _garch_parameters(p.eq_garch, len(p.eq_geo))
+    if garch is not None and (not np.isfinite(p.eq_vol_scale) or p.eq_vol_scale <= 0):
+        raise ValueError(f"eq_vol_scale must be finite and positive when eq_garch is enabled, got {p.eq_vol_scale}")
+    if garch is not None and start is not None and "garch_h" in start:
+        start_h = np.asarray(start["garch_h"], dtype=float)
+        if not np.isfinite(start_h).all() or np.any(start_h < 0):
+            raise ValueError("starting garch_h must contain finite nonnegative variances")
 
     rng = np.random.default_rng(seed)
     M, k = p.months, p.cov.shape[0]
@@ -195,22 +231,8 @@ def simulate(p: ESGParams, n: int, seed: int = 0, antithetic: bool = True,
     shocks[..., :K] *= p.eq_vol_scale
 
     garch_h = None
-    if p.eq_garch is not None:
-        if isinstance(p.eq_garch, (tuple, list)):
-            alpha, beta = float(p.eq_garch[0]), float(p.eq_garch[1])
-            h0 = float(p.eq_garch[2]) if len(p.eq_garch) > 2 else 1.0
-            factor_idx = 0
-        elif isinstance(p.eq_garch, dict):
-            alpha = float(p.eq_garch["alpha"])
-            beta = float(p.eq_garch["beta"])
-            h0 = float(p.eq_garch.get("h0", 1.0))
-            factor_idx = int(p.eq_garch.get("factor_idx", 0))
-        else:
-            alpha = float(p.eq_garch.alpha)
-            beta = float(p.eq_garch.beta)
-            h0 = float(getattr(p.eq_garch, "h0", 1.0))
-            factor_idx = int(getattr(p.eq_garch, "factor_idx", 0))
-
+    if garch is not None:
+        alpha, beta, h0, factor_idx = garch
         omega = 1.0 - alpha - beta
         garch_h = np.ones((n, M))
         if start is not None and "garch_h" in start:
