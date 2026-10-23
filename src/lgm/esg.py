@@ -171,7 +171,12 @@ def _correlation(value: float | None, name: str) -> float:
     """Return a finite correlation coefficient or reject an invalid configuration."""
     if value is None:
         return 0.0
-    rho = float(value)
+    if isinstance(value, (bool, np.bool_)):
+        raise ValueError(f"{name} must be a finite correlation in [-1, 1], got {value!r}")
+    try:
+        rho = float(value)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError(f"{name} must be a finite correlation in [-1, 1], got {value!r}") from exc
     if not np.isfinite(rho) or not -1.0 <= rho <= 1.0:
         raise ValueError(f"{name} must be a finite correlation in [-1, 1], got {value}")
     return rho

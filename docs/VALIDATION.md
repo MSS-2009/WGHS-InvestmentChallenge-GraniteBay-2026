@@ -203,7 +203,7 @@ is code, tested (`docs/loop/IMPROVEMENT_LOG.md` gives the effects):
 | The 2031 floor move charged 4 ETF tickets on top of the forced rebalance, which already charges one per fund | One ticket per fund; a separate floor ticket only when the sleeve holds VGIT (`tests/test_review_fixes.py`) |
 | `wins_rebalance.py` ignored the ladder check's shortfall | The cheapest top-up (6 IBTO) is ordered first (`tests/test_audit_fixes.py`) |
 | A Taiwan cost correlation with both CPI and USD/TWD would have diluted the first | Refused (`tests/test_taiwan_esg.py`); the headline uses only USD/TWD |
-| A non-finite or out-of-range Taiwan cost correlation could distort variance or produce NaNs | Reject coefficients outside [-1, 1] (`tests/test_taiwan_esg.py`) |
+| A non-finite, nonnumeric, boolean, or out-of-range Taiwan cost correlation could distort dependence or produce NaNs | Accept only finite numeric coefficients in [-1, 1] (`tests/test_taiwan_esg.py`) |
 | Invalid Student-t degrees of freedom or a rate-tail share outside [0, 1] could produce NaNs | Validate ESG tail controls before drawing; positive infinity is the Gaussian limit (`tests/test_rate_tails.py`) |
 | Invalid GARCH coefficients, volatility scale, initial variance shape, or factor index could create non-finite paths or fail during broadcasting | Require stationary coefficients, a finite nonnegative scale (positive with GARCH), an integer equity factor, and scalar or path-sized finite starting variances (`tests/test_esg_v2.py`) |
 | `esg_params` took an `infl_phi` argument and ignored it | Removed; the fitted value is used, as before |

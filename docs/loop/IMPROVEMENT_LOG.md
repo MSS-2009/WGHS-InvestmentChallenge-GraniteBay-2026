@@ -360,3 +360,5 @@ volatility scales, and starting variance arrays whose shape cannot map unambiguo
 Scalar continuation state and one value per path remain supported and produce identical paths when equal.
 Equity volatility scales are now finite and nonnegative for all scenarios; negative values previously
 flipped equity cross-correlations, while zero remains available for a deterministic-equity stress.
+Taiwan cost correlation inputs also reject booleans and nonnumeric values, which Python would otherwise
+coerce or fail on with an unhelpful low-level exception.

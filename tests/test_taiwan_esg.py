@@ -237,7 +237,7 @@ def test_cost_fx_correlation_carries_to_long_horizons():
 
 
 @pytest.mark.parametrize("field", ["tw_cost_corr", "tw_cost_fx_corr"])
-@pytest.mark.parametrize("rho", [-1.01, 1.01, np.nan, np.inf])
+@pytest.mark.parametrize("rho", [-1.01, 1.01, np.nan, np.inf, True, False, "invalid"])
 def test_taiwan_cost_correlation_rejects_invalid_coefficients(base_params, field, rho):
     params = {"tw_cost_corr": None, "tw_cost_fx_corr": None, field: rho}
     p = dc.replace(base_params, months=12, tw_cost_phi=(0.65, -0.09), tw_cost_sig_eps=0.007, **params)
