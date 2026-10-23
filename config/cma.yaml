@@ -30,11 +30,11 @@ firms:
 # count toward a view's size (the median) but not its spread: a view with one forecaster keeps the
 # single-source uncertainty, because a long-run average says little about the next ten years.
 us_value_minus_growth:
-  Vanguard (Dec 2025 run, via Morningstar): 0.035      # value 5.8-7.8% vs growth 2.3-4.3%
+  Vanguard (VCMM run of Sep 30, 2026): 0.030           # value 7.2-9.2% vs growth 4.2-6.2% (published Oct 21, 2026)
   History, Kenneth French large value minus large growth, 1927-2026: 0.0224   # 1990-2026: -0.2%; 2007-2026: -3.2%
 us_small_minus_large:
   J.P. Morgan 2027 LTCMA: 0.002                        # small 7.7% vs large 7.5% (Oct 19, 2026)
-  Vanguard (Dec 2025 run, via Morningstar): 0.017      # small 5.1-7.1% vs large 3.4-5.4%
+  Vanguard (VCMM run of Sep 30, 2026): 0.009           # small 5.6-7.6% vs large 4.7-6.7% (published Oct 21, 2026)
   History, Kenneth French small minus large, 1927-2026: 0.0100               # 1990-2026: -0.3%; 2007-2026: -1.4%
 view_std_floor: 0.015        # minimum uncertainty for any view
 single_source_std: 0.025     # uncertainty when only one firm publishes the view
