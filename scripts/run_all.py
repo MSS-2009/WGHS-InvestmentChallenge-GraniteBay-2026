@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ORDER = [  # (script, passes --refresh, failure is fatal)
     ("validate_plans_v2", False, True),
     ("build_core", False, True),
+    ("fund_scorecard", False, True),        # after build_core: it reads the BL posterior
     ("policy_study", False, True),          # before report_numbers: it calibrates the 2031 range
     ("report_numbers", False, True),
     ("build_satellite", True, True),

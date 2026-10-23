@@ -68,6 +68,7 @@ python -m pytest                    # offline (cached data); also run on every p
 python scripts/run_all.py           # every script below and the studies the docs quote, then the doc check (about 100 s)
 python scripts/validate_plans_v2.py
 python scripts/build_core.py
+python scripts/fund_scorecard.py   # every fund held, ranked on the quantitative, Black-Litterman and qualitative indexes
 python scripts/build_satellite.py
 python scripts/validate_model.py    # how good is the model: generator checks, convergence, replay, BL sensitivity
 python scripts/report_numbers.py    # headline numbers for the IPS and Final Report

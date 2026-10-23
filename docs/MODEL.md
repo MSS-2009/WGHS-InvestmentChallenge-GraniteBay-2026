@@ -210,6 +210,45 @@ risk-control choice, not a return engine: it holds technology and China+Taiwan b
 share for about 0.3% of the median. Equity selection is second-order for Laura; the funding
 decisions in Part 1 dominate.
 
+### Fund scorecard (`scripts/fund_scorecard.py`, `reports/fund_scorecard.csv`)
+Every equity fund the WInS account has held, ranked on one index from each model: the nine core
+funds plus ESGV and VSGX, which the previous team bought on Oct 21, 2026 and we sold on Oct 23. Each
+index is scaled so the average of the 11 funds is 50 and one standard deviation is 10 points; the
+overall score is the average of the three.
+
+- **Quantitative index:** the S&P 500 screen's return-quality score (Part 2b), 0.5 z(12-1 month
+  momentum) + 0.5 z(3-year Sharpe ratio), on each fund's total returns to Sep 30, 2026.
+- **Black-Litterman index:** how far the custom BL model's views move a fund's expected return above
+  or below what its market risk alone implies (posterior minus equilibrium excess return), less its
+  fee. The market portfolio scores zero. ESGV and VSGX are mapped onto the nine core funds by
+  returns-based style analysis (60 months, R² 0.99 for both): ESGV is 61% VUG, 28% VTV, 10% VB.
+- **Qualitative index:** the qualitative model's two fund limits, look-through tech/communication
+  and China+Taiwan (Bigdata.com ETF tearsheets, Oct 23, 2026; `config/fund_lookthrough.yaml`),
+  -0.5 z(tech/communication) - 0.5 z(China+Taiwan).
+
+| Fund | Quantitative | Black-Litterman | Qualitative | Overall | Rank | BL weight (market) |
+|---|---:|---:|---:|---:|---:|---:|
+| BBCA | 55.6 (2) | 52.8 (6) | 59.4 (2) | 55.9 | 1 | 3.9% (3.0%) |
+| VTV | 54.3 (5) | 55.5 (3) | 57.3 (4) | 55.7 | 2 | 31.0% (29.9%) |
+| EMXC | 64.0 (1) | 63.9 (1) | 37.8 (10) | 55.2 | 3 | 7.8% (8.6%) |
+| VGK | 49.1 (8) | 55.0 (4) | 58.9 (3) | 54.3 | 4 | 16.6% (13.8%) |
+| VSGX (sold) | 54.9 (4) | 56.8 (2) | 48.2 (7) | 53.3 | 5 | 0% |
+| EPP | 45.0 (9) | 50.8 (7) | 61.7 (1) | 52.5 | 6 | 2.9% (2.2%) |
+| BBJP | 55.2 (3) | 48.1 (8) | 53.4 (6) | 52.2 | 7 | 6.8% (5.2%) |
+| VB | 44.3 (10) | 54.9 (5) | 56.0 (5) | 51.7 | 8 | 12.8% (8.7%) |
+| ESGV (sold) | 52.4 (6) | 37.6 (10) | 45.5 (8) | 45.1 | 9 | 0% |
+| VUG | 50.3 (7) | 27.4 (11) | 39.6 (9) | 39.1 | 10 | 16.3% (26.8%) |
+| MCHI | 24.8 (11) | 47.3 (9) | 32.3 (11) | 34.8 | 11 | 1.9% (1.9%) |
+
+The scorecard ranks; it does not set weights, which come from the BL optimisation and its limits.
+The two agree where it matters: the funds ranked last overall (VUG, MCHI) are the ones the limits
+hold at or below market weight, and VUG is the core's largest underweight (16.3% against 26.8%).
+ESGV ranks 9th: the views expect it to earn 0.66 points a year less than its risk implies, because
+it behaves like a growth fund, and 56% of it is tech/communication. VSGX ranks 5th on the strength
+of its international and emerging tilt, which the core already holds fund by fund. It fails the
+qualitative limit: held as 40% of stocks, as the previous team held it, its 19.2% in China+Taiwan
+puts the portfolio at 7.7% against the market's 5.2% (the core: 4.9%).
+
 ## Part 2b — stock satellite (tested, not adopted)
 The IPS holds no individual stocks. The plan runs entirely in WInS, and under its $25 commissions the
 35-stock satellite below lowers the median facility (Monte Carlo verdict). It is kept here as a tested

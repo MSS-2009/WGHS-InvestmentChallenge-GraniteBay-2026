@@ -1,0 +1,19 @@
+# Fund-level look-through for the fund scorecard (scripts/fund_scorecard.py).
+# Source: Bigdata.com ETF tearsheets (sector and country tables from FMP), read Oct 23, 2026.
+# tech_comm = Technology (or Information Technology) + Communication Services, % of fund.
+# china_taiwan = China + Taiwan by country, % of fund (Hong Kong is listed separately and not counted,
+# matching config/qualitative.yaml and src/lgm/growth/lookthrough.py).
+as_of: 2026-10-23
+funds:
+  VUG:  {tech_comm: 74.96, china_taiwan: 0.00, expense_ratio: 0.0004, held: true}
+  VTV:  {tech_comm: 17.23, china_taiwan: 0.00, expense_ratio: 0.0004, held: true}
+  VB:   {tech_comm: 21.48, china_taiwan: 0.00, expense_ratio: 0.0005, held: true}
+  VGK:  {tech_comm: 12.22, china_taiwan: 0.00, expense_ratio: 0.0006, held: true}
+  BBJP: {tech_comm: 30.02, china_taiwan: 0.00, expense_ratio: 0.0019, held: true}
+  EPP:  {tech_comm: 2.67,  china_taiwan: 0.49, expense_ratio: 0.0047, held: true}
+  BBCA: {tech_comm: 10.43, china_taiwan: 0.00, expense_ratio: 0.0019, held: true}
+  EMXC: {tech_comm: 51.62, china_taiwan: 36.56, expense_ratio: 0.0025, held: true}
+  MCHI: {tech_comm: 28.22, china_taiwan: 88.89, expense_ratio: 0.0059, held: true}
+  # Bought by the previous team on Oct 21, 2026 and sold on Oct 23 (not in the IPS)
+  ESGV: {tech_comm: 55.78, china_taiwan: 0.00, expense_ratio: 0.0009, held: false}
+  VSGX: {tech_comm: 31.52, china_taiwan: 19.22, expense_ratio: 0.0010, held: false}
