@@ -37,3 +37,13 @@ def test_scorecard_covers_every_fund_held_and_ranks_consistently():
         for b in d.index:
             if d.loc[a, "tech_comm"] > d.loc[b, "tech_comm"] and d.loc[a, "china_taiwan"] >= d.loc[b, "china_taiwan"]:
                 assert d.loc[a, "qual_index"] < d.loc[b, "qual_index"]
+
+
+def test_ladder_scorecard_scores_the_optimal_ladder_at_100():
+    d = pd.read_csv(ROOT / "reports" / "ladder_scorecard.csv")
+    assert len(d) == 48 and d["value_per_100"].max() <= 100 + 1e-6
+    bought = d[d["model_dollars"] > 0.5]
+    assert np.allclose(bought["value_per_100"], 100, atol=1e-4)       # LP duality: bought => zero reduced cost
+    assert (d.loc[d["model_dollars"] <= 0.5, "value_per_100"] < 100 - 1e-4).all()
+    held = d[d["held_in_wins"]]
+    assert len(held) == 9 and held["saving_if_removed"].min() >= -1e-6

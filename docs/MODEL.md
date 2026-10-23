@@ -152,6 +152,35 @@ since 2007 the 5-year rate rose 0.05 points on average and fell in 58% of them, 
 correlation" of 0.39 rests on 12 months (p = 0.11 against no extra tail dependence;
 `scripts/crash_comovement.py`).
 
+### Ladder scorecard (`scripts/ladder_scorecard.py`, `reports/ladder_scorecard.csv`)
+Every WInS-listed Treasury security (42 bonds and the six iBonds funds IBTL-IBTR) scored for the
+reserve ladder at two-thirds scale, on the Oct 20 curve, with cash waiting for a payment earning
+WInS's 0%. The cheapest ladder costs $201,604. Its shadow prices give today's cost of $1 on each
+payment date (from $0.7408 for 2033 to $0.4710 for 2042); a security's score is the payment value
+$100 of it buys at those prices. Everything the optimiser buys scores 100. "Saving" is how much the
+cheapest ladder rises if the security is removed.
+
+| Security | Score | Rank of 48 | Held in WInS | Saving if removed |
+|---|---:|---:|---|---:|
+| IBTR | 100.0 | 1 (tied) | yes | $1,861 |
+| IBTO | 100.0 | 1 (tied) | yes | $1,061 |
+| IBTP | 100.0 | 1 (tied) | yes | $1,015 |
+| IBTQ | 100.0 | 1 (tied) | yes | $978 |
+| 3.125% Nov 2041 | 100.0 | 1 (tied) | yes | $797 |
+| 4.375% Nov 2039 | 100.0 | 1 (tied) | yes | $239 |
+| 4.500% May 2038 | 100.0 | 1 (tied) | yes | $169 |
+| 4.250% Nov 2040 | 100.0 | 1 (tied) | yes | $138 |
+| IBTM | 100.0 | 1 (tied) | growth sleeve | $49 |
+| 3.875% Aug 2040 | 99.5 | 10 | no | |
+| 4.375% May 2041 | 97.5 | 14 | no | |
+| 4.750% Feb 2037 | 97.1 | 16 | yes | $0 |
+
+Without IBTO the optimiser buys $21,037 more IBTM, whose cash waits about a year for the 2034
+payment; without the Nov 2041 bond it buys the 4.375% May 2041 bond, which pays more of its value
+early. The Feb 2037 bond, bought by the previous team on Oct 21, is the one holding the optimiser
+would not buy: it covers the 2038 payment with more IBTR, which compounds its interest inside the
+fund instead of paying coupons that wait at 0%. The bond still meets its payment and is kept.
+
 ## Part 2a — ETF core (Black-Litterman)
 Nine equity groups, one ETF each (VUG, VTV, VB, VGK, BBJP, EPP, BBCA, EMXC, MCHI). Bonds in the growth
 sleeve are IBTM.

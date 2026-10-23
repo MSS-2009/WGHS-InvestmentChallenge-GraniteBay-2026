@@ -26,6 +26,7 @@ ORDER = [  # (script, passes --refresh, failure is fatal)
     ("validate_model", False, True),        # after build_satellite: its HRP check reads the selection
     ("wins_rebalance", True, True),         # after report_numbers: it reads the core weights
     ("wins_ladder_check", False, False),
+    ("ladder_scorecard", False, True),
     # studies quoted in the docs (each reads the headline ESG through growth.scoring.esg_params)
     ("fx_variants", False, True),
     ("taiwan_fx_corr", False, True),

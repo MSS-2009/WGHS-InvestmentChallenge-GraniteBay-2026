@@ -78,6 +78,7 @@ python scripts/doc_numbers.py       # do the figures in docs/ match the reports?
 python scripts/policy_study.py      # 2031 floor frontier, range calibration, reverse stress test
 python scripts/wins_rebalance.py    # orders that bring WInS in line with the IPS (ladder top-up first)
 python scripts/wins_ladder_check.py # does the WInS ladder meet every payment at 0% interest on cash?
+python scripts/ladder_scorecard.py  # every WInS Treasury scored on the payment value $100 buys; holdings ranked by saving
 ```
 
 Studies behind the assumptions (each writes one report; `run_all.py` reruns all but the policy search):
