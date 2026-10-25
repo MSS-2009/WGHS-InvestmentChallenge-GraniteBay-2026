@@ -475,3 +475,14 @@ factors are reported as invalid input data.
 - Named crises in the main docs (r8): the episode results are now a bullet in docs/VALIDATION.md
   section 7, generated and checked by doc_numbers.py from reports/episode_stress.csv (128 figures);
   scripts/episode_stress.py joins run_all.
+
+- Reinvestment risk (r8-reinvest, scripts/reinvest_risk.py): held to 2042 with idle cash earning each
+  path's simulated 1-month rate (floored at 0) instead of a fixed 3%, the ladder misses at least one
+  payment on 20.4% of paths (mean total shortfall $319, 99th percentile $4.4k, most often the 2034
+  payment). Making 95% / 99% of paths whole costs $1.9k / $3.8k more at the lock (kappa0 2.47% / 3.11%,
+  IPS median -$2.8k / -$5.3k). Two other orderings of cash within the month give 22.9% and 26.4%.
+  Independently verified (r8-verify-reinvest). Not yet in MODEL.md: the pricing choice is open.
+- Claims review (r8-claims): 139 causal, ranking and universal claims in MODEL.md, VALIDATION.md and
+  README.md checked against the reports. Two were stale figures: a single optimum's BBJP range given as
+  2.6-9.5% (the report says 2.6-7.2%) and the corrected satellite beta given as 0.89 -> 0.99 (0.87 ->
+  0.97). Both fixed, each now checked by doc_numbers.py (129 figures).
