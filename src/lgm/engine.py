@@ -45,6 +45,7 @@ class EngineConfig:
     sell_at_settlement: bool = True  # Jan 2033: one sale ticket per fund still held (the contribution is paid in cash)
     kappa_rate_slope: float = 0.0  # premium change per unit of the scenario's 5-year rate above `kappa_rate_ref`
     kappa_rate_ref: float | None = None  # 5-year zero rate (cc) the premium kappa0 belongs to; required with a slope
+    topup_2033: bool = True       # Jan 2033: top-up reserve ladder to achieve 0% reinvestment certainty
 
 
 def pay_tau(m: float) -> np.ndarray:
@@ -83,6 +84,7 @@ class State:
     costs: np.ndarray         # (N,) commissions paid
     ratchet_ref: np.ndarray | None = None
     ratchet_y: np.ndarray | None = None
+    reserve_cash: np.ndarray | None = None
 
 
 def target_equity_share(st: Strategy, m: int) -> float:
@@ -178,6 +180,27 @@ def _validate_state(state: State, n: int, K: int) -> None:
         if name == "ratchet_ref" and np.any(arr < 0.0):
             raise ValueError("state.ratchet_ref must be nonnegative")
         setattr(state, name, arr)
+    if state.reserve_cash is None:
+        state.reserve_cash = np.zeros(n)
+    else:
+        try:
+            raw = np.asarray(state.reserve_cash)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError(f"state.reserve_cash must be a finite numeric array with shape ({n},)") from exc
+        has_boolean = raw.dtype.kind == "b" or (
+            raw.dtype.kind == "O" and any(isinstance(x, (bool, np.bool_)) for x in raw.flat)
+        )
+        if has_boolean:
+            raise ValueError(f"state.reserve_cash must be a finite numeric array with shape ({n},)")
+        try:
+            arr = np.asarray(raw, dtype=float)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError(f"state.reserve_cash must be a finite numeric array with shape ({n},)") from exc
+        if arr.shape != (n,) or not np.isfinite(arr).all():
+            raise ValueError(f"state.reserve_cash must be a finite numeric array with shape ({n},)")
+        if np.any(arr < 0.0):
+            raise ValueError("state.reserve_cash must be nonnegative")
+        state.reserve_cash = arr
 
 
 def _real_config(name: str, value, *, lower: float | None = None,
@@ -197,7 +220,7 @@ def _real_config(name: str, value, *, lower: float | None = None,
 
 
 def _validate_engine_config(cfg: EngineConfig, K: int) -> dict[int, float]:
-    for name in ("commissions", "compound_costs", "sell_at_settlement"):
+    for name in ("commissions", "compound_costs", "sell_at_settlement", "topup_2033"):
         if not isinstance(getattr(cfg, name), (bool, np.bool_)):
             raise ValueError(f"cfg.{name} must be boolean")
     if isinstance(cfg.extra_tickets, (bool, np.bool_)) or not isinstance(cfg.extra_tickets, Integral) or cfg.extra_tickets < 0:
@@ -335,7 +358,7 @@ def _invested(s: State, sc: Scenarios, m: int) -> np.ndarray:
     return growth_value(s, sc, m) + s.floor_face * _ibtm_df(sc, m)
 
 
-def _step(s: State, sc: Scenarios, m: int, cfg: "EngineConfig"):
+def _step(s: State, sc: Scenarios, m: int, cfg: "EngineConfig", ladder_flow_by_m: dict[int, float] | None = None):
     """Advance one month: markets move, fees accrue."""
     v0 = _invested(s, sc, m) if cfg.compound_costs else None
     s.eq *= np.exp(sc.eq_log[:, m - sc.m0, :]) * (1 - np.asarray(cfg.eq_er) / 12)
@@ -354,6 +377,12 @@ def _step(s: State, sc: Scenarios, m: int, cfg: "EngineConfig"):
         # own monthly return is the same as having paid each one when it was incurred.
         v1 = _invested(s, sc, m + 1)
         s.costs *= np.divide(v1, v0, out=np.ones_like(v0), where=v0 > 0)
+    if ladder_flow_by_m is not None and m >= M_2027:
+        if m in ladder_flow_by_m:
+            s.reserve_cash += ladder_flow_by_m[m]
+        df_1m = sc.df(m, [1 / 12.0])[:, 0]
+        r_1m = np.maximum(-np.log(df_1m) * 12.0, 0.0)
+        s.reserve_cash *= (1.0 + r_1m / 12.0)
 
 
 def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: State | None = None,
@@ -423,11 +452,14 @@ def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: Sta
             setattr(sc, name, value)
     s = state if state is not None else State(
         np.zeros((n, K)), np.zeros(n), np.zeros(n), np.zeros(n), np.zeros(n),
-        np.zeros((n, N_PAY)), np.zeros(n),
+        np.zeros((n, N_PAY)), np.zeros(n), reserve_cash=np.zeros(n),
     )
     if not isinstance(s, State):
         raise ValueError("state must be an engine.State instance or None")
     _validate_state(s, int(n), K)
+    from .topup import get_held_ladder, solve_topup
+    lad_held = get_held_ladder(pmt=PMT, n_pay=N_PAY)
+    ladder_flow_by_m = lad_held["flow_by_m"]
     out: dict = {}
     for m in range(sc.m0, M_2033 + 1):
         if state is not None and m == sc.m0:
@@ -438,6 +470,8 @@ def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: Sta
             spent = _lock(s, sc, m, target, cash_in, cfg) if target > 0 else np.zeros(n)
             if m == M_2027:
                 out["lock_cost_2027"] = spent + 0.0
+                c0 = sum(amt for m_flow, amt in ladder_flow_by_m.items() if m_flow < M_2027)
+                s.reserve_cash += c0
             _invest(s, sc, m, st, cash_in - spent, cfg)
             if m == M_2028:
                 _rebalance(s, sc, m, st, cfg)
@@ -497,10 +531,11 @@ def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: Sta
                         *(a.copy() for a in (s.eq, s.vgit, s.ibtm_face, s.floor_face, s.cash, s.locked, s.costs)),
                         ratchet_ref=None if s.ratchet_ref is None else s.ratchet_ref.copy(),
                         ratchet_y=None if s.ratchet_y is None else s.ratchet_y.copy(),
+                        reserve_cash=None if s.reserve_cash is None else s.reserve_cash.copy(),
                     )
         if m == M_2033:
             break
-        _step(s, sc, m, cfg)
+        _step(s, sc, m, cfg, ladder_flow_by_m)
     # January 2033 settlement
     if cfg.commissions and cfg.sell_at_settlement:
         # IBTM has matured into cash; each equity fund, VGIT and the extra names are sold
@@ -508,14 +543,19 @@ def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: Sta
         s.costs += COMMISSION_ETF * (held + (s.vgit > 0) + np.where(s.eq.sum(1) > 0, cfg.extra_tickets, 0))
     assets = s.eq.sum(1) + s.vgit + s.ibtm_face + s.floor_face + s.cash - s.costs
     open_cost = ((1 - s.locked) * PMT * sc.df(M_2033, pay_tau(M_2033)) * (1 + kappa(M_2033, cfg, sc))).sum(1)
-    funded = assets >= open_cost - 1e-6
-    facility = np.maximum(assets - open_cost, 0.0)
+    if cfg.topup_2033:
+        topup_cost = solve_topup(sc, s.reserve_cash, m_2033=M_2033, pmt=PMT, n_pay=N_PAY)
+    else:
+        topup_cost = np.zeros(n)
+    funded = assets >= open_cost + topup_cost - 1e-6
+    facility = np.maximum(assets - open_cost - topup_cost, 0.0)
     i33 = M_2033 - sc.m0
     real = facility * np.exp(fx_log[:, i33] - fx_2027) / np.exp(tw_cost_log[:, i33] - tw_cost_2027)
     out.update({"funded": funded, "facility": facility, "contribution": facility * st.contribution_share,
                 "facility_real_tw2027": real, "assets_2033": assets, "open_cost_2033": open_cost,
-                "shortfall": np.maximum(open_cost - assets, 0.0), "locked_2033": s.locked.mean(1),
-                "costs_2033": s.costs.copy()})
+                "shortfall": np.maximum(open_cost + topup_cost - assets, 0.0), "locked_2033": s.locked.mean(1),
+                "costs_2033": s.costs.copy(), "topup_2033": topup_cost,
+                "reserve_cash_2033": s.reserve_cash.copy()})
     out.setdefault("floor_2033", np.zeros(n))
     out.setdefault("growth_2031", np.zeros(n))
     out.setdefault("assets_2031", np.zeros(n))
@@ -545,7 +585,8 @@ def state_for(snap: State, i: int, n: int) -> State:
     return State(rep(snap.eq), rep(snap.vgit), rep(snap.ibtm_face), rep(snap.floor_face), rep(snap.cash),
                  rep(snap.locked), rep(snap.costs),
                  ratchet_ref=None if snap.ratchet_ref is None else rep(snap.ratchet_ref),
-                 ratchet_y=None if snap.ratchet_y is None else rep(snap.ratchet_y))
+                 ratchet_y=None if snap.ratchet_y is None else rep(snap.ratchet_y),
+                 reserve_cash=None if snap.reserve_cash is None else rep(snap.reserve_cash))
 
 
 def _positive_integer(name: str, value) -> int:
