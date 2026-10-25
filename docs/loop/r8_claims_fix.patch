@@ -1,0 +1,52 @@
+diff --git a/docs/MODEL.md b/docs/MODEL.md
+index e566ddd..cf96c54 100644
+--- a/docs/MODEL.md
++++ b/docs/MODEL.md
+@@ -412,7 +412,7 @@ example `taiwan_variants.csv`, `rate_tails_impact.csv`) used the defaults of the
+   to random baskets, selection made in-sample risk look about 12% too low; out of sample the
+   "low-risk" picks were no calmer than random baskets. Correcting for it
+   (`scripts/satellite_risk_sensitivity.py`) raises the satellite's volatility from 15.1% to 16.9% and
+-  its beta from 0.89 to 0.99: at a 20% share and no commissions the median stays positive (+$0.4k as
++  its beta from 0.87 to 0.97: at a 20% share and no commissions the median stays positive (+$0.4k as
+   estimated, +$0.6k to +$0.8k corrected), but the 5th percentile goes from +$0.3k to -$0.2k to -$0.3k
+   against the core alone; with $25 commissions from -$4.1k to -$4.6k to -$4.7k. Thin evidence: four
+   overlapping screens, one market episode, today's index members only, and the qualitative judgments
+diff --git a/docs/VALIDATION.md b/docs/VALIDATION.md
+index 46325c7..0db7052 100644
+--- a/docs/VALIDATION.md
++++ b/docs/VALIDATION.md
+@@ -175,7 +175,7 @@ Run `python scripts/validate_model.py` (reports `validation_esg.csv`, `validatio
+   (16.9%) and equal weights (18.2%) (`reports/validation_hrp.csv`).
+ - **Black-Litterman stability:** over tau 0.025-0.10 and value-view uncertainty 1.5-5 points, the
+   resampled weights hold BBJP at 6.6-6.9% and BBCA at 3.8-3.9%; a single optimum swings them from 2.6%
+-  to 9.5% and 2.3% to 6.0%.
++  to 7.2% and 2.3% to 6.0%.
+ 
+ ## 8. Reproduce
+ 
+diff --git a/scripts/doc_numbers.py b/scripts/doc_numbers.py
+index 85b6619..817c105 100644
+--- a/scripts/doc_numbers.py
++++ b/scripts/doc_numbers.py
+@@ -328,6 +328,10 @@ def checks() -> list[tuple[str, str, str]]:
+     def rsk(reading, comm, col):
+         return rs[(rs.reading == reading) & (rs.commissions == comm)][col].iloc[0]
+     sk = lambda x: ("+" if x >= 0 else "-") + k(abs(x))
++    out.append(("MODEL", "satellite risk correction, volatility and beta",
++                f"raises the satellite's volatility from {rsk('as_estimated', 'none', 'satellite_vol'):.1%} to "
++                f"{rsk('with_return', 'none', 'satellite_vol'):.1%} and\n  its beta from "
++                f"{rsk('as_estimated', 'none', 'satellite_beta'):.2f} to {rsk('with_return', 'none', 'satellite_beta'):.2f}:"))
+     out.append(("MODEL", "satellite risk correction",
+                 f"and no commissions the median stays positive ({sk(rsk('as_estimated', 'none', 'median_vs_core'))} as estimated, "
+                 f"{sk(rsk('risk_only', 'none', 'median_vs_core'))}\n  to {sk(rsk('with_return', 'none', 'median_vs_core'))} "
+@@ -395,7 +399,9 @@ def checks() -> list[tuple[str, str, str]]:
+     out.append(("VALIDATION", "BL stability",
+                 f"resampled weights hold BBJP at {bl.BBJP.min() * 100:.1f}-{bl.BBJP.max():.1%} and BBCA at "
+                 f"{bl.BBCA.min() * 100:.1f}-{bl.BBCA.max():.1%}"))
+-    out.append(("VALIDATION", "BL single optimum", f"and {pc('single_optimum_BBCA')}"))
++    out.append(("VALIDATION", "BL single optimum",
++                f"a single optimum swings them from {bl.single_optimum_BBJP.min():.1%}\n  "
++                f"to {bl.single_optimum_BBJP.max():.1%} and {pc('single_optimum_BBCA')}."))
+     s1r, s2r = pv.loc["S1 Index-first, all equity"], pv.loc["S2 Index-first, static 60/40"]
+     out.append(("VALIDATION", "Plans v2 table: S1",
+                 f"| S1 all equity | {s1r.v2_funded:.1%} / {s1r.funded:.1%} | 0 / 0 | {s1r.v2_median_k:.1f} / {s1r.median_k:.1f} | "
