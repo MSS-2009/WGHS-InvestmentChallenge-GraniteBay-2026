@@ -412,7 +412,7 @@ example `taiwan_variants.csv`, `rate_tails_impact.csv`) used the defaults of the
   to random baskets, selection made in-sample risk look about 12% too low; out of sample the
   "low-risk" picks were no calmer than random baskets. Correcting for it
   (`scripts/satellite_risk_sensitivity.py`) raises the satellite's volatility from 15.1% to 16.9% and
-  its beta from 0.89 to 0.99: at a 20% share and no commissions the median stays positive (+$0.4k as
+  its beta from 0.87 to 0.97: at a 20% share and no commissions the median stays positive (+$0.4k as
   estimated, +$0.6k to +$0.8k corrected), but the 5th percentile goes from +$0.3k to -$0.2k to -$0.3k
   against the core alone; with $25 commissions from -$4.1k to -$4.6k to -$4.7k. Thin evidence: four
   overlapping screens, one market episode, today's index members only, and the qualitative judgments

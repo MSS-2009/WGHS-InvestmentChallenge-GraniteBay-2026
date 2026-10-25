@@ -328,6 +328,10 @@ def checks() -> list[tuple[str, str, str]]:
     def rsk(reading, comm, col):
         return rs[(rs.reading == reading) & (rs.commissions == comm)][col].iloc[0]
     sk = lambda x: ("+" if x >= 0 else "-") + k(abs(x))
+    out.append(("MODEL", "satellite risk correction, volatility and beta",
+                f"raises the satellite's volatility from {rsk('as_estimated', 'none', 'satellite_vol'):.1%} to "
+                f"{rsk('with_return', 'none', 'satellite_vol'):.1%} and\n  its beta from "
+                f"{rsk('as_estimated', 'none', 'satellite_beta'):.2f} to {rsk('with_return', 'none', 'satellite_beta'):.2f}:"))
     out.append(("MODEL", "satellite risk correction",
                 f"and no commissions the median stays positive ({sk(rsk('as_estimated', 'none', 'median_vs_core'))} as estimated, "
                 f"{sk(rsk('risk_only', 'none', 'median_vs_core'))}\n  to {sk(rsk('with_return', 'none', 'median_vs_core'))} "
@@ -395,7 +399,9 @@ def checks() -> list[tuple[str, str, str]]:
     out.append(("VALIDATION", "BL stability",
                 f"resampled weights hold BBJP at {bl.BBJP.min() * 100:.1f}-{bl.BBJP.max():.1%} and BBCA at "
                 f"{bl.BBCA.min() * 100:.1f}-{bl.BBCA.max():.1%}"))
-    out.append(("VALIDATION", "BL single optimum", f"and {pc('single_optimum_BBCA')}"))
+    out.append(("VALIDATION", "BL single optimum",
+                f"a single optimum swings them from {bl.single_optimum_BBJP.min():.1%}\n  "
+                f"to {bl.single_optimum_BBJP.max():.1%} and {pc('single_optimum_BBCA')}."))
     s1r, s2r = pv.loc["S1 Index-first, all equity"], pv.loc["S2 Index-first, static 60/40"]
     out.append(("VALIDATION", "Plans v2 table: S1",
                 f"| S1 all equity | {s1r.v2_funded:.1%} / {s1r.funded:.1%} | 0 / 0 | {s1r.v2_median_k:.1f} / {s1r.median_k:.1f} | "

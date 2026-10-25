@@ -175,7 +175,7 @@ Run `python scripts/validate_model.py` (reports `validation_esg.csv`, `validatio
   (16.9%) and equal weights (18.2%) (`reports/validation_hrp.csv`).
 - **Black-Litterman stability:** over tau 0.025-0.10 and value-view uncertainty 1.5-5 points, the
   resampled weights hold BBJP at 6.6-6.9% and BBCA at 3.8-3.9%; a single optimum swings them from 2.6%
-  to 9.5% and 2.3% to 6.0%.
+  to 7.2% and 2.3% to 6.0%.
 
 ## 8. Reproduce
 
