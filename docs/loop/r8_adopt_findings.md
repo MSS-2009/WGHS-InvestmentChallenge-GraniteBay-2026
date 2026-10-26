@@ -1,117 +1,104 @@
 # Round 8 Findings: January 2033 Top-Up Adopted as Engine Default
 
-**Brief:** `docs/loop/r8_adopt.md`  
+**Brief:** `docs/loop/r8_adopt.md` (and Planner Follow-Up)  
 **Worker:** Worker Agent (Thread `r8-adopt`)  
 **Worktree:** `/Users/whinz/WhartonComp/WGHS-InvestmentChallenge-GraniteBay-2026-wt-r8-adopt` (branch `r8-adopt`)  
-**Scripts:** `scripts/topup_measure.py`, `scripts/verify_findings.py`, `scripts/run_all.py`  
+**Scripts:** `scripts/topup_measure.py`, `scripts/topup_2033.py`, `scripts/verify_findings.py`, `scripts/run_all.py`  
 **Tests:** `tests/test_topup.py`  
 **All figures below are printed directly by committed scripts `scripts/topup_measure.py` and `scripts/verify_findings.py`.**
 
 ---
 
-## 1. Task 1: Baseline Engine Timing, LP Timing, and Distinct Optimal Bases
+## 1. Executive Summary & Defect Remediation
 
-Measured using `scripts/topup_measure.py` on the 20,000 headline ESG scenarios (`simulate(esg_params(...), n=20000, seed=11)`):
+Following verifier feedback on probes P1 and P2, two defects were identified:
+1. `engine.py` previously deducted top-up even when `s.locked == 0`, using `reserve_cash` built from unbought ladder coupons, while `open_cost` still priced the unlocked part at $\kappa$ (the 3% ladder), which is not 0%-certain.
+2. The held ladder assumed 100% locked from January 2027 even though the IPS locks ~1.1% on average in January 2028 (and other policies lock in 2028 and 2031).
 
-### 1. Today's `engine.run` Timing (median of 5 runs)
-- Run 1: 0.2054 s
-- Run 2: 0.1943 s
-- Run 3: 0.1941 s
-- Run 4: 0.1962 s
-- Run 5: 0.1923 s
-- **Median `engine.run` runtime today:** **0.1943 s**
-
-### 2. Exact LP Timing per Path
-- **Total runtime for 20,000 exact LP solves (SciPy HiGHS):** **82.11 s**
-- **Exact LP solve time per path:** **4.105 ms**
-
-### 3. Number of Distinct Optimal Bases Across All 20,000 Headline Paths
-- **Distinct optimal bases count:** **46**
-- **Share of paths needing zero top-up:** **24.16%** (4,832 paths belong to the all-surplus basis `(20, 21, 22, 23, 24, 25, 26, 27, 28, 29)`)
-- **Top 5 bases coverage:**
-  1. Basis `(20, 21, 22, 23, 24, 25, 26, 27, 28, 29)`: 4,832 paths (24.16%) [Zero top-up]
-  2. Basis `(3, 6, 9, 12, 18, 20, 21, 22, 23, 24)`: 4,530 paths (22.65%)
-  3. Basis `(3, 6, 9, 12, 20, 21, 22, 23, 24, 25)`: 3,826 paths (19.13%)
-  4. Basis `(1, 3, 6, 9, 12, 15, 16, 17, 20, 24)`: 3,256 paths (16.28%)
-  5. Basis `(6, 9, 12, 20, 21, 22, 23, 24, 25, 26)`: 897 paths (4.49%)
-  - Together, the top 4 bases cover **82.22%** of all paths, and all 46 bases cover **100.00%** of all 20,000 headline paths.
+Both defects were resolved via the unified rule:
+- **(a) Tranche locking & cash crediting simplification:** Each lock event (month $m_{\text{lock}}$, share $d$) buys $d \times$ the same 3% ladder at today's price rule ($\text{PMT} \cdot \text{df} \cdot (1 + \kappa)$ at $m_{\text{lock}}$, unchanged). Its flows dated after $m_{\text{lock}}$ arrive on their dates as reserve cash; its flows dated on or before $m_{\text{lock}}$ are added to reserve cash at $m_{\text{lock}}$ (this simplification captures accrued value without introducing retrospective intra-month simulation). Reserve cash earns the path's 1-month rate floored at 0.
+- **(b) Single January 2033 reserve purchase:** In January 2033 there is ONE reserve purchase: the cheapest instruments from `wins_reserve_universe()` on the path's 2033 curve such that all ten payments are funded at 0% reinvestment, given $\text{held} = s.\text{locked} \times \text{ladder's post-2033 flows}$ and the reserve cash. Its cost replaces BOTH `open_cost` and the old top-up. With $s.\text{locked} == 0$, held ladder is 0, reserve cash is 0, and the purchase is the full 10-payment 0%-certain ladder.
+- **(c) Extended basis catalog:** Extended the optimal basis library in `src/lgm/topup.py` from 46 to 80 bases covering locked shares 0.0, 0.25, 0.5, 0.75, 1.0 and actual tranche shares so S1, S2, and partly locked policies execute in parallel with 0 fallbacks.
 
 ---
 
-## 2. Task 5: Speed Check Against Budgets
-
-Measured using `scripts/verify_findings.py` and `scripts/run_all.py`:
-
-| Budget item | Allowed Budget | Measured Actual | Margin | Status |
-|---|---|---|---|---|
-| **One `engine.run` on 20,000 scenarios** | $\le$ today + 0.50 s | +0.0398 s (0.2491 s vs 0.2093 s) | 0.4602 s under budget | **PASS** |
-| **Pipeline runtime (`scripts/run_all.py`)** | $\le$ 130 s total | 114 s total | 16 s under budget | **PASS** |
-| **Per-path top-up accuracy vs exact LP** | $\le$ $1.00 max diff | $0.0050 max diff (100% within $0.01) | $0.9950 within tolerance | **PASS** |
-
-### Implementation Mechanism:
-The constant structure of the payment obligations and bond/fund schedules allows precomputing a fixed $10 \times 30$ equality constraint matrix $A_{eq}$ and the inverses of all 46 distinct optimal bases. Evaluating all 46 bases in parallel via NumPy array operations takes only ~35 ms for all 20,000 scenarios, with full primal and dual feasibility verified on 100.00% of headline scenarios. Any path with an uncatalogued basis automatically falls back to an exact SciPy HiGHS LP solve.
-
----
-
-## 3. Task 6: Pipeline and Report Changes
-
-### 1. Changed Report Files (`git status --short reports/`)
-Total of 18 files modified in `reports/` upon running `scripts/run_all.py`:
-- `reports/backtest.csv`
-- `reports/core_scoring.csv`
-- `reports/corr_shrink_ips.csv`
-- `reports/episode_stress.csv`
-- `reports/fx_hedge_frontier.csv`
-- `reports/fx_variants.csv`
-- `reports/ladder_premium.csv`
-- `reports/plans_v2_rate_stress.json`
-- `reports/plans_v2_validation.csv`
-- `reports/policy_robust.csv`
-- `reports/policy_study.json`
-- `reports/rate_path_scenario.json`
-- `reports/report_numbers.json`
-- `reports/satellite_risk_sensitivity.csv`
-- `reports/satellite_scoring.csv`
-- `reports/stock_rate_corr.csv`
-- `reports/strips_reserve.csv`
-- `reports/validation_convergence.csv`
-
-### 2. Headline Numbers Comparison (`reports/report_numbers.json`)
+## 2. Headline Numbers Comparison (`reports/report_numbers.json`)
 
 All figures printed by `scripts/verify_findings.py`:
 
-| Metric | Old Baseline (today) | New (January 2033 Top-Up Adopted) | Net Impact |
-|---|---:|---:|---:|
-| **Plan Median** | $196,989.2 | **$195,570.1** | -$1,419.1 |
-| **Plan 5th Percentile (p5)** | $146,101.9 | **$144,164.1** | -$1,937.8 |
-| **Plan CVaR 5%** | $135,213.5 | **$133,244.9** | -$1,968.6 |
-| **Real Median (Taiwan 2027)** | $166,547.4 | **$165,397.4** | -$1,150.0 |
-| **Contribution Median** | $167,440.8 | **$166,234.6** | -$1,206.2 |
-| **Contribution 5th Percentile** | $124,186.6 | **$122,539.5** | -$1,647.1 |
+| Metric | Original Baseline (no topup) | Previous Branch (100% held from 2027) | New Adopted (Tranche Rule + 0% Purchase) | Net Shift vs Previous Branch |
+|---|---:|---:|---:|---:|
+| **Plan Median** | $196,989.2 | $195,570.1 | **$195,585.8** | +$15.7 |
+| **Plan 5th Percentile (p5)** | $146,101.9 | $144,164.1 | **$144,121.3** | -$42.8 |
+| **Plan CVaR 5%** | $135,213.5 | $133,244.9 | **$133,132.5** | -$112.4 |
+| **Real Median (Taiwan 2027)** | $166,547.4 | $165,397.4 | **$165,406.7** | +$9.3 |
+| **Contribution Median** | $167,440.8 | $166,234.6 | **$166,247.9** | +$13.3 |
+| **Contribution 5th Percentile** | $124,186.6 | $122,539.5 | **$122,503.1** | -$36.4 |
 
-The new headline median ($195,570.1) and 5th percentile ($144,164.1) match the client decision targets to the dollar ($195,570.1 vs $195,570.1; $144,164.1 vs $144,164.1).
-
-### 3. Documentation Numbers Output Line
-Output line from running `scripts/doc_numbers.py`:
-```
-65 of 129 figures missing from the docs
-```
-(As instructed by brief Task 6, `doc_numbers.py --fix` was NOT run and documentation files `docs/MODEL.md`, `docs/VALIDATION.md`, and `README.md` were left untouched for the separate documentation step).
+*Note on movement vs previous branch:* On paths where the January 2027 deposit did not fully lock 100% of the ladder, the January 2028 tranche ($d_2 \approx 1.1\%$ on average) did not accumulate reinvestment interest on coupons between month 2 and month 14, slightly shifting reserve cash by ~$10-$20 on those paths. This shifts the 20,000-scenario plan median by +$15.7 and 5th percentile by -$42.8.
 
 ---
 
-## 4. Tasks 3 & 4: Nested Simulation and Test Suite Verification
+## 3. Policy Comparison: S1, S2, and Partly Locked Policies (Probe P1 Fix)
 
-### Nested Simulation Verification (Task 3)
-In `engine.State`, `reserve_cash` is carried forward explicitly. When `snapshot_2031=True` is passed to `engine.run()`, `state_2031.reserve_cash` stores each path's accumulated reserve cash entering January 2031. For any nested run starting from January 2031 (`m0 = 50`) without new shocks (exact same rate path to 2033):
-- Path 0: Full reserve cash = $52,775.54, Nested reserve cash = $52,775.54 (diff = $0.00)
-- Path 0: Full top-up = $2,502.52, Nested top-up = $2,502.52 (diff = $0.00)
-- Path 0: Full facility = $145,759.41, Nested facility = $145,759.41 (diff = $0.00)
+Measured across 20,000 headline scenarios in `scripts/verify_findings.py`:
 
-### Tests Added in `tests/test_topup.py` (Task 4)
-- (a) `test_topup_false_reproduces_baseline`: `topup_2033=False` reproduces median $196,989.2 and p5 $146,101.9 to the dollar. (Pass)
-- (b) `test_default_matches_topup_2033_per_path`: matches `scripts/topup_2033.py` within $1.00 on all 20,000 paths (max diff $0.0050). (Pass)
-- (c) `test_constructed_all_zero_rates_path`: all-zero-rates path tops up by $8,256.53. (Pass)
-- (d) `test_high_rates_paths_topup_bound`: paths with rates $\ge 3\%$ top up by at most $2,984.86; flat 3% path tops up by exactly $2,984.86. (Pass)
-- (e) `test_facility_equals_old_minus_topup`: `facility == old_facility - topup_2033` across all paths. (Pass)
-- (f) `test_nested_simulation_preserves_topup_without_shocks`: nested simulation preserves exact top-up and facility down to machine precision. (Pass)
+| Policy | Status | Facility Median | Facility 5th Percentile (p5) |
+|---|---|---:|---:|
+| **S1 Index-first, all equity (0% locked)** | Before fix (open at $\kappa$) | $239,459.7 | $0.0 |
+| | **After fix (0% reserve LP purchase)** | **$237,815.7** | **$0.0** |
+| | Difference | -$1,644.0 | $0.0 |
+| **S2 Index-first, static 60/40 (0% locked)**| Before fix (open at $\kappa$) | $223,226.5 | $40,642.0 |
+| | **After fix (0% reserve LP purchase)** | **$221,345.5** | **$38,832.2** |
+| | Difference | -$1,881.0 | -$1,809.8 |
+| **Partly locked 50% (50% locked)** | Before fix (open at $\kappa$) | $212,133.3 | $92,204.5 |
+| | **After fix (0% reserve LP purchase)** | **$211,003.5** | **$91,143.2** |
+| | Difference | -$1,129.8 | -$1,061.3 |
+
+*Finding:* Pricing the open reserve obligation at the true 0%-certain LP purchase rather than $\kappa$ eliminates the bias in policy comparisons. S1 and S2 pay the full 10-payment 0%-certain ladder without receiving coupons of unheld ladders or paying spurious top-ups.
+
+---
+
+## 4. Speed Check Against Budgets
+
+Measured using `scripts/verify_findings.py` and `scripts/run_all.py`:
+
+| Budget Item | Allowed Budget | Measured Actual | Margin | Status |
+|---|---|---|---|---|
+| **IPS `engine.run` on 20,000 scenarios** | $\le$ baseline + 0.50 s | +0.0414 s (0.2468 s vs 0.2053 s) | 0.4586 s under budget | **PASS** |
+| **S1 `engine.run` on 20,000 scenarios** | $\le$ baseline + 0.50 s | +0.0415 s (0.2357 s vs 0.1942 s) | 0.4585 s under budget | **PASS** |
+| **Pipeline runtime (`scripts/run_all.py`)** | $\le$ 130 s total | 120 s total | 10 s under budget | **PASS** |
+| **Per-path top-up accuracy vs exact LP** | $\le$ $1.00 max diff | $0.0050 max diff (100% within $0.01) | $0.9950 within tolerance | **PASS** |
+
+### Implementation Mechanism:
+Precomputing a fixed $10 \times 30$ equality constraint matrix $A_{eq}$ and the inverses of all 80 distinct optimal bases enables vectorized evaluation across all 20,000 paths in ~16 ms. Dual feasibility checks guarantee exact optimality, resulting in 0 fallbacks across all tested policies and fractions.
+
+---
+
+## 5. Test Suite Verification (`tests/test_topup.py`)
+
+All 9 tests pass in 5.23 s:
+- **(a) `test_topup_false_reproduces_baseline`**: `topup_2033=False` reproduces baseline median $196,989.2 and p5 $146,101.9 to the dollar. (Pass)
+- **(b) `test_default_matches_topup_2033_per_path`**: Default engine top-up matches `reports/topup_2033.csv` within $0.02 across all 20,000 paths (max diff $0.0050). (Pass)
+- **(c) `test_constructed_all_zero_rates_path`**: All-zero-rates path with 100% locked ladder tops up by exactly $8,256.53 in direct LP and `engine.run`. (Pass)
+- **(d) `test_high_rates_paths_topup_bound`**: Paths with rates $\ge 3\%$ top up by at most $2,984.86; flat 3% path tops up by exactly $2,984.86. (Pass)
+- **(e) `test_facility_equals_old_minus_topup`**: `facility == max(assets - topup_2033, 0)` on all paths, and equals old facility minus top-up on paths fully locked in 2027. (Pass)
+- **(f) `test_nested_simulation_preserves_topup_without_shocks`**: Nested simulation from January 2031 preserves exact top-up and facility down to machine precision. (Pass)
+- **(g) `test_zero_locked_reserve_cash_and_exact_lp`**: $s.\text{locked} == 0$ for whole horizon produces 0 reserve cash and matches exact 0%-certain LP within $1 ($0.000000 max diff) on 50 paths. (Pass)
+- **(h) `test_2028_tranche_crediting_and_handbuilt_lp`**: On 3 IPS paths, print old (100% in 2027) and new top-up; new matches exact hand-built two-tranche LP within $1 ($0.000000 max diff). (Pass)
+  - Path 0: old top-up = $3,071.99, new top-up = $3,090.03, hand-built = $3,090.03
+  - Path 1: old top-up = $796.16, new top-up = $802.44, hand-built = $802.44
+  - Path 2: old top-up = $0.67, new top-up = $0.67, hand-built = $0.67
+- **(i) `test_strategies_match_exact_lp_200_paths`**: For S1, S2, and Partly locked 50%, engine's 2033 purchase matches exact LP within $1 ($0.000000 max diff) on 200 paths each. (Pass)
+
+Full test suite: `421 passed in 31.26s`.
+
+---
+
+## 6. Documentation Numbers Check
+
+Output line from running `scripts/doc_numbers.py`:
+```
+66 of 129 figures missing from the docs
+```
+(As instructed, `doc_numbers.py --fix` was NOT run and `docs/MODEL.md`, `docs/VALIDATION.md`, and `README.md` were left untouched).
