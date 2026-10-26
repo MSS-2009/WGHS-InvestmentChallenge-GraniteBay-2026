@@ -126,7 +126,7 @@ def main(n: int = 20_000):
     # is certain even at 0% shows what that assumption is worth.
     zc = bootstrap(par_curve(CURVE_DATE))
     k0 = ladder.premium(zc, 0.0)
-    rr = engine.run(st, sc, dc.replace(cfg, kappa0=k0))
+    rr = engine.run(st, sc, dc.replace(cfg, kappa0=k0, topup_2033=False))
     stress["reserve_certain_at_0pct_reinvestment"] = {
         "ladder_premium": round(k0, 4), "ladder_premium_at_3pct": round(ladder.premium(zc, 0.03), 4),
         "median": round(float(np.median(rr["facility"])), 1),
