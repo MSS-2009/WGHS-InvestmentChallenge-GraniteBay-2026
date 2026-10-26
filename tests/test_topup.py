@@ -11,7 +11,6 @@ Verifies:
 from __future__ import annotations
 
 import dataclasses as dc
-import datetime as dt
 from pathlib import Path
 
 import numpy as np
@@ -87,7 +86,6 @@ def test_constructed_all_zero_rates_path():
     assert round(sol["cost"], 2) == 8256.53
 
     # 2. Vectorized solve via engine.run on constructed all-zero scenario
-    knots = np.array([0.0, 1.0, 30.0])
     sc_zero = Scenarios(
         beta=np.zeros((1, 75, 3)),
         eq_log=np.zeros((1, 74, 3)),

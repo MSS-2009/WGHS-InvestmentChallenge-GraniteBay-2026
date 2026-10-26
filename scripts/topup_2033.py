@@ -307,7 +307,7 @@ def main(n: int = 20_000):
         if m in flow_by_m:
             c_roll0 += flow_by_m[m]
 
-    print(f"Check (ii): Constructed path with all rates at 0 from 2027:")
+    print("Check (ii): Constructed path with all rates at 0 from 2027:")
     print(f"  Holding 3% ladder at 0% total shortfall: ${sf_roll0:,.2f}")
     print(f"  Top-up cost on 0% curve in Jan 2033:     ${flat0_topup['cost']:,.2f}")
     diff_0 = abs(flat0_topup["cost"] - sf_roll0)

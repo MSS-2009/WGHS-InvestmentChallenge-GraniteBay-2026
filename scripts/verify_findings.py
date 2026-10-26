@@ -71,7 +71,7 @@ def main():
     med_s1_true = float(np.median(times_s1_true))
     delta_s1_s = med_s1_true - med_s1_false
 
-    print(f"\n[Speed Budget 1: engine.run on 20,000 scenarios (5 runs)]")
+    print("\n[Speed Budget 1: engine.run on 20,000 scenarios (5 runs)]")
     print(f"  IPS topup_2033=False median: {med_false:.4f} s")
     print(f"  IPS topup_2033=True median:  {med_true:.4f} s")
     print(f"  IPS Delta:                   +{delta_s:.4f} s (budget: <= +0.50 s) -> {'PASS' if delta_s <= 0.50 else 'FAIL'}")
@@ -83,7 +83,7 @@ def main():
     st_s2 = dc.replace(S2, region_weights=tuple(w))
     st_part = Strategy("Partly locked 50%", lock_2027=0.5, lock_2028=0.5, lock_2031=0.5, equity_share=0.6, region_weights=tuple(w))
 
-    print(f"\n[Policy Comparison: S1, S2, Partly Locked 50% (n=20,000)]")
+    print("\n[Policy Comparison: S1, S2, Partly Locked 50% (n=20,000)]")
     for pol in [st_s1, st_s2, st_part]:
         r_f = engine.run(pol, sc, cfg_false)
         r_t = engine.run(pol, sc, cfg_true)
@@ -103,7 +103,7 @@ def main():
         diffs = np.abs(res_true["topup_2033"] - ref_costs)
         max_diff = float(np.max(diffs))
         p99_diff = float(np.percentile(diffs, 99))
-        print(f"\n[Accuracy Check across 20,000 headline paths]")
+        print("\n[Accuracy Check across 20,000 headline paths]")
         print(f"  Max absolute difference: ${max_diff:.4f} (budget: <= $1.00) -> {'PASS' if max_diff <= 1.0 else 'FAIL'}")
         print(f"  99th percentile difference: ${p99_diff:.4f}")
         print(f"  Share within $0.01: {np.mean(diffs < 0.01):.4%}")
@@ -112,13 +112,13 @@ def main():
     rn_path = REPORTS_DIR / "report_numbers.json"
     rn_data = json.loads(rn_path.read_text())
     plan = rn_data["plan"]
-    print(f"\n[Headline Numbers: reports/report_numbers.json]")
-    print(f"  Old baseline:  median=$196,989.2, p5=$146,101.9, CVaR5=$135,213.5, real_median=$166,547.4")
+    print("\n[Headline Numbers: reports/report_numbers.json]")
+    print("  Old baseline:  median=$196,989.2, p5=$146,101.9, CVaR5=$135,213.5, real_median=$166,547.4")
     print(f"  New (adopted): median=${plan['median']:,.1f}, p5=${plan['p5']:,.1f}, CVaR5=${plan['cvar5']:,.1f}, real_median=${plan['real_median']:,.1f}")
     print(f"  Difference:    median=${plan['median'] - 196989.2:,.1f}, p5=${plan['p5'] - 146101.9:,.1f}")
 
     # 5. doc_numbers check
-    print(f"\n[doc_numbers.py status]")
+    print("\n[doc_numbers.py status]")
     import sys
     cmd = [sys.executable, "scripts/doc_numbers.py"]
     res_doc = subprocess.run(cmd, capture_output=True, text=True)

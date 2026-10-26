@@ -11,7 +11,7 @@ import time
 import numpy as np
 from scipy.optimize import linprog
 
-from lgm import engine, instruments, ladder
+from lgm import engine, ladder
 from lgm.asof import month_of
 from lgm.esg import simulate
 from lgm.growth.core import build_core
