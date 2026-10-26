@@ -486,3 +486,12 @@ factors are reported as invalid input data.
   README.md checked against the reports. Two were stale figures: a single optimum's BBJP range given as
   2.6-9.5% (the report says 2.6-7.2%) and the corrected satellite beta given as 0.89 -> 0.99 (0.87 ->
   0.97). Both fixed, each now checked by doc_numbers.py (129 figures).
+- January 2033 top-up adopted (client decision, Oct 25; r8-topup, r8-adopt, r8-docs): the reserve is
+  locked as before; its cash earns the simulated 1-month rate floored at 0; in January 2033 one purchase
+  from the facility makes all ten payments certain even if cash earns nothing. Costs $1.4k of median
+  against the 3%-only plan and is $6.4k better than pricing certainty at the lock. Headline median
+  $196,989 -> $195,586, 5th percentile $146,102 -> $144,121; funded share 100%. The engine solves the
+  2033 purchase exactly for every path from 80 cached optimal bases (exact LP fallback), +0.04 s a run.
+  Verifiers found and the workers fixed: a phantom top-up for strategies that never lock, late tranches
+  treated as bought in 2027, and two double charges (the 0%-at-the-lock stress and the STRIPS cases ran
+  with the top-up on). STRIPS now show +$2.5k median against the adopted ladder. 137 checked figures.
