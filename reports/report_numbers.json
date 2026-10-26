@@ -166,6 +166,17 @@
     "kept_by_laura_median": 29337.9,
     "lock_cost_2027_median": 300000.0
   },
+  "reserve_2033": {
+    "share_with_topup": 0.7589,
+    "mean": 1479.7,
+    "median": 1153.9,
+    "p95": 4334.2,
+    "p99": 5852.1,
+    "max": 7538.0,
+    "facility_before_topup_min": 80402.3,
+    "topup_max": 7538.0,
+    "funded_share": 1.0
+  },
   "quotes_2031": {
     "calibrated_band_percentiles": [
       20.0,
@@ -243,8 +254,8 @@
     "reserve_certain_at_0pct_reinvestment": {
       "ladder_premium": 0.037,
       "ladder_premium_at_3pct": 0.0182,
-      "median": 187666.2,
-      "median_change": -7919.6,
+      "median": 189219.8,
+      "median_change": -6366.0,
       "lock_cost_2027_median": 300000.0
     },
     "worst_5pct_stock_paths_median": 149140.5,
