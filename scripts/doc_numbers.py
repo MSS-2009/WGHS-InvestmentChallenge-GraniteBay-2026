@@ -89,7 +89,7 @@ def decision_rows() -> list[str]:
     s20 = sat.loc[("Black-Litterman posterior", "$25 (WInS)", "Core + 20% satellite"), "median_vs_core"]
     s20f = sat.loc[("Black-Litterman posterior", "none", "Core + 20% satellite"), "median_vs_core"]
     sr = pd.read_csv(R / "strips_reserve.csv").set_index(["universe", "reinvestment_rate"])
-    sx, w3, w0 = sr.loc[("STRIPS (ask quotes)", 0.0)], sr.loc[("WInS universe", 0.03)], sr.loc[("WInS universe", 0.0)]
+    sx, w3 = sr.loc[("STRIPS (ask quotes)", 0.0)], sr.loc[("WInS universe", 0.03)]
     return [
         f"| Growth mix and 2031 floor | {alt.equity_share:.0%} equity with a {alt.floor_share:.0%} floor instead of the IPS's "
         f"{ips.equity_share:.0%} and {ips.floor_share:.0%}: median {d(alt['median'] - ips['median'])}, 5th percentile "
@@ -110,9 +110,9 @@ def decision_rows() -> list[str]:
         f"not a return one | Part 2b |",
         f"| Reserve outside WInS | STRIPS need no reinvestment assumption and, at the retail ask, cost about what the "
         f"WInS ladder costs assuming 3% ({sx.cost_over_zero / sx.zero_coupon_value:+.2%} vs "
-        f"{w3.cost_over_zero / w3.zero_coupon_value:+.2%} over zero-coupon value): {k(w0.cost - sx.cost)} cheaper than "
-        f"making the WInS ladder certain, {d(sx.median_facility - w0.median_facility)} of median | Only if WInS rules do "
-        f"not bind | `scripts/strips_reserve.py` |",
+        f"{w3.cost_over_zero / w3.zero_coupon_value:+.2%} over zero-coupon value): STRIPS give {d(sx.median_change_vs_wins_3pct)} of "
+        f"median and {d(sx.p5_change_vs_wins_3pct)} of 5th percentile against the adopted ladder with its January 2033 top-up | "
+        f"Only if WInS rules do not bind | `scripts/strips_reserve.py` |",
     ]
 
 
@@ -149,7 +149,7 @@ def sensitivity_rows() -> list[str]:
         f"{d(cs.loc['mean', 'p5'] - cs.loc['zero', 'p5'])} 5th pct |",
         f"| Rates at the January 2027 lock | as today | 0.75 points lower / higher | "
         f"{d(st['rates_minus_75bp_at_lock']['median'] - plan['median'])} / {d(st['rates_plus_75bp_at_lock']['median'] - plan['median'])} median |",
-        f"| Cash awaiting a ladder payment | earns 3% | earns 0% (WInS pays none) | "
+        f"| Cash awaiting a ladder payment | certain in January 2033 | priced certain at the lock | "
         f"{d(st['reserve_certain_at_0pct_reinvestment']['median_change'])} median |",
         f"| Expected rate path | unchanged | forwards less Kim-Wright term premium | "
         f"{d(rp['kim_wright']['median'] - rp['unchanged']['median'])} median |",
@@ -197,12 +197,26 @@ def episodes_bullet() -> str:
             f"  fall alone costs {k(med - s22['equity only'])} (`reports/episode_stress.csv`).")
 
 
+def reinvestment_risk_bullet() -> str:
+    """The reinvestment risk bullet in docs/VALIDATION.md section 7, from reports/reinvest_risk.csv and reports/report_numbers.json."""
+    rr = pd.read_csv(R / "reinvest_risk.csv").set_index("rule")
+    sim = rr.loc["(c) simulated 1m rate floored at 0"]
+    rn = json.loads((R / "report_numbers.json").read_text())
+    r33 = rn["reserve_2033"]
+    return (f"- **Reinvestment risk:** without the January 2033 top-up rule, {sim.miss_any_pct:.1f}% of paths miss at\n"
+            f"  least one payment when idle cash earns market rates (99th percentile shortfall of {k(sim.p99_total_shortfall)}).\n"
+            f"  With the rule adopted, the January 2033 purchase makes all ten payments certain even at 0%\n"
+            f"  reinvestment: {r33['funded_share']:.0%} funded across all paths, with a median top-up of {k(r33['median'])}\n"
+            f"  ({k(r33['p99'])} at the 99th percentile; at most {k(r33['max'])}), safely covered by the facility\n"
+            f"  (at least {k(r33['facility_before_topup_min'])} before the top-up; `scripts/reinvest_risk.py`).")
+
 
 def checks() -> list[tuple[str, str, str]]:
     """(doc, what, text that must appear)."""
     rn = json.loads((R / "report_numbers.json").read_text())
     ps = json.loads((R / "policy_study.json").read_text())
     plan, stress, q = rn["plan"], rn["stress"], rn["quotes_2031"]["median"]
+    d = lambda x: ("+" if x >= 0 else "-") + (k(abs(x)) if abs(x) >= 1000 else f"${abs(x):,.0f}")
     sl = rn["sleeves"]
     fx = pd.read_csv(R / "fx_variants.csv").set_index("variant")
     out = [
@@ -261,8 +275,22 @@ def checks() -> list[tuple[str, str, str]]:
                 + f" and ${cs[2]['contribution_median'] / 1000:.0f}k and leave\nLaura "
                 + ", ".join(f"${c['kept_median'] / 1000:.0f}k" for c in cs[:2]) + f" and ${cs[2]['kept_median'] / 1000:.0f}k"))
     zero = stress["reserve_certain_at_0pct_reinvestment"]
-    out.append(("MODEL", "reserve certain at 0%", f"then lowers the median facility by {k(-zero['median_change'])}"))
     out.append(("VALIDATION", "reserve certain at 0%", f"(median -{k(-zero['median_change'])})"))
+    r33 = rn["reserve_2033"]
+    rr_csv = pd.read_csv(R / "reinvest_risk.csv").set_index("rule")
+    sim_rr = rr_csv.loc["(c) simulated 1m rate floored at 0"]
+    out.append(("MODEL", "reinvest risk without rule", f"without the rule, {sim_rr.miss_any_pct:.1f}% of simulated paths miss at least one payment"))
+    out.append(("MODEL", "top-up costs vs 3pct",
+                f"costs {k(196989.2 - plan['median'])} in median facility ({k(plan['median'])} vs $197.0k) and "
+                f"{k(146101.9 - plan['p5'])} at the 5th percentile ({k(plan['p5'])} vs $146.1k)"))
+    out.append(("MODEL", "top-up savings vs 0pct lock",
+                f"is {k(plan['median'] - zero['median'])} better in median and {k(plan['p5'] - 139725.1)} at the 5th percentile "
+                f"than pricing 0% certainty at the lock ({k(zero['median'])} median, $139.7k 5th percentile"))
+    out.append(("MODEL", "top-up distribution",
+                f"{r33['share_with_topup']:.1%} require a top-up (mean ${r33['mean']:,.0f}, median ${r33['median']:,.0f}, "
+                f"95th percentile ${r33['p95']:,.0f}, 99th percentile ${r33['p99']:,.0f}, maximum ${r33['max']:,.0f})"))
+    out.append(("MODEL", "facility covers top-up",
+                f"before the top-up is {k(r33['facility_before_topup_min'])}, more than ten times the largest top-up of {k(r33['max'])}"))
     out.append(("MODEL", "Taiwan cost-FX correlation range",
                 f"range from {rng(fx.loc['random_walk_no_cost_fx_corr', 'real_p5'], fx.loc['random_walk_no_cost_fx_corr', 'real_p95'])} "
                 f"to\n  {rng(fx.loc['random_walk', 'real_p5'], fx.loc['random_walk', 'real_p95'])}"))
@@ -355,6 +383,7 @@ def checks() -> list[tuple[str, str, str]]:
                 f"the IPS median is {k(ips['median'])} against {k(plan['median'])}\n  simulated; its 5th percentile is "
                 f"{k(ips['p5'])} against {k(plan['p5'])} simulated"))
     out.append(("VALIDATION", "named crises after the lock", episodes_bullet()))
+    out.append(("VALIDATION", "reinvestment risk bullet", reinvestment_risk_bullet()))
     pv = pd.read_csv(R / "plans_v2_validation.csv").set_index("strategy")
     for short, full in (("S8 hybrid", "S8 Hybrid, half-hedged"), ("S6 lock, stock surplus", "S6 Bond-first, equity surplus"),
                         ("S9 lock, 60/40, floor", "S9 Bond-first, 60/40 surplus, 60% floor")):
@@ -446,7 +475,7 @@ def checks() -> list[tuple[str, str, str]]:
                                                f"{fit.slope:.2f} points\nper point of rate ({fit.lp_min:.1%} to {fit.lp_max:.1%}"))
     sl, lv = ips_lp.loc["rate slope"], ips_lp.loc["rate slope, Jan 2027 LP level"]
     out.append(("MODEL", "ladder premium impact",
-                f"changes the IPS median by +${sl.median_vs_engine:,.0f} and its 5th percentile by +{k(sl.p5_vs_engine)}; "
+                f"changes the IPS median by {d(sl.median_vs_engine)} and its 5th percentile by +{k(sl.p5_vs_engine)}; "
                 f"with the lower level as well,\n+{k(lv.median_vs_engine)} and +{k(lv.p5_vs_engine)}"))
     eh = pd.read_csv(R / "equity_horizon.csv")
     e74 = eh[(eh.returns == "nominal") & (eh.start == 1926) & (eh.horizon_m == 74)].iloc[0]
@@ -517,11 +546,19 @@ def checks() -> list[tuple[str, str, str]]:
     lpm = pd.read_csv(R / "ladder_premium.csv")
     lpm = lpm[(lpm.kind == "score") & lpm.strategy.str.startswith("IPS")].set_index("variant")
     out.append(("MODEL", "ladder slope, loop summary",
-                f"a rate-dependent ladder premium (+${lpm.loc['rate slope', 'median_vs_engine']:,.0f} median"))
+                f"a rate-dependent ladder premium ({d(lpm.loc['rate slope', 'median_vs_engine'])} median"))
     out += [("MODEL", f"sensitivity row {i + 1}", row) for i, row in enumerate(sensitivity_rows())]
     out += [("MODEL", f"decision row {i + 1}", row) for i, row in enumerate(decision_rows())]
     tw10 = fx.loc["random_walk", "real_median"] - fx.loc["random_walk_tw_drift_10y", "real_median"]
     out.append(("MODEL", "Taiwan drift effect", f"the real median by {k(tw10)} (`scripts/fx_variants.py`"))
+    out.append(("MODEL", "curve price assumption caveat",
+                "assumption is that the January 2033 reserve purchase can be made at the curve's prices"))
+    out.append(("MODEL", "top-up loop change",
+                f"reserve top-up making all ten payments certain even at 0% reinvestment, funded from the facility "
+                f"(median $197.0k -> {k(plan['median'])}, 5th percentile $146.1k -> {k(plan['p5'])}, real median $166.5k -> {k(plan['real_median'])})"))
+    out.append(("README", "headline numbers",
+                f"median facility {k(plan['median'])}, 5th percentile {k(plan['p5'])}, CVaR 5% {k(plan['cvar5'])}, "
+                f"real median {k(plan['real_median'])} (Taiwan 2027 terms), and {r33['funded_share']:.0%} funded share"))
     return out
 
 
@@ -556,10 +593,15 @@ def pattern(text: str) -> re.Pattern:
 def fix() -> list[tuple[str, str, str]]:
     """Rewrite each stale figure found exactly once, number by number, so the doc keeps its own line
     breaks; return the ones that could not be placed."""
-    paths = {"MODEL": ROOT / "docs" / "MODEL.md", "VALIDATION": ROOT / "docs" / "VALIDATION.md"}
+    paths = {d: p for d, p in (("MODEL", ROOT / "docs" / "MODEL.md"),
+                                ("VALIDATION", ROOT / "docs" / "VALIDATION.md"),
+                                ("README", ROOT / "README.md")) if p.exists()}
     texts = {d: p.read_text() for d, p in paths.items()}
     left = []
     for doc, what, text in missing():
+        if doc not in texts:
+            left.append((doc, what, text))
+            continue
         hits = list(pattern(text).finditer(texts[doc]))
         if len(hits) != 1:
             left.append((doc, what, text))
@@ -575,8 +617,13 @@ def fix() -> list[tuple[str, str, str]]:
 
 
 def missing() -> list[tuple[str, str, str]]:
-    docs = {d: _flat((ROOT / "docs" / f"{d}.md").read_text()) for d in ("MODEL", "VALIDATION")}
-    return [c for c in checks() if _flat(c[2]) not in docs[c[0]]]
+    paths = {
+        "MODEL": ROOT / "docs" / "MODEL.md",
+        "VALIDATION": ROOT / "docs" / "VALIDATION.md",
+        "README": ROOT / "README.md",
+    }
+    docs = {d: _flat(p.read_text()) for d, p in paths.items() if p.exists()}
+    return [c for c in checks() if c[0] in docs and _flat(c[2]) not in docs[c[0]]]
 
 
 def main() -> int:

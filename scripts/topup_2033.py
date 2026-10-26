@@ -155,15 +155,29 @@ def solve_topup_lp(
     }
 
 
-def roll_cash_to_2033(flow_by_m: dict[int, float], rates_mat: np.ndarray, start_m: int = 2, end_m: int = 74) -> np.ndarray:
+def roll_cash_to_2033(
+    flow_by_m: dict[int, float],
+    rates_mat: np.ndarray,
+    start_m: int = 2,
+    end_m: int = 74,
+    d1: np.ndarray | float = 1.0,
+    d2: np.ndarray | float = 0.0,
+) -> np.ndarray:
     """Roll cash forward from start_m to end_m under monthly 1m rates floored at 0."""
     n_paths = rates_mat.shape[0]
-    c0 = sum(amt for m, amt in flow_by_m.items() if m < start_m)
-    cash = np.full(n_paths, c0, dtype=float)
+    past_27 = sum(amt for m, amt in flow_by_m.items() if m <= 2)
+    past_28 = sum(amt for m, amt in flow_by_m.items() if m <= 14)
+    d1_arr = np.broadcast_to(d1, (n_paths,)).copy()
+    d2_arr = np.broadcast_to(d2, (n_paths,)).copy()
+    cash = d1_arr * past_27
+    held_share = d1_arr.copy()
 
     for idx_m, m in enumerate(range(start_m, end_m)):
+        if m == 14:
+            cash += d2_arr * past_28
+            held_share += d2_arr
         if m in flow_by_m:
-            cash += flow_by_m[m]
+            cash += held_share * flow_by_m[m]
         cash *= (1.0 + rates_mat[:, idx_m] / 12.0)
 
     return cash
@@ -226,8 +240,8 @@ def main(n: int = 20_000):
     r_list = [-np.log(sc.df(m, 1/12)[:, 0]) * 12.0 for m in range(2, m_2033)]
     r_sim = np.maximum(np.column_stack(r_list), 0.0)
 
-    # Roll cash on hand entering January 2033 for all paths
-    cash_2033 = roll_cash_to_2033(flow_by_m, r_sim, start_m=2, end_m=m_2033)
+    # Reserve cash entering January 2033 from the engine (including 2028 tranche crediting)
+    cash_2033 = res_engine["reserve_cash_2033"]
 
     # Task 1: Measure first
     curve_p0 = sc.curve(0, m_2033, settle_2033)
@@ -293,7 +307,7 @@ def main(n: int = 20_000):
         if m in flow_by_m:
             c_roll0 += flow_by_m[m]
 
-    print(f"Check (ii): Constructed path with all rates at 0 from 2027:")
+    print("Check (ii): Constructed path with all rates at 0 from 2027:")
     print(f"  Holding 3% ladder at 0% total shortfall: ${sf_roll0:,.2f}")
     print(f"  Top-up cost on 0% curve in Jan 2033:     ${flat0_topup['cost']:,.2f}")
     diff_0 = abs(flat0_topup["cost"] - sf_roll0)
