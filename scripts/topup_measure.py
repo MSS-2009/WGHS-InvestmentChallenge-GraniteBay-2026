@@ -21,24 +21,28 @@ from lgm.strategies import IPS
 from topup_2033 import get_held_ladder_data, roll_cash_to_2033, solve_topup_lp
 
 
-def measure_engine_today(n: int = 20_000, runs: int = 5) -> dict[str, float]:
+def measure_engine(st, n: int = 20_000, runs: int = 5, topup_2033: bool = True) -> dict[str, float]:
     core = build_core()
     w = core["w_bl"]
     er = np.array([g.expense_ratio for g in CORE])
     p = esg_params(core["cal"], core["table"]["bl_geo_total"].values)
     sc = simulate(p, n=n, seed=11)
-    st = dc.replace(IPS, region_weights=tuple(w))
-    cfg = engine.EngineConfig(eq_er=tuple(er))
+    st_run = dc.replace(st, region_weights=tuple(w))
+    cfg = engine.EngineConfig(eq_er=tuple(er), topup_2033=topup_2033)
 
     times = []
     for _ in range(runs):
         t0 = time.perf_counter()
-        _ = engine.run(st, sc, cfg)
+        _ = engine.run(st_run, sc, cfg)
         t1 = time.perf_counter()
         times.append(t1 - t0)
 
     med = float(np.median(times))
     return {"runs": times, "median_s": med}
+
+
+def measure_engine_today(n: int = 20_000, runs: int = 5) -> dict[str, float]:
+    return measure_engine(IPS, n=n, runs=runs, topup_2033=False)
 
 
 def measure_lp_and_bases(n: int = 20_000) -> dict:
@@ -107,16 +111,26 @@ def measure_lp_and_bases(n: int = 20_000) -> dict:
 
 
 def main():
+    from lgm.strategies import S1
     n = int(sys.argv[1]) if len(sys.argv) > 1 else 20_000
     print("=" * 70)
     print("Task 1: Measurement Script (scripts/topup_measure.py)")
     print("=" * 70)
 
-    # 1. Measure today's engine.run
-    print(f"\n1. Measuring today's engine.run on {n:,} headline scenarios (5 runs)...")
-    eng_res = measure_engine_today(n=n, runs=5)
-    print("Run times (s):", [round(t, 4) for t in eng_res["runs"]])
-    print(f"Median engine.run time: {eng_res['median_s']:.4f} s")
+    # 1. Measure engine.run for IPS and S1
+    print(f"\n1. Measuring engine.run on {n:,} headline scenarios (5 runs each)...")
+    ips_false = measure_engine(IPS, n=n, runs=5, topup_2033=False)
+    ips_true = measure_engine(IPS, n=n, runs=5, topup_2033=True)
+    s1_false = measure_engine(S1, n=n, runs=5, topup_2033=False)
+    s1_true = measure_engine(S1, n=n, runs=5, topup_2033=True)
+
+    delta_ips = ips_true["median_s"] - ips_false["median_s"]
+    delta_s1 = s1_true["median_s"] - s1_false["median_s"]
+
+    print(f"IPS topup_2033=False median: {ips_false['median_s']:.4f} s")
+    print(f"IPS topup_2033=True  median: {ips_true['median_s']:.4f} s (Delta: {delta_ips:+.4f} s, budget <= +0.50 s)")
+    print(f"S1  topup_2033=False median: {s1_false['median_s']:.4f} s")
+    print(f"S1  topup_2033=True  median: {s1_true['median_s']:.4f} s (Delta: {delta_s1:+.4f} s, budget <= +0.50 s)")
 
     # 2. Measure LP timing and distinct optimal bases
     print(f"\n2. Measuring exact LP per path and counting distinct optimal bases ({n:,} paths)...")

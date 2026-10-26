@@ -53,10 +53,45 @@ def main():
     med_true = float(np.median(times_true))
     delta_s = med_true - med_false
 
-    print(f"\n[Speed Budget 1: engine.run on 20,000 scenarios]")
-    print(f"  topup_2033=False median (5 runs): {med_false:.4f} s")
-    print(f"  topup_2033=True median (5 runs):  {med_true:.4f} s")
-    print(f"  Delta:                           +{delta_s:.4f} s (budget: <= +0.50 s) -> {'PASS' if delta_s <= 0.50 else 'FAIL'}")
+    # Also measure S1
+    from lgm.strategies import S1, S2, Strategy
+    st_s1 = dc.replace(S1, region_weights=tuple(w))
+    times_s1_false = []
+    for _ in range(5):
+        t0 = time.perf_counter()
+        _ = engine.run(st_s1, sc, cfg_false)
+        times_s1_false.append(time.perf_counter() - t0)
+    med_s1_false = float(np.median(times_s1_false))
+
+    times_s1_true = []
+    for _ in range(5):
+        t0 = time.perf_counter()
+        _ = engine.run(st_s1, sc, cfg_true)
+        times_s1_true.append(time.perf_counter() - t0)
+    med_s1_true = float(np.median(times_s1_true))
+    delta_s1_s = med_s1_true - med_s1_false
+
+    print(f"\n[Speed Budget 1: engine.run on 20,000 scenarios (5 runs)]")
+    print(f"  IPS topup_2033=False median: {med_false:.4f} s")
+    print(f"  IPS topup_2033=True median:  {med_true:.4f} s")
+    print(f"  IPS Delta:                   +{delta_s:.4f} s (budget: <= +0.50 s) -> {'PASS' if delta_s <= 0.50 else 'FAIL'}")
+    print(f"  S1  topup_2033=False median: {med_s1_false:.4f} s")
+    print(f"  S1  topup_2033=True median:  {med_s1_true:.4f} s")
+    print(f"  S1  Delta:                   +{delta_s1_s:.4f} s (budget: <= +0.50 s) -> {'PASS' if delta_s1_s <= 0.50 else 'FAIL'}")
+
+    # Policy comparison table for S1, S2, and Partly locked 50%
+    st_s2 = dc.replace(S2, region_weights=tuple(w))
+    st_part = Strategy("Partly locked 50%", lock_2027=0.5, lock_2028=0.5, lock_2031=0.5, equity_share=0.6, region_weights=tuple(w))
+
+    print(f"\n[Policy Comparison: S1, S2, Partly Locked 50% (n=20,000)]")
+    for pol in [st_s1, st_s2, st_part]:
+        r_f = engine.run(pol, sc, cfg_false)
+        r_t = engine.run(pol, sc, cfg_true)
+        f_f = r_f["facility"]
+        f_t = r_t["facility"]
+        print(f"  {pol.name:<25}:")
+        print(f"    Before fix (open at kappa):  median=${np.median(f_f):,.1f}, p5=${np.percentile(f_f, 5):,.1f}")
+        print(f"    After fix (0% reserve LP):   median=${np.median(f_t):,.1f}, p5=${np.percentile(f_t, 5):,.1f}")
 
     # 3. Accuracy check against reports/topup_2033.csv
     res_true = engine.run(st, sc, cfg_true)
