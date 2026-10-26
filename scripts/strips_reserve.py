@@ -46,14 +46,16 @@ def main(n: int = 20_000):
     st = dc.replace(IPS, region_weights=tuple(w))
     cfg_base = engine.EngineConfig(eq_er=tuple(er))
 
-    # Baseline run (default kappa0 = 0.018, corresponding to WInS ladder at ~3%)
+    # Baseline run (default kappa0 = 0.018, corresponding to WInS ladder at ~3%, with adopted Jan 2033 topup)
     res_base = engine.run(st, sc, cfg_base)
     base_median = float(np.median(res_base["facility"]))
+    base_p5 = float(np.percentile(res_base["facility"], 5))
 
-    # WInS ladder at 0% benchmark
+    # WInS ladder at 0% benchmark (priced certain at lock, no 2033 topup)
     k_wins_0 = ladder.premium(zc, 0.0)
-    res_wins_0 = engine.run(st, sc, dc.replace(cfg_base, kappa0=k_wins_0))
+    res_wins_0 = engine.run(st, sc, dc.replace(cfg_base, kappa0=k_wins_0, topup_2033=False))
     wins_0_median = float(np.median(res_wins_0["facility"]))
+    wins_0_p5 = float(np.percentile(res_wins_0["facility"], 5))
 
     universes = [
         ("STRIPS (market quotes)", strips_universe(use_market_quotes=True)),
@@ -79,10 +81,16 @@ def main(n: int = 20_000):
             lp = ladder.solve(u, pays, zc, reinvest=r_rate)
             k0 = lp.cost / zc_cost - 1.0
             idle = ladder.idle_cash_days(u, lp.units, pays, zc, reinvest=r_rate)
-            rr = engine.run(st, sc, dc.replace(cfg_base, kappa0=k0))
+            # STRIPS need no 2033 top-up; WInS 0% is priced certain at lock so no top-up;
+            # WInS 3% uses the adopted January 2033 top-up
+            topup = (uname == "WInS universe" and r_rate == 0.03)
+            rr = engine.run(st, sc, dc.replace(cfg_base, kappa0=k0, topup_2033=topup))
             med = float(np.median(rr["facility"]))
+            p5 = float(np.percentile(rr["facility"], 5))
             diff_wins_3 = med - base_median
+            diff_p5_wins_3 = p5 - base_p5
             diff_wins_0 = med - wins_0_median
+            diff_p5_wins_0 = p5 - wins_0_p5
 
             row = {
                 "universe": uname,
@@ -94,8 +102,11 @@ def main(n: int = 20_000):
                 "idle_cash_dollar_days": round(idle["total_dollar_days"], 1),
                 "idle_cash_weighted_days": round(idle["weighted_avg_days"], 1),
                 "median_facility": round(med, 1),
+                "p5_facility": round(p5, 1),
                 "median_change_vs_wins_3pct": round(diff_wins_3, 1),
+                "p5_change_vs_wins_3pct": round(diff_p5_wins_3, 1),
                 "median_change_vs_wins_0pct": round(diff_wins_0, 1),
+                "p5_change_vs_wins_0pct": round(diff_p5_wins_0, 1),
                 "holdings_json": json.dumps({k: round(v, 2) for k, v in lp.holdings.items()}),
             }
             rows.append(row)

@@ -89,7 +89,7 @@ def decision_rows() -> list[str]:
     s20 = sat.loc[("Black-Litterman posterior", "$25 (WInS)", "Core + 20% satellite"), "median_vs_core"]
     s20f = sat.loc[("Black-Litterman posterior", "none", "Core + 20% satellite"), "median_vs_core"]
     sr = pd.read_csv(R / "strips_reserve.csv").set_index(["universe", "reinvestment_rate"])
-    sx, w3, w0 = sr.loc[("STRIPS (ask quotes)", 0.0)], sr.loc[("WInS universe", 0.03)], sr.loc[("WInS universe", 0.0)]
+    sx, w3 = sr.loc[("STRIPS (ask quotes)", 0.0)], sr.loc[("WInS universe", 0.03)]
     return [
         f"| Growth mix and 2031 floor | {alt.equity_share:.0%} equity with a {alt.floor_share:.0%} floor instead of the IPS's "
         f"{ips.equity_share:.0%} and {ips.floor_share:.0%}: median {d(alt['median'] - ips['median'])}, 5th percentile "
@@ -110,9 +110,9 @@ def decision_rows() -> list[str]:
         f"not a return one | Part 2b |",
         f"| Reserve outside WInS | STRIPS need no reinvestment assumption and, at the retail ask, cost about what the "
         f"WInS ladder costs assuming 3% ({sx.cost_over_zero / sx.zero_coupon_value:+.2%} vs "
-        f"{w3.cost_over_zero / w3.zero_coupon_value:+.2%} over zero-coupon value): {k(w0.cost - sx.cost)} cheaper than "
-        f"pricing the WInS ladder certain at the lock, {d(sx.median_facility - w0.median_facility)} of median | Only if WInS rules do "
-        f"not bind | `scripts/strips_reserve.py` |",
+        f"{w3.cost_over_zero / w3.zero_coupon_value:+.2%} over zero-coupon value): STRIPS give {d(sx.median_change_vs_wins_3pct)} of "
+        f"median and {d(sx.p5_change_vs_wins_3pct)} of 5th percentile against the adopted ladder with its January 2033 top-up | "
+        f"Only if WInS rules do not bind | `scripts/strips_reserve.py` |",
     ]
 
 
@@ -284,8 +284,8 @@ def checks() -> list[tuple[str, str, str]]:
                 f"costs {k(196989.2 - plan['median'])} in median facility ({k(plan['median'])} vs $197.0k) and "
                 f"{k(146101.9 - plan['p5'])} at the 5th percentile ({k(plan['p5'])} vs $146.1k)"))
     out.append(("MODEL", "top-up savings vs 0pct lock",
-                f"saves +{k(plan['median'] - zero['median'])} in median and +{k(plan['p5'] - 139725.1)} at the 5th percentile "
-                f"compared to pricing 0% certainty upfront at the lock ({k(zero['median'])} median, $139.7k 5th percentile"))
+                f"is {k(plan['median'] - zero['median'])} better in median and {k(plan['p5'] - 139725.1)} at the 5th percentile "
+                f"than pricing 0% certainty at the lock ({k(zero['median'])} median, $139.7k 5th percentile"))
     out.append(("MODEL", "top-up distribution",
                 f"{r33['share_with_topup']:.1%} require a top-up (mean ${r33['mean']:,.0f}, median ${r33['median']:,.0f}, "
                 f"95th percentile ${r33['p95']:,.0f}, 99th percentile ${r33['p99']:,.0f}, maximum ${r33['max']:,.0f})"))

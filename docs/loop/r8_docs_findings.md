@@ -20,8 +20,9 @@ Below is the decision table for all 6 sites with `kappa0` in `scripts/`:
 | File:Line | What it measures | Top-up 2033 status | Decision & Rationale |
 |---|---|---|---|
 | `scripts/report_numbers.py:129` | `reserve_certain_at_0pct_reinvestment` stress test | Changed to `False` | **Fixed**: When priced certain upfront at lock ($k_0 = 3.70\%$), all ladder payments are already locked at 0% reinvestment. Top-up in 2033 would double-charge. Set `topup_2033=False`. |
-| `scripts/strips_reserve.py:101` | Baseline configuration for STRIPS comparison (`base_cfg`) | Left as default (`True`) | **Keep**: The baseline for comparison against STRIPS must be the adopted default strategy (which includes `topup_2033=True`). |
-| `scripts/strips_reserve.py:149` | `wins_0pct` strategy (WInS ladder priced at 0% reinvestment) | Explicitly set to `False` (`topup_2033=False`) | **Correct as-is**: Already set to `False` in code. Measures upfront 0% lock without 2033 top-up. |
+| `scripts/strips_reserve.py:47` | Baseline configuration for STRIPS comparison (`cfg_base`) | Default (`True`) | **Keep**: The baseline for comparison against STRIPS is the adopted default strategy (`topup_2033=True`). |
+| `scripts/strips_reserve.py:55` | `res_wins_0` benchmark (WInS ladder priced at 0% reinvestment) | Changed to `False` | **Fixed**: When priced certain upfront at lock ($k_0 = 3.70\%$), no 2033 top-up should run. Explicitly set `topup_2033=False`. |
+| `scripts/strips_reserve.py:82` | Simulation loop for STRIPS vs WInS | `topup = (uname == "WInS universe" and r_rate == 0.03)` | **Fixed**: STRIPS need no 2033 top-up (`topup_2033=False`). WInS 0% needs no top-up (`False`). Only WInS 3% uses the adopted January 2033 top-up (`True`). |
 | `scripts/reinvest_risk.py:20` | Baseline configuration for reinvestment risk simulation | Explicitly set to `False` (`topup_2033=False`) | **Correct as-is**: Already set to `False` in code. Simulates failure rate when top-up rule is absent. |
 | `scripts/policy_table.py:133` | Alternative policy row `Fixed reserve (0% floor, $302.4k)` | Explicitly set to `False` (`topup_2033=False`) | **Correct as-is**: Already set to `False` in code. Measures fixed upfront 0% reserve without top-up. |
 | `scripts/figure_ladder_cost.py:72` | Figure plotting ladder cost vs reinvestment rate assumption | N/A (Curve generation) | **Correct as-is**: Pure cost function plotting upfront ladder purchase cost as a function of reinvestment assumption ($k_0 \in [0\%, 5\%]$); does not run Monte Carlo engine. |
@@ -147,9 +148,9 @@ A total of 80 figure replacements were performed across `docs/MODEL.md` and `doc
 **After:**
 > Locking the reserve as a ladder of zero-coupon Treasuries in January 2027 (and 2028) protects against price movements between the lock and each contribution date. However, pricing the ladder under an assumed 3% reinvestment rate leaves cash awaiting each annual contribution earning the simulated 1-month rate (floored at 0%). Without an explicit mechanism to bridge reinvestment shortfalls, 20.4% of paths miss at least one contribution payment.
 > 
-> To guarantee every payment without overpaying upfront, the adopted policy implements a **January 2033 top-up rule**: cash awaiting payments earns the simulated 1-month rate floored at 0%, and in January 2033, before that year's contribution is disbursed, a single market purchase locks all ten remaining annual payments (2033–2042) at 0% reinvestment, funded directly from the facility.
+> To guarantee every payment without overpaying upfront, the adopted policy implements a **January 2033 top-up rule**: cash awaiting payments earns the simulated 1-month rate floored at 0%, and in January 2033, before that year's contribution is disbursed, a single market purchase makes all ten remaining annual payments (2033–2042) certain even if cash earns nothing, funded directly from the facility.
 > 
-> This rule costs $1.4k of median ending balance ($195.6k vs $197.0k) and $2.0k of 5th percentile ($144.1k vs $146.1k) compared to an un-topped-up 3% ladder, but saves $6.4k in median ending balance ($195.6k vs $189.2k) and $4.4k in 5th percentile ($144.1k vs $139.7k) compared to pricing all payments at 0% reinvestment upfront at the lock. Across 10,000 paths, 75.9% require a positive top-up (mean $1,479.7, median $1,153.9, 95th percentile $4,334.2, maximum $7,538.0). The smallest facility entering January 2033 before top-up is $80,402.3, covering the maximum required top-up ($7,538.0) by more than 10x and ensuring 100.0% funded share.
+> This rule costs $1.4k in median facility ($195.6k vs $197.0k) and $2.0k at the 5th percentile ($144.1k vs $146.1k) against the 3%-only numbers, but is $6.4k better in median and $4.4k at the 5th percentile than pricing 0% certainty at the lock ($189.2k median, $139.7k 5th percentile). Across 10,000 paths, 75.9% require a top-up (mean $1,479.7, median $1,153.9, 95th percentile $4,334.2, maximum $7,538.0). The smallest facility entering January 2033 before top-up is $80,402.3, covering the maximum required top-up ($7,538.0) by more than 10x and ensuring 100.0% funded share.
 > 
 > Even so, 6 of the 10 IBTOs (2032 through 2037) are tradeable on WInS and could be purchased directly at lock, eliminating all reinvestment risk for those years at an upfront cost of about $4.2k.
 
@@ -174,9 +175,9 @@ A total of 80 figure replacements were performed across `docs/MODEL.md` and `doc
 > Text: "STRIPS cost $296.1k at retail ask (+1.54% over mid, or about $4.5k in dealer spread). That is $6.3k cheaper than making the WInS ladder certain at lock ($302.4k at 0% reinvestment), and it eliminates all reinvestment risk from day one."
 
 **After:**
-> | Reserve outside WInS | Buy retail STRIPS at lock ($296.1k, +1.54% upfront) | Buy WInS ladder at lock ($296.9k) + Jan 2033 top-up | STRIPS guarantee every payment at lock with zero reinvestment risk; WInS ladder is $0.8k cheaper upfront and makes payments certain via 2033 top-up, but pricing WInS certain at lock costs $6.3k more (+1.71%) |
+> | Reserve outside WInS | STRIPS need no reinvestment assumption and, at the retail ask, cost about what the WInS ladder costs assuming 3% (+1.54% vs +1.82% over zero-coupon value): STRIPS give +$2.5k of median and +$2.8k of 5th percentile against the adopted ladder with its January 2033 top-up | Only if WInS rules do not bind | `scripts/strips_reserve.py` |
 >
-> Text: "Under the adopted rule, the WInS ladder is already made certain via the January 2033 top-up ($195.6k median). Compared to pricing the WInS ladder certain at the lock ($189.2k median), buying STRIPS at retail ask ($296.1k, +1.54%) is $6.3k cheaper upfront and delivers +$9.0k higher median ($198.2k vs $189.2k). Compared to the adopted WInS policy with 2033 top-up ($195.6k), STRIPS are $0.8k cheaper upfront and yield +$1.1k higher median ($196.7k vs $195.6k in `reports/strips_reserve.csv`)."
+> In `scripts/strips_reserve.py`, the baseline WInS comparison runs with the adopted default (`topup_2033=True`), while STRIPS runs with `topup_2033=False` because physical zero-coupon STRIPS require no 2033 top-up. The WInS 0% benchmark also runs with `topup_2033=False` (already priced certain at lock). `scripts/strips_reserve.py` was extended to report 5th percentile metrics (`p5_facility`, `p5_change_vs_wins_3pct`, `p5_change_vs_wins_0pct`). Against the adopted baseline ($195.6k median, $144.1k p5), retail ask STRIPS deliver +$2.5k higher median ($198.1k) and +$2.8k higher 5th percentile ($146.9k). Against pricing the WInS ladder certain at lock ($189.2k median, $139.7k p5), retail ask STRIPS deliver +$8.8k higher median and +$7.2k higher 5th percentile.
 
 ### 5. `docs/MODEL.md`: "Changes from the improvement loop"
 Added entry:
@@ -184,15 +185,10 @@ Added entry:
 
 ### 6. `README.md`
 **Before:**
-> - Median ending portfolio: **$197.0k** (real: **$166.5k**)
-> - 5th percentile (downside): **$146.1k**
-> - CVaR 5% (expected shortfall): **$135.2k**
+> Under the January 2033 top-up rule, the reserve is locked in January 2027-2028 and topped up in January 2033 so that all ten payments are guaranteed even if cash earns 0% reinvestment. Headline results across 20,000 Monte Carlo scenarios: median facility $195.6k, 5th percentile $144.1k, CVaR 5% $133.1k, real median $165.4k (Taiwan 2027 terms), and 100% funded share.
 
 **After:**
-> - Median ending portfolio: **$195.6k** (real: **$165.4k**)
-> - 5th percentile (downside): **$144.1k**
-> - CVaR 5% (expected shortfall): **$133.1k**
-> - Reinvestment certainty: all 15 payments guaranteed by a 3% ladder locked in 2027/2028 and a single top-up purchase in January 2033 funded from the facility (100.0% funded share).
+> Under the January 2033 top-up rule, the reserve is locked in January 2027-2028 and topped up in January 2033 so that all ten payments are certain even if cash earns nothing. Headline results across 20,000 Monte Carlo scenarios: median facility $195.6k, 5th percentile $144.1k, CVaR 5% $133.1k, real median $165.4k (Taiwan 2027 terms), and 100% funded share.
 
 ### 7. `docs/VALIDATION.md`: Section 7 Bullet
 **Generated via `reinvestment_risk_bullet()` in `scripts/doc_numbers.py`:**

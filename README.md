@@ -4,7 +4,7 @@ Liability-driven investment model for the 2026-27 Laura Gao case: fund ten fixed
 (2033-2042) with certainty, then build the largest responsible facility contribution for 2033.
 
 Under the January 2033 top-up rule, the reserve is locked in January 2027-2028 and topped up in
-January 2033 so that all ten payments are guaranteed even if cash earns 0% reinvestment. Headline
+January 2033 so that all ten payments are certain even if cash earns nothing. Headline
 results across 20,000 Monte Carlo scenarios: median facility $195.6k, 5th percentile $144.1k,
 CVaR 5% $133.1k, real median $165.4k (Taiwan 2027 terms), and 100% funded share.
 

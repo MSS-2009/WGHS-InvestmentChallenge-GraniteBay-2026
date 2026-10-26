@@ -42,7 +42,7 @@ The model leaves these open. Each row gives what the evidence says and where it 
 | Hedge USD/TWD | On the random walk every hedge lowers the real 5th percentile and median; if the forward were unbiased, at most +$4.1k on the 5th percentile | Evidence says do not hedge | USD/TWD |
 | Taiwan building-cost drift | The long-run average forecast six-year cost growth better in real time (RMSE 0.167 vs 0.222); the ten-year drift would mean -$8.7k of real median | Evidence supports the long-run average | Taiwan building costs |
 | Stock satellite | -$4.3k median at 20% with WInS commissions, +$0.5k without | A values choice, not a return one | Part 2b |
-| Reserve outside WInS | STRIPS need no reinvestment assumption and, at the retail ask, cost about what the WInS ladder costs assuming 3% (+1.54% vs +1.82% over zero-coupon value): $6.3k cheaper than pricing the WInS ladder certain at the lock, +$9.0k of median | Only if WInS rules do not bind | `scripts/strips_reserve.py` |
+| Reserve outside WInS | STRIPS need no reinvestment assumption and, at the retail ask, cost about what the WInS ladder costs assuming 3% (+1.54% vs +1.82% over zero-coupon value): STRIPS give +$2.5k of median and +$2.8k of 5th percentile against the adopted ladder with its January 2033 top-up | Only if WInS rules do not bind | `scripts/strips_reserve.py` |
 
 ## Part 1 — funding model
 Treasury par curve → zero curve → cheapest WInS-permitted cash-flow-matched ladder (linear program),
@@ -120,12 +120,12 @@ Market inputs (all keyless):
 **How certain is "certain"?** A locked payment is treated as certain. Under the adopted January 2033
 top-up rule, the reserve is locked in January 2027 (and 2028) as a share of the 3% ladder, and idle
 cash earns the simulated 1-month rate floored at 0; then in January 2033, before the contribution is
-paid, a single reserve purchase makes all ten payments certain even if cash earns 0% reinvestment.
+paid, a single reserve purchase makes all ten payments certain even if cash earns nothing.
 Evidence that 3% reinvestment alone is not enough: without the rule, 20.4% of simulated paths miss at
 least one payment (`reports/reinvest_risk.csv`). At 0% the cheapest ladder costs 3.7% over zero-coupon
 value instead of 1.8%. The rule costs $1.4k in median facility ($195.6k vs
-$197.0k) and $2.0k at the 5th percentile ($144.1k vs $146.1k) against the 3%-only numbers, but saves
-+$6.4k in median and +$4.4k at the 5th percentile compared to pricing 0% certainty upfront at the lock
+$197.0k) and $2.0k at the 5th percentile ($144.1k vs $146.1k) against the 3%-only numbers, but is
+$6.4k better in median and $4.4k at the 5th percentile than pricing 0% certainty at the lock
 ($189.2k median, $139.7k 5th percentile; `reports/report_numbers.json`, `stress`). Across all 20,000
 paths, 75.9% require a top-up (mean $1,480, median $1,154, 95th percentile $4,334, 99th percentile
 $5,852, maximum $7,538). The facility fund always covers it: the smallest facility entering January 2033
@@ -427,7 +427,7 @@ example `taiwan_variants.csv`, `rate_tails_impact.csv`) used the defaults of the
   against the core alone; with $25 commissions from -$4.2k to -$4.8k to -$4.9k. Thin evidence: four
   overlapping screens, one market episode, today's index members only, and the qualitative judgments
   could not be re-run historically.
-- Locked payments are made certain by the January 2033 top-up even if cash earns 0% reinvestment. The
+- Locked payments are made certain by the January 2033 top-up even if cash earns nothing. The
   remaining assumption is that the January 2033 reserve purchase can be made at the curve's prices.
 
 ## Reproduce
