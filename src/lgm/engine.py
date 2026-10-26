@@ -321,21 +321,36 @@ def _rebalance(s: State, sc: Scenarios, m: int, st: Strategy, cfg: EngineConfig,
     _invest(s, sc, m, st, amount, cfg, eq_target=target_eq)
 
 
-def _lock(s: State, sc: Scenarios, m: int, target: float, budget: np.ndarray, cfg: EngineConfig) -> np.ndarray:
-    """Raise every payment's matched fraction toward `target`, longest payment first, within budget.
+def _lock(s: State, sc: Scenarios, m: int, target: float, budget: np.ndarray, cfg: EngineConfig,
+          ladder_flow_by_m: dict[int, float] | None = None) -> np.ndarray:
+    """Raise every payment's matched fraction toward `target`, within budget.
+    Under topup_2033=True, buys share d of the 3% ladder at today's price rule,
+    crediting past flows at lock. Under topup_2033=False, buys longest payment first.
     Returns money spent."""
     tau = pay_tau(m)
     unit = PMT * sc.df(m, np.maximum(tau, 0)) * (1 + kappa(m, cfg, sc))      # (N, K) cost of a full payment
-    need = np.clip(target - s.locked, 0, None)                              # (N, K)
-    spent = np.zeros(sc.n)
-    left = budget.copy()
-    for k in range(N_PAY - 1, -1, -1):
-        cost_k = need[:, k] * unit[:, k]
-        frac = np.where(cost_k > 0, np.minimum(1.0, left / np.where(cost_k > 0, cost_k, 1)), 0.0)
-        s.locked[:, k] += need[:, k] * frac
-        paid = cost_k * frac
-        left -= paid
-        spent += paid
+    if cfg.topup_2033:
+        ladder_price = unit.sum(axis=1)
+        cur_share = s.locked[:, 0]
+        need_d = np.clip(target - cur_share, 0.0, None)
+        max_d = np.where(ladder_price > 0, budget / ladder_price, 0.0)
+        d = np.minimum(need_d, max_d)
+        spent = d * ladder_price
+        s.locked += d[:, None]
+        if ladder_flow_by_m is not None and s.reserve_cash is not None:
+            past_flows = sum(amt for m_flow, amt in ladder_flow_by_m.items() if m_flow <= m)
+            s.reserve_cash += d * past_flows
+    else:
+        need = np.clip(target - s.locked, 0, None)                              # (N, K)
+        spent = np.zeros(sc.n)
+        left = budget.copy()
+        for k in range(N_PAY - 1, -1, -1):
+            cost_k = need[:, k] * unit[:, k]
+            frac = np.where(cost_k > 0, np.minimum(1.0, left / np.where(cost_k > 0, cost_k, 1)), 0.0)
+            s.locked[:, k] += need[:, k] * frac
+            paid = cost_k * frac
+            left -= paid
+            spent += paid
     if cfg.commissions:
         s.costs += np.where(spent > 0, 5 * COMMISSION_ETF + 5 * COMMISSION_BOND, 0.0)
     return spent
@@ -379,7 +394,8 @@ def _step(s: State, sc: Scenarios, m: int, cfg: "EngineConfig", ladder_flow_by_m
         s.costs *= np.divide(v1, v0, out=np.ones_like(v0), where=v0 > 0)
     if ladder_flow_by_m is not None and m >= M_2027:
         if m in ladder_flow_by_m:
-            s.reserve_cash += ladder_flow_by_m[m]
+            held_share = s.locked[:, 0] if cfg.topup_2033 else 1.0
+            s.reserve_cash += held_share * ladder_flow_by_m[m]
         df_1m = sc.df(m, [1 / 12.0])[:, 0]
         r_1m = np.maximum(-np.log(df_1m) * 12.0, 0.0)
         s.reserve_cash *= (1.0 + r_1m / 12.0)
@@ -467,11 +483,9 @@ def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: Sta
         elif m in deposits:
             cash_in = np.full(n, deposits[m])
             target = st.lock_2027 if m == M_2027 else st.lock_2028
-            spent = _lock(s, sc, m, target, cash_in, cfg) if target > 0 else np.zeros(n)
+            spent = _lock(s, sc, m, target, cash_in, cfg, ladder_flow_by_m) if target > 0 else np.zeros(n)
             if m == M_2027:
                 out["lock_cost_2027"] = spent + 0.0
-                c0 = sum(amt for m_flow, amt in ladder_flow_by_m.items() if m_flow < M_2027)
-                s.reserve_cash += c0
             _invest(s, sc, m, st, cash_in - spent, cfg)
             if m == M_2028:
                 _rebalance(s, sc, m, st, cfg)
@@ -484,7 +498,7 @@ def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: Sta
                 unit = PMT * sc.df(m, tau) * (1 + kappa(m, cfg, sc))
                 need_cost = (np.clip(st.lock_2031 - s.locked, 0, None) * unit).sum(1)
                 raised = _liquidate(s, sc, m, need_cost)
-                _lock(s, sc, m, st.lock_2031, raised, cfg)
+                _lock(s, sc, m, st.lock_2031, raised, cfg, ladder_flow_by_m)
             g = growth_value(s, sc, m)
             if m == M_2031:
                 out["growth_2031"] = g.copy()
@@ -542,10 +556,12 @@ def run(st: Strategy, sc: Scenarios, cfg: EngineConfig | None = None, state: Sta
         held = sum((s.eq[:, f].sum(1) > 0).astype(float) for f in _funds(np.array(st.region_weights), cfg))
         s.costs += COMMISSION_ETF * (held + (s.vgit > 0) + np.where(s.eq.sum(1) > 0, cfg.extra_tickets, 0))
     assets = s.eq.sum(1) + s.vgit + s.ibtm_face + s.floor_face + s.cash - s.costs
-    open_cost = ((1 - s.locked) * PMT * sc.df(M_2033, pay_tau(M_2033)) * (1 + kappa(M_2033, cfg, sc))).sum(1)
     if cfg.topup_2033:
-        topup_cost = solve_topup(sc, s.reserve_cash, m_2033=M_2033, pmt=PMT, n_pay=N_PAY)
+        reserve_cost_2033 = solve_topup(sc, s.reserve_cash, m_2033=M_2033, pmt=PMT, n_pay=N_PAY, locked=s.locked)
+        open_cost = np.zeros(n)
+        topup_cost = reserve_cost_2033
     else:
+        open_cost = ((1 - s.locked) * PMT * sc.df(M_2033, pay_tau(M_2033)) * (1 + kappa(M_2033, cfg, sc))).sum(1)
         topup_cost = np.zeros(n)
     funded = assets >= open_cost + topup_cost - 1e-6
     facility = np.maximum(assets - open_cost - topup_cost, 0.0)
