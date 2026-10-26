@@ -2,18 +2,18 @@ kind,date,engine_kappa,lp_at_today_rate,slope,resid_sd,lp_min,lp_max,z5_p5,z5_p9
 fit,Jan 2027,0.018,0.01638,0.56918,0.00093,0.00856,0.02512,0.04269,0.05516,,,,,,,,,
 fit,Jan 2028,0.01629,0.01286,0.67723,0.00393,-0.03986,0.03495,0.03398,0.06387,,,,,,,,,
 fit,Jan 2031,0.01114,0.0049,0.66375,0.01103,-0.09848,0.01913,0.02535,0.0725,,,,,,,,,
-score,,,,0.0,,,,,,constant (engine),0.018,"IPS: lock, 60/40 with IBTM, 60% floor, 85% contribution",195570.0635,144164.10144,133244.9355,0.0,0.0,0.0
-score,,,,0.0,,,,,,constant (engine),0.018,"S1 Index-first, all equity",238199.22275,0.0,0.0,0.0,0.0,0.0
-score,,,,0.0,,,,,,constant (engine),0.018,"S2 Index-first, static 60/40",221799.77881,38711.05265,14489.92303,0.0,0.0,0.0
-score,,,,0.0,,,,,,constant (engine),0.018,"S6 Bond-first, equity surplus",203158.91551,113930.08083,98600.68083,0.0,0.0,0.0
-score,,,,0.0,,,,,,constant (engine),0.018,"S9 Bond-first, 60/40 surplus, 60% floor",195704.59469,143599.63153,132601.43753,0.0,0.0,0.0
-score,,,,0.62321,,,,,,rate slope,0.018,"IPS: lock, 60/40 with IBTM, 60% floor, 85% contribution",195561.59493,144799.75702,133990.48569,-8.46857,635.65559,745.55019
-score,,,,0.62321,,,,,,rate slope,0.018,"S1 Index-first, all equity",237931.47534,0.0,0.0,-267.74741,0.0,0.0
-score,,,,0.62321,,,,,,rate slope,0.018,"S2 Index-first, static 60/40",221872.82397,38806.10605,14569.21141,73.04516,95.05341,79.28837
-score,,,,0.62321,,,,,,rate slope,0.018,"S6 Bond-first, equity surplus",203304.40039,114112.11748,98849.97513,145.48489,182.03665,249.29429
-score,,,,0.62321,,,,,,rate slope,0.018,"S9 Bond-first, 60/40 surplus, 60% floor",195740.8457,144117.3538,133351.80522,36.25101,517.72227,750.36769
-score,,,,0.62321,,,,,,"rate slope, Jan 2027 LP level",0.01638,"IPS: lock, 60/40 with IBTM, 60% floor, 85% contribution",196225.33873,145371.65593,134502.0585,655.27523,1207.5545,1257.123
-score,,,,0.62321,,,,,,"rate slope, Jan 2027 LP level",0.01638,"S1 Index-first, all equity",238217.05535,0.0,0.0,17.83259,0.0,0.0
-score,,,,0.62321,,,,,,"rate slope, Jan 2027 LP level",0.01638,"S2 Index-first, static 60/40",222140.74093,39092.689,14754.6572,340.96212,381.63636,264.73416
-score,,,,0.62321,,,,,,"rate slope, Jan 2027 LP level",0.01638,"S6 Bond-first, equity surplus",204000.83311,114542.36518,99207.03782,841.9176,612.28435,606.35699
-score,,,,0.62321,,,,,,"rate slope, Jan 2027 LP level",0.01638,"S9 Bond-first, 60/40 surplus, 60% floor",196424.37062,144671.88824,133861.48457,719.77593,1072.25671,1260.04704
+score,,,,0.0,,,,,,constant (engine),0.018,"IPS: lock, 60/40 with IBTM, 60% floor, 85% contribution",195585.76019,144121.33703,133132.45046,0.0,0.0,0.0
+score,,,,0.0,,,,,,constant (engine),0.018,"S1 Index-first, all equity",237815.69648,0.0,0.0,0.0,0.0,0.0
+score,,,,0.0,,,,,,constant (engine),0.018,"S2 Index-first, static 60/40",221345.49566,38832.23672,14593.90209,0.0,0.0,0.0
+score,,,,0.0,,,,,,constant (engine),0.018,"S6 Bond-first, equity surplus",203227.69534,113892.40992,98584.55795,0.0,0.0,0.0
+score,,,,0.0,,,,,,constant (engine),0.018,"S9 Bond-first, 60/40 surplus, 60% floor",195730.74706,143570.95976,132485.34217,0.0,0.0,0.0
+score,,,,0.62321,,,,,,rate slope,0.018,"IPS: lock, 60/40 with IBTM, 60% floor, 85% contribution",195574.62853,144743.68788,133894.63053,-11.13166,622.35085,762.18006
+score,,,,0.62321,,,,,,rate slope,0.018,"S1 Index-first, all equity",237815.69648,0.0,0.0,0.0,0.0,0.0
+score,,,,0.62321,,,,,,rate slope,0.018,"S2 Index-first, static 60/40",221345.49566,38832.23672,14593.90209,0.0,0.0,0.0
+score,,,,0.62321,,,,,,rate slope,0.018,"S6 Bond-first, equity surplus",203360.28282,114063.82473,98839.61001,132.58748,171.41481,255.05206
+score,,,,0.62321,,,,,,rate slope,0.018,"S9 Bond-first, 60/40 surplus, 60% floor",195783.74391,144102.75648,133252.14995,52.99685,531.79672,766.80778
+score,,,,0.62321,,,,,,"rate slope, Jan 2027 LP level",0.01638,"IPS: lock, 60/40 with IBTM, 60% floor, 85% contribution",196255.41151,145292.96538,134408.95186,669.65132,1171.62835,1276.50139
+score,,,,0.62321,,,,,,"rate slope, Jan 2027 LP level",0.01638,"S1 Index-first, all equity",237815.69648,0.0,0.0,0.0,0.0,0.0
+score,,,,0.62321,,,,,,"rate slope, Jan 2027 LP level",0.01638,"S2 Index-first, static 60/40",221345.49566,38832.23672,14593.90209,0.0,0.0,0.0
+score,,,,0.62321,,,,,,"rate slope, Jan 2027 LP level",0.01638,"S6 Bond-first, equity surplus",204037.99627,114460.15006,99195.13905,810.30093,567.74014,610.5811
+score,,,,0.62321,,,,,,"rate slope, Jan 2027 LP level",0.01638,"S9 Bond-first, 60/40 surplus, 60% floor",196456.4604,144655.21191,133765.37525,725.71334,1084.25214,1280.03308
