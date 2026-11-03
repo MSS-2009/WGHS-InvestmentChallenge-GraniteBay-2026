@@ -12,8 +12,9 @@ that would have funded the ladder more cheaply; the summary gives the ladder's c
 
 Bond and low-risk funds: every US-listed ETF whose name marks it as a bond, bill, cash or income fund (Nasdaq
 ETF screener), less leveraged, inverse and stock-income funds.
-  Pass 1, quantitative: at least 36 months of prices and a price of $3; drop the top 20% by 3-year volatility,
-  the worst 20% by drawdown, and funds with a stock beta above 0.5 (a bond fund should not move with stocks);
+  Pass 1, quantitative: at least 36 months of prices and a price of $3; drop the worst 20% by drawdown and funds
+  with a stock beta above 0.5 (a bond fund should not move with stocks). Unlike the stock screen there is no
+  volatility cut: a bond fund's volatility mostly measures its length, and the 2033 date needs about six years;
   quantitative index = 0.5 z(12-month income return) + 0.5 z(3-year Sharpe ratio), within each category;
   pass = the risk filter and the top 75% of the category.
   Pass 2, fit for Laura's safe money (1-5 each): credit quality (by category); match to the January 2033
@@ -58,11 +59,13 @@ INCLUDE = (r"(?:treasur|t-bill|\bbill|bond|fixed income|municipal|\bmuni|corpora
 EXCLUDE = (r"(?:\b[23]x\b|-[123]x|ultrashort|ultra short(?! (term|duration))|ultrapro|inverse|\bbear\b|\bbull\b|daily|"
            r"leveraged|equity|stock|dividend|covered call|premium income|buywrite|option|bitcoin|crypto|ether|"
            r"gold|silver|commodit|real estate|reit|preferred|convertible|currency|volatility|hedge|long/short|"
-           r"tail risk|managed futures|autocall|buffer|defined outcome|\btarget (date|retirement)|nasdaq|s&p 500|"
+           r"tail risk|managed futures|autocall|buffer|defined outcome|overlay|enhanced income|premium|putwrite|put-write|\btarget (date|retirement)|nasdaq|s&p 500|"
            r"\bqqq\b|growth|innovation|technology|healthcare|energy)")
 CATEGORIES = [   # (category, name pattern, credit quality 1-5), first match wins
     ("Emerging-market debt", r"emerging|\bem\b|china|asia", 1),
-    ("High yield", r"high yield|high-yield|junk|fallen angel|\bloan", 1),
+    ("High yield", r"high yield|high-yield|junk|fallen angel|\bloan|\bbb\b|bb-rated|bb rated|crossover|high income", 1),
+    ("Multisector and unconstrained", r"multisector|multi-sector|unconstrained|strategic income|flexible|opportunistic|tactical", 2),
+    ("Securitized and asset-backed", r"securitized|\babs\b|asset-backed|\bcmbs\b|non-agency", 3),
     ("International developed", r"international|ex-us|ex us|world|global (?!x)", 2),
     ("Floating rate and AAA CLO", r"floating|\bclo\b", 3),
     ("Inflation-linked", r"\btips\b|inflation", 5),
@@ -200,7 +203,7 @@ def rank_funds(d: pd.DataFrame) -> pd.DataFrame:
     d["pass_data"] = (d["months"] >= 36) & (d["last_price"] >= 3) & d["vol3"].notna()
     ok = d["pass_data"]
     vcut, dcut = d.loc[ok, "vol3"].quantile(0.80), d.loc[ok, "maxdd"].quantile(0.20)
-    d["pass_risk"] = ok & (d["vol3"] <= vcut) & (d["maxdd"] >= dcut) & (d["stock_beta"] <= 0.5)
+    d["pass_risk"] = ok & (d["maxdd"] >= dcut) & (d["stock_beta"] <= 0.5)
     e = d[ok]
     d.loc[ok, "quant_index"] = 0.5 * zs(e["income_12m"].fillna(0), e["category"]) + 0.5 * zs(e["sharpe3"], e["category"])
     d.loc[ok, "quant_cat_pct"] = d.loc[ok].groupby("category")["quant_index"].rank(pct=True)
@@ -236,7 +239,7 @@ def main():
             "ret3", "vol3", "maxdd", "stock_beta", "stock_corr", "rate_duration", "pass_data", "pass_risk", "quant_index",
             "quant_cat_pct", "pass_quant", "credit_quality", "date_match", "diversification", "concentration",
             "fit_score", "accepted", "final_score"]
-    funds[cols].round(4).to_csv(OUT / "bond_funds_universe.csv", index=False)
+    funds[cols].round(8).to_csv(OUT / "bond_funds_universe.csv", index=False)
     held = funds.set_index("symbol").reindex(["IBTM", "IBTO", "IBTP", "IBTQ", "IBTR"])[["final_rank", "category_rank", "fit_score", "quant_index"]]
     summary = {"treasuries": tsum, "funds": {
         "universe": int(len(funds)), "pass_data": int(funds["pass_data"].sum()), "pass_risk": int(funds["pass_risk"].sum()),

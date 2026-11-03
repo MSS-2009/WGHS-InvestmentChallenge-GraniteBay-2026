@@ -1,0 +1,83 @@
+{
+ "treasuries": {
+  "securities": 352,
+  "listed_in_wins": 42,
+  "ladder_cost_wins": 201603.91,
+  "ladder_cost_all_treasuries": 200670.56,
+  "saving_if_all_listed": 933.35,
+  "best_score_by_maturity_year": {
+   "2032": 97.34,
+   "2033": 96.3,
+   "2034": 96.42,
+   "2035": 96.54,
+   "2036": 95.4,
+   "2037": 97.6,
+   "2038": 100.0,
+   "2039": 100.0,
+   "2040": 103.37,
+   "2041": 101.2
+  },
+  "above_100": 5
+ },
+ "funds": {
+  "universe": 802,
+  "pass_data": 438,
+  "pass_risk": 346,
+  "pass_quant": 270,
+  "final_ranked": 216,
+  "categories": {
+   "Aggregate and core": 160,
+   "Municipal": 120,
+   "High yield": 118,
+   "Treasury": 60,
+   "Investment-grade corporate": 58,
+   "Term corporate": 50,
+   "Inflation-linked": 46,
+   "T-bill and cash": 41,
+   "Floating rate and AAA CLO": 40,
+   "Term Treasury (iBonds)": 23,
+   "Mortgage and agency": 19,
+   "International developed": 19,
+   "Multisector and unconstrained": 17,
+   "Emerging-market debt": 15,
+   "Securitized and asset-backed": 14,
+   "Other": 2
+  },
+  "risk_cuts": {
+   "vol3_max": 0.0653,
+   "maxdd_min": -0.1871
+  },
+  "our_funds": {
+   "IBTM": {
+    "final_rank": 38.0,
+    "category_rank": 3.0,
+    "fit_score": 4.5,
+    "quant_index": -0.266
+   },
+   "IBTO": {
+    "final_rank": 9.0,
+    "category_rank": 2.0,
+    "fit_score": 4.25,
+    "quant_index": 0.52
+   },
+   "IBTP": {
+    "final_rank": null,
+    "category_rank": null,
+    "fit_score": 4.333,
+    "quant_index": null
+   },
+   "IBTQ": {
+    "final_rank": null,
+    "category_rank": null,
+    "fit_score": 4.333,
+    "quant_index": null
+   },
+   "IBTR": {
+    "final_rank": null,
+    "category_rank": null,
+    "fit_score": 4.0,
+    "quant_index": null
+   }
+  }
+ }
+}
