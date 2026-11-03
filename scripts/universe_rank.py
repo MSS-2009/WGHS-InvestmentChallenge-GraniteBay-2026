@@ -10,7 +10,8 @@ Pass 1, quantitative: the satellite screen (src/lgm/growth/satellite.py) on the 
   - risk: drop the top 20% by 3-year volatility, the worst 20% by 5-year drawdown and any beta above 1.5;
   - quantitative index: 0.5 z(12-1 month momentum) + 0.5 z(3-year Sharpe ratio), z-scores within sector;
   - pass: the risk filter and the top 75% of its sector on the index.
-Pass 2, qualitative: the 11 dimensions of config/qualitative.yaml (1-5), scored from data for every survivor.
+Pass 2, qualitative: the 11 dimensions of config/qualitative.yaml (1-5), scored from data for every company in
+the universe (so each has a qualitative score and sector rank), and ranked in the final list only if it passed pass 1.
   - financial quality, growth and sentiment: the model's own rules (src/lgm/growth/qualitative.py);
   - the five values dimensions: how often the company description uses words from Laura's values
     parameters (V1-V25), per 100 words, as 3 + z within sector (the exemplar's Scouting Report method,
@@ -19,7 +20,8 @@ Pass 2, qualitative: the 11 dimensions of config/qualitative.yaml (1-5), scored 
     volatility and 5-year drawdown; each against sector peers, as 3 + z within sector;
   - every score is clipped to 1-5; gates: an excluded activity (tobacco, gambling, controversial weapons,
     adult entertainment), financial quality <= 2 or risk flags <= 1;
-  - qualitative score = 0.35 values + 0.65 strength; final score = 0.5 z(qualitative) + 0.5 z(quant index).
+  - qualitative score = 0.35 values + 0.65 strength; final score = 0.5 z(qualitative) + 0.5 z(quant index),
+    over the companies that passed pass 1 and every gate.
 The automated scores are compared with the 57 companies the team scored by hand (reports/satellite_qualitative.csv).
 """
 import csv
@@ -102,7 +104,7 @@ def pass1() -> pd.DataFrame:
 
 
 def pass2(p1: pd.DataFrame) -> pd.DataFrame:
-    s = p1[p1["pass_quant"]].copy()
+    s = p1.copy()
     ev = pd.DataFrame.from_dict({t: nasdaq.evidence(t) for t in s["ticker"]}, orient="index")
     d = s.set_index("ticker").join(ev, how="left")
     has = d["revenue"].notna() | d["description"].fillna("").str.len().gt(0)
@@ -140,13 +142,13 @@ def pass2(p1: pd.DataFrame) -> pd.DataFrame:
         reasons.append("; ".join(why))
     d["reject_reason"] = reasons
     d["accepted"] = d["reject_reason"] == ""
-    a = d["accepted"]
+    d.loc[d["accepted"], "qual_sector_rank"] = d.loc[d["accepted"]].groupby("sector")["qual_score"].rank(ascending=False, method="min")
+    a = d["accepted"] & d["pass_quant"].astype(bool)
     zf = lambda c: (d.loc[a, c] - d.loc[a, c].mean()) / d.loc[a, c].std()
     d.loc[a, "final_score"] = 0.5 * zf("qual_score") + 0.5 * zf("quant_index")
     d.loc[a, "final_rank"] = d.loc[a, "final_score"].rank(ascending=False, method="min")
     d.loc[a, "final_sector_rank"] = d.loc[a].groupby("sector")["final_score"].rank(ascending=False, method="min")
-    d.loc[a, "qual_sector_rank"] = d.loc[a].groupby("sector")["qual_score"].rank(ascending=False, method="min")
-    return d.reset_index().sort_values(["accepted", "final_rank"], ascending=[False, True])
+    return d.reset_index().sort_values(["final_rank", "qual_score"], ascending=[True, False])
 
 
 def main():
@@ -158,7 +160,7 @@ def main():
     p2 = pass2(p1)
     cols2 = ["final_rank", "final_sector_rank", "ticker", "name", "sector", "industry", "quant_index", "quant_sector_rank",
              *q.VALUES, *q.JUDGED_STRENGTH, "financial_quality", "growth_innovation", "sentiment_momentum",
-             "values_score", "strength_score", "qual_score", "qual_sector_rank", "final_score", "accepted",
+             "values_score", "strength_score", "qual_score", "qual_sector_rank", "final_score", "accepted", "pass_quant",
              "reject_reason", "analyst_rating", "rev_cagr_3y", "op_margin_avg4", "roe", "debt_to_equity",
              *[k + "_hits" for k in KEYWORDS]]
     p2[cols2].round(4).to_csv(OUT / "universe_pass2_qual.csv", index=False)
@@ -170,14 +172,14 @@ def main():
     summary = {
         "universe": int(len(p1)), "pass_data": int(p1["pass_data"].sum()), "pass_risk": int(p1["pass_risk"].sum()),
         "pass_quant": int(p1["pass_quant"].sum()), "scored_qualitative": int(len(p2)),
-        "accepted": int(p2["accepted"].sum()), "rejected": p2.loc[~p2["accepted"], "reject_reason"].value_counts().to_dict(),
+        "accepted": int(p2["accepted"].sum()), "final_ranked": int(p2["final_rank"].notna().sum()), "rejected": p2.loc[~p2["accepted"], "reject_reason"].value_counts().to_dict(),
         "risk_cuts": {"vol3_max": round(p1.attrs.get("vol_cut", np.nan), 4), "maxdd5_min": round(p1.attrs.get("dd_cut", np.nan), 4)},
         "hand_scored_overlap": int(len(both)), "spearman_automated_vs_hand": corr,
         "sectors": p1.loc[p1["pass_data"], "sector"].value_counts().to_dict(),
     }
     (OUT / "universe_summary.json").write_text(json.dumps(summary, indent=1))
     print(json.dumps(summary, indent=1))
-    show = p2[p2["accepted"]].head(15)[["final_rank", "ticker", "name", "sector", "quant_index", "qual_score", "final_score"]]
+    show = p2[p2["final_rank"].notna()].head(15)[["final_rank", "ticker", "name", "sector", "quant_index", "qual_score", "final_score"]]
     print(show.round(2).to_string(index=False))
 
 
