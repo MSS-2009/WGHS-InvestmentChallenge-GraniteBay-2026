@@ -1,0 +1,10 @@
+etf,group,market_implied,firm_median_region,black_litterman,w_market,w_black_litterman
+VUG,US large-cap growth,0.06062,0.059,0.04889,0.26767,0.16284
+VTV,US large-cap value,0.06184,0.059,0.06548,0.29877,0.31041
+VB,US small-cap,0.06369,0.059,0.06713,0.08663,0.1284
+VGK,Developed Europe,0.06323,0.072,0.0668,0.1381,0.16558
+BBJP,Japan,0.05776,0.072,0.05884,0.0517,0.06792
+EPP,Pacific ex-Japan,0.06085,0.072,0.06623,0.02206,0.02874
+BBCA,Canada,0.06327,0.072,0.06692,0.03025,0.03849
+EMXC,Emerging markets ex-China,0.06042,0.075,0.07075,0.0862,0.07844
+MCHI,China,0.03092,0.075,0.03555,0.01862,0.01917
