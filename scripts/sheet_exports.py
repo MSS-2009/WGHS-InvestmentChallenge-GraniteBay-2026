@@ -27,10 +27,10 @@ def stocks_pass2():
     p2 = pd.read_csv(REP / "universe_pass2_qual.csv")
     p2["excluded"] = p2["reject_reason"].fillna("").str.extract(r"excluded activity: ([^;]+)")[0].fillna("")
     out = pd.DataFrame({
-        "Ticker": p2["ticker"], "Company": p2["name"], "Sector": p2["sector"],
+        "Ticker": p2["ticker"], "Company": p2["name"].str.replace(",", "", regex=False), "Sector": p2["sector"],
         "Innovation and creativity": p2["innovation_creativity"], "Societal utility": p2["societal_utility"],
         "People and inclusion": p2["people_inclusion"], "Trust and integrity": p2["trust_integrity"],
-        "Access, education and creators": p2["access_education_creators"],
+        "Access education and creators": p2["access_education_creators"],
         "Management (ROE, margin trend)": p2["management_capital_allocation"],
         "Competitive position (margins vs peers)": p2["moat_position"],
         "Risk flags (volatility, drawdown)": p2["risk_flags"], "Financial quality": p2["financial_quality"],
