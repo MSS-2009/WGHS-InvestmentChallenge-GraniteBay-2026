@@ -18,7 +18,7 @@ the universe (so each has a qualitative score and sector rank), and ranked in th
     on company profiles instead of 10-K filings);
   - management: ROE and operating-margin trend; moat: 4-year operating margin; risk flags: 3-year
     volatility and 5-year drawdown; each against sector peers, as 3 + z within sector;
-  - every score is clipped to 1-5; gates: an excluded activity (tobacco, gambling, controversial weapons,
+  - every score is clipped to 1-5; a company with no financial statements scores 3 on financial quality; gates: an excluded activity (tobacco, gambling, controversial weapons,
     adult entertainment), financial quality <= 2 or risk flags <= 1;
   - qualitative score = 0.35 values + 0.65 strength; final score = 0.5 z(qualitative) + 0.5 z(quant index),
     over the companies that passed pass 1 and every gate.
@@ -72,6 +72,15 @@ def to_score(z: pd.Series) -> pd.Series:
     return (3 + z).clip(1, 5).round(1)
 
 
+def fin_quality(r) -> float:
+    """The model's financial-quality rule; a company with no financial statements at Nasdaq scores a neutral 3,
+    as the model already does for missing growth and analyst data."""
+    try:
+        return q.financial_quality(r)
+    except ValueError:
+        return 3.0
+
+
 def universe() -> pd.DataFrame:
     rows = [h for h in holdings("IWB") if h["w"] > 0 and h["loc"] == "United States"]
     lines = (ISHARES / "IWB_holdings.csv").read_text(encoding="utf-8-sig", errors="ignore").splitlines()
@@ -123,9 +132,9 @@ def pass2(p1: pd.DataFrame) -> pd.DataFrame:
     for c in ("roe", "op_margin", "op_margin_avg4", "debt_to_equity", "fcf_conversion", "rev_cagr_3y", "rd_to_revenue",
               "net_margin"):
         r[c] = [None if v is None else float(v) for v in num(c).astype(object).where(num(c).notna(), None)]
-    d["financial_quality"] = [q.financial_quality(x) for _, x in r.iterrows()]
+    d["financial_quality"] = [fin_quality(x) for _, x in r.iterrows()]
     d["growth_innovation"] = [q.growth_innovation(x) for _, x in r.iterrows()]
-    mom_pct = p1.set_index("ticker")["mom12_1"].rank(pct=True)
+    mom_pct = p1.set_index("ticker")["mom12_1"].rank(pct=True).fillna(0.5)   # no price history: median
     d["sentiment_momentum"] = [q.sentiment(x, float(mom_pct.get(t, 0.5))) for t, x in r.iterrows()]
     strength = q.JUDGED_STRENGTH + ["financial_quality", "growth_innovation", "sentiment_momentum"]
     d["values_score"] = d[q.VALUES].mean(axis=1)

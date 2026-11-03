@@ -1,0 +1,40 @@
+{
+ "universe": 924,
+ "pass_data": 880,
+ "pass_risk": 582,
+ "pass_quant": 453,
+ "scored_qualitative": 918,
+ "accepted": 768,
+ "final_ranked": 416,
+ "rejected": {
+  "financial quality <= 2": 109,
+  "financial quality <= 2; risk flags <= 1": 24,
+  "risk flags <= 1": 9,
+  "excluded activity: gambling": 3,
+  "excluded activity: gambling; financial quality <= 2": 3,
+  "excluded activity: tobacco": 2
+ },
+ "risk_cuts": {
+  "vol3_max": 0.4469,
+  "maxdd5_min": -0.6126
+ },
+ "hand_scored_overlap": 56,
+ "spearman_automated_vs_hand": {
+  "values_score": -0.009,
+  "strength_score": 0.845,
+  "qual_score": 0.657
+ },
+ "sectors": {
+  "Industrials": 166,
+  "Financials": 136,
+  "Information Technology": 133,
+  "Consumer Discretionary": 101,
+  "Health Care": 96,
+  "Real Estate": 54,
+  "Consumer Staples": 47,
+  "Materials": 42,
+  "Utilities": 38,
+  "Energy": 35,
+  "Communication": 32
+ }
+}
