@@ -85,7 +85,7 @@ def main():
         df[c.replace("_index", "") + "_rank"] = df[c].rank(ascending=False).astype(int)
     df = df.sort_values("overall", ascending=False)
     df.index.name = "fund"
-    df.round(4).to_csv(ROOT / "reports" / "fund_scorecard.csv")
+    df.round(8).to_csv(ROOT / "reports" / "fund_scorecard.csv")
 
     show = df[["quant_index", "quant_rank", "bl_index", "bl_rank", "qual_index", "qual_rank", "overall", "overall_rank",
                "bl_alpha_net", "w_bl", "w_mkt", "tech_comm", "china_taiwan"]]
