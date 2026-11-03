@@ -34,11 +34,11 @@ inputs (stocks 6.06%/yr net, 16.5% volatility, rates unchanged on average), fat 
 
 | Plan | Funded: theirs / ours | 5th pct | Median | 95th pct | 2031 floor | 2031 10th-90th pct range |
 | --- | --- | --- | --- | --- | --- | --- |
-| S1 all equity | 86.8% / 86.7% | 0 / 0 | 212.8 / 220.7 | 759.3 / 780.5 | — | — |
-| S2 static 60/40 | 96.4% / 96.8% | 16.2 / 18.6 | 208.0 / 215.2 | 508.3 / 523.1 | 0 / 0 | 120.7-332.4 / 146.3-380.7 |
-| S8 hybrid | 100% / 100% | 94.2 / 97.2 | 194.9 / 199.2 | 355.3 / 367.7 | 124.3 / 118.9 | 191.9-230.2 / 181.9-220.9 |
-| S6 lock, stock surplus | 100% / 100% | 106.2 / 107.9 | 197.7 / 199.8 | 365.5 / 370.4 | 0 / 0 | 150.2-261.7 / 148.2-269.4 |
-| S9 lock, 60/40, floor | 100% / 100% | 137.9 / 141.9 | 193.5 / 195.9 | 273.2 / 274.9 | 114.6 / 111.2 | 181.4-208.6 / 175.0-203.5 |
+| S1 all equity | 86.8% / 86.5% | 0 / 0 | 212.8 / 219.0 | 759.3 / 779.1 | — | — |
+| S2 static 60/40 | 96.4% / 96.7% | 16.2 / 17.1 | 208.0 / 213.6 | 508.3 / 521.3 | 0 / 0 | 120.7-332.4 / 143.4-376.9 |
+| S8 hybrid | 100% / 100% | 94.2 / 94.6 | 194.9 / 197.1 | 355.3 / 366.0 | 124.3 / 118.9 | 191.9-230.2 / 180.5-220.1 |
+| S6 lock, stock surplus | 100% / 100% | 106.2 / 106.1 | 197.7 / 198.4 | 365.5 / 369.5 | 0 / 0 | 150.2-261.7 / 145.9-267.7 |
+| S9 lock, 60/40, floor | 100% / 100% | 137.9 / 140.2 | 193.5 / 194.6 | 273.2 / 273.9 | 114.6 / 115.5 | 181.4-208.6 / 179.3-208.2 |
 
 Figures are after the October 2026 code-review fixes (section 6) and the switch to the Fed's H.10
 USD/TWD series. S8's 2031 floor and range are up to 5% below the former team's; our VGIT now compounds
@@ -52,7 +52,7 @@ Other model claims:
 | Zero-coupon cost of the ladder, Oct 16 (guide 4C) | $295,584 | $295,559 |
 | Real-instrument ladder, Oct 16 (guide 4C) | $300,769 | $300,396 (LP, 3% reinvestment) |
 | Real-instrument ladder, Oct 20 (Plans v2) | $300.1k | $299,717 |
-| Rates 0.75 pts lower at the lock, and staying lower: lock-and-balance median | $192k -> $159k (-17%) | $195.9k -> $160.2k (-18%) (`reports/plans_v2_rate_stress.json`) |
+| Rates 0.75 pts lower at the lock, and staying lower: lock-and-balance median | $192k -> $159k (-17%) | $194.6k -> $157.7k (-19%) (`reports/plans_v2_rate_stress.json`) |
 | Fat tails change results by | < $5k | < $5k (Gaussian vs t5) |
 | Facility buys less in Taiwan terms | ~25% | 21% at 4%/yr building costs; 25% needs ~5%/yr |
 | Plans v2 nine-instrument ladder funds ten payments | yes | yes: coupons 2027-32 pay the 2033 payment; $4k-$16k surplus each year |
@@ -145,28 +145,43 @@ Run `python scripts/validate_model.py` (reports `validation_esg.csv`, `validatio
   same market, as EEM is for EMXC.
 - **Rates:** the 10-year yield's change to January 2033 spans -2.8 to +2.8 points (5th-95th
   percentile), against -2.7 to +2.4 points over every 74-month window since 1994.
-- **Convergence:** across 8 seeds of 20,000 scenarios the median facility is $197,055 with a standard
-  error of $31; the 5th percentile's is $114. A single run, like the headline's (seed 11), moves by $88
-  in the median and $323 in the 5th percentile from seed to seed; the headline's 5th percentile is
-  $497 above the 8-seed average. Comparisons between strategies use the same scenarios, so they
+- **Convergence:** across 8 seeds of 20,000 scenarios the median facility is $195,650 with a standard
+  error of $23; the 5th percentile's is $128. A single run, like the headline's (seed 11), moves by $65
+  in the median and $361 in the 5th percentile from seed to seed; the headline's 5th percentile is
+  $440 above the 8-seed average. Comparisons between strategies use the same scenarios, so they
   are far more precise than either level.
 - **Historical replay:** 184 real six-year paths (starts April 2005 to July 2020) applied to today's
-  curve. With returns re-centred on our expectations, the IPS median is $195.6k against $197.0k
-  simulated; its 5th percentile is $154.8k against $146.1k simulated, so the simulation is the more
-  cautious. All-stock funds every payment in 89.1% of real paths against 86.7% simulated.
+  curve. With returns re-centred on our expectations, the IPS median is $195.2k against $195.6k
+  simulated; its 5th percentile is $149.2k against $144.1k simulated, so the simulation is the more
+  cautious. All-stock funds every payment in 89.1% of real paths against 86.5% simulated.
+- **Named crises just after the lock:** 2008, 2011, 2015-16 and COVID, each started so that its
+  first bad month falls just after the January 2027 lock, fund every payment
+  (`scripts/episode_stress.py`). As it happened, their facilities are $204.1k, $214.9k,
+  $240.1k and $213.9k, all above the simulated median. The worst of the 184 paths, from
+  June 2006, gives $128.7k against the simulated 5th percentile of $144.1k: rates had
+  already fallen by the lock (5-year zero rate 4.53% against 4.95% on the median path), so
+  the first deposit locks only 96.4% of the ladder. Splicing 2022's first twelve months into the
+  simulation lifts the median facility to $207.7k: the rate rise alone adds $18.3k and the stock
+  fall alone costs $5.8k (`reports/episode_stress.csv`).
+- **Reinvestment risk:** without the January 2033 top-up rule, 20.4% of paths miss at
+  least one payment when idle cash earns market rates (99th percentile shortfall of $4.4k).
+  With the rule adopted, the January 2033 purchase makes all ten payments certain even at 0%
+  reinvestment: 100% funded across all paths, with a median top-up of $1.2k
+  ($5.9k at the 99th percentile; at most $7.5k), safely covered by the facility
+  (at least $80.4k before the top-up; `scripts/reinvest_risk.py`).
 - **Expected rate path:** forecasting the curve 74 months ahead from 320 month-ends (1994-2020), the
   error in the cost of ten payments is 7.7% for "unchanged", 7.5% for forwards minus the Kim-Wright term
   premium and 10.0% for pure forwards. "Unchanged" stays: it ties on accuracy and has the least bias.
 - **2031 range calibration:** on the same 184 paths, the model's 10th-90th percentile range quoted from
   each path's own January 2031 position contained the January 2033 result 99.5% of the time re-centred
-  (98.4% as it happened): it behaves like a 98% range. The 20th-80th percentile band held 82.1% (75.5% as
+  (98.4% as it happened): it behaves like a 98% range. The 20th-80th percentile band held 84.8% (75.0% as
   it happened), so that is the range to quote as "80%" (`reports/policy_study.json`).
 - **Satellite weighting:** re-estimated each January since 2019, single-linkage HRP's realised
   volatility (16.1%) is level with average-linkage HRP (16.2%) and below Ward (16.7%), inverse-variance
   (16.9%) and equal weights (18.2%) (`reports/validation_hrp.csv`).
 - **Black-Litterman stability:** over tau 0.025-0.10 and value-view uncertainty 1.5-5 points, the
   resampled weights hold BBJP at 6.6-6.9% and BBCA at 3.8-3.9%; a single optimum swings them from 2.6%
-  to 9.5% and 2.3% to 6.0%.
+  to 7.2% and 2.3% to 6.0%.
 
 ## 8. Reproduce
 
@@ -185,7 +200,7 @@ tests in `tests/test_audit_fixes.py`:
 | Finding | Fix |
 | --- | --- |
 | The WInS ladder check judged only the last payment and assumed 3% interest on cash (WInS pays 0%) | Checks every payment at WInS's 0%; prints the cheapest top-up and exits 1 if short. The ladder held is $189 short for 2034; 6 more IBTO shares fix it |
-| Reinvestment risk sat outside "100% funded" | `ladder.premium` derives the ladder premium from the LP (a test pins `kappa0` to it); a stress prices the reserve to be certain at 0% reinvestment (median -$7.8k) |
+| Reinvestment risk sat outside "100% funded" | `ladder.premium` derives the ladder premium from the LP (a test pins `kappa0` to it); a stress prices the reserve to be certain at 0% reinvestment (median -$6.4k) |
 | The 2031 "80% range" held 98% of real outcomes | Calibrated on history: the 20th-80th percentile band held about 80% (section 7); both ranges are now reported |
 | Rate stresses faded back to today's curve by 2033 | The long-run level moves with the shock |
 | Negative-equity companies scored a neutral 3 on ROE and leverage | ROE not scored, leverage scores 1 (HLT 4.0 -> 3.5; selection unchanged) |

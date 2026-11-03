@@ -419,12 +419,79 @@ The cash-flow ladder solver now normalizes one-shot payment iterables, requires 
 payments and a reinvestment rate above -100%, and rejects duplicate instrument labels and unknown
 constraints. A fixed amount now remains fixed when a compatible minimum is also provided; contradictory
 fixed/minimum bounds fail explicitly. Annual schedules from leap day roll to February 28 in non-leap years.
-Matured bonds and term funds now expose no future cash flows, and explicit ladder matrices reject expired
-instruments. The premium helper filters expired candidates from future-date universes. The study also
-drops its Jan 2033 fit: the first payment is due at settlement, and its previous fit incorrectly credited
-the already-matured IBTM toward that payment.
+Matured Treasury bonds, STRIPS, and term funds now expose no future cash flows or stale prices, and their
+yield/duration calculations fail clearly. Explicit ladder matrices reject expired instruments. The
+premium helper filters expired candidates from future-date universes. The study also drops its Jan 2033
+fit: the first payment is due at settlement, and its previous fit incorrectly credited the already-matured
+IBTM toward that payment.
 
 Treasury par/zero curves now validate tenor, knot, and discount-vector shapes and values. Negative or
 non-finite maturities fail directly; `ZeroCurve.zero()` no longer turns a past date into a plausible
 short rate. Bootstrap horizons must include at least one semiannual point, and nonpositive discount
 factors are reported as invalid input data.
+- **Commit note:** `2dabbb3` ("Test the volatility-window forecast helper ...") also contains the
+  input validation Codex had left uncommitted in `src/lgm/engine.py`, `src/lgm/strategies.py` and
+  `tests/test_strategy_validation.py` (swept in by `git commit -a`). The code is tested; only the message
+  undersells it. It was already pushed, so the history is left as is rather than rewritten.
+
+## Round 7: DeepSeek workers (2026-10-22 evening)
+
+- Tracking error corrected out of sample: 1.44-1.45% over three years, 1.57% over six, against 1.30%
+  as estimated (r7-te).
+- Refresh dry run (r7-refresh): all 57 sources downloaded; on the 2026-10-22 curve (5-year 4.94% ->
+  4.78%, 10-year 5.12% -> 4.96% since Oct 20) the IPS median would be $189.6k, 5th percentile
+  $140.1k, real median $160.3k; the WInS ladder top-up grows to about $298 of IBTO and $4 of IBTP;
+  not adopted, the committed numbers stay on the Oct 20 curve.
+
+- Scripts outside run_all (r7-scripts): all ten run after the day's input validation, which rejected
+  none of their inputs. Two stale scripts fixed: taiwan_variants.py (its config template lacked
+  usd_twd_innovation_corr) and taiwan_costs.py, which would have overwritten the live
+  config/taiwan.yaml with its round-1 schema and now writes config/taiwan_costs_proposal.yaml.
+  Independently verified (r7-verify-scripts).
+- Review of the validation in curve.py, ladder.py and instruments.py (r7-review-ladder): four edge
+  cases at maturity dates, none hit by a current caller. Fixed: a term fund's cash-flow cut-off now
+  uses the later of settlement and curve date, and ladder.premium raises a clear error when the
+  curve date is on or after the first payment (it returned NaN). Left as designed: a STRIP or fund
+  on its maturity date has no cash flow, so a price of 0 is consistent. Independently verified
+  (r7-verify-ladder).
+
+- Engine validation review (r7-review-engine): four findings fixed in engine.py, each with a test that
+  fails before the fix: conditional_2031_band reads a generator of percentiles once; a 2-D eq_log gets a
+  clear shape message; run() no longer changes the caller's EngineConfig; the arrays validated by
+  _finite_path are the ones used. Headline unchanged to the dollar; one engine.run about 2% slower.
+  Independently verified (r7-verify-engine).
+- ESG validation review (r7-review-esg): three fixes in esg.py. A list-of-lists covariance now works with
+  GARCH and the Taiwan cost correlation; tw_cost_state0 errors name the parameter; the _dof message lists
+  the accepted values. ESG output is bit-identical before and after under the headline, GARCH and
+  cost-correlation settings (docs/loop/r7_esg_bitcheck.py). Independently verified (r7-verify-esg2).
+- Named historical episodes (r7-episodes, scripts/episode_stress.py): 2008, 2011, 2015-16 and COVID
+  placed just after the January 2027 lock all fund every payment. The worst historical start (October
+  2008) gives a facility of $136.2k against the simulated 5th percentile of $146.1k: its 5-year zero rate
+  is already 3.65% at the lock (4.95% on the median path), so the first deposit locks 84.95% of the
+  ladder. Splicing the 2022 sell-off into the first year raises the median facility to $207.4k (rates
+  alone +$16.5k, equities alone -$5.8k, USD/TWD alone $0). Details in docs/loop/r7_episodes_findings.md;
+  not yet in MODEL.md.
+
+- Named crises in the main docs (r8): the episode results are now a bullet in docs/VALIDATION.md
+  section 7, generated and checked by doc_numbers.py from reports/episode_stress.csv (128 figures);
+  scripts/episode_stress.py joins run_all.
+
+- Reinvestment risk (r8-reinvest, scripts/reinvest_risk.py): held to 2042 with idle cash earning each
+  path's simulated 1-month rate (floored at 0) instead of a fixed 3%, the ladder misses at least one
+  payment on 20.4% of paths (mean total shortfall $319, 99th percentile $4.4k, most often the 2034
+  payment). Making 95% / 99% of paths whole costs $1.9k / $3.8k more at the lock (kappa0 2.47% / 3.11%,
+  IPS median -$2.8k / -$5.3k). Two other orderings of cash within the month give 22.9% and 26.4%.
+  Independently verified (r8-verify-reinvest). Not yet in MODEL.md: the pricing choice is open.
+- Claims review (r8-claims): 139 causal, ranking and universal claims in MODEL.md, VALIDATION.md and
+  README.md checked against the reports. Two were stale figures: a single optimum's BBJP range given as
+  2.6-9.5% (the report says 2.6-7.2%) and the corrected satellite beta given as 0.89 -> 0.99 (0.87 ->
+  0.97). Both fixed, each now checked by doc_numbers.py (129 figures).
+- January 2033 top-up adopted (client decision, Oct 25; r8-topup, r8-adopt, r8-docs): the reserve is
+  locked as before; its cash earns the simulated 1-month rate floored at 0; in January 2033 one purchase
+  from the facility makes all ten payments certain even if cash earns nothing. Costs $1.4k of median
+  against the 3%-only plan and is $6.4k better than pricing certainty at the lock. Headline median
+  $196,989 -> $195,586, 5th percentile $146,102 -> $144,121; funded share 100%. The engine solves the
+  2033 purchase exactly for every path from 80 cached optimal bases (exact LP fallback), +0.04 s a run.
+  Verifiers found and the workers fixed: a phantom top-up for strategies that never lock, late tranches
+  treated as bought in 2027, and two double charges (the 0%-at-the-lock stress and the STRIPS cases ran
+  with the top-up on). STRIPS now show +$2.5k median against the adopted ladder. 137 checked figures.

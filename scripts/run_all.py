@@ -33,6 +33,7 @@ ORDER = [  # (script, passes --refresh, failure is fatal)
     ("stock_rate_corr", False, True),
     ("crash_comovement", False, True),
     ("corr_shrink_oos", False, True),
+    ("tracking_error_oos", False, True),
     ("ladder_premium", False, True),
     ("fx_horizon", False, True),
     ("equity_horizon", False, True),
@@ -41,6 +42,8 @@ ORDER = [  # (script, passes --refresh, failure is fatal)
     ("fx_hedge_frontier", False, True),
     ("strips_reserve", False, True),        # a reserve outside WInS (STRIPS at mid and ask)
     ("policy_robust", False, True),         # IPS under 11 shifts (the top policies come from the last policy_search)
+    ("episode_stress", False, True),        # named crises after the lock (docs/VALIDATION.md section 7)
+    ("reinvest_risk", False, True),         # reinvestment risk without top-up (reports/reinvest_risk.csv)
     ("doc_numbers", False, True),           # last: every quoted figure against its report
 ]
 

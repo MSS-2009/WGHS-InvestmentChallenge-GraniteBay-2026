@@ -91,6 +91,19 @@ def main(n: int = 20_000):
     out["plan"]["contribution_p5"] = round(float(np.percentile(res["contribution"], 5)), 1)
     out["plan"]["kept_by_laura_median"] = round(float(np.median(res["facility"] - res["contribution"])), 1)
     out["plan"]["lock_cost_2027_median"] = round(float(np.median(res["lock_cost_2027"])), 1)
+    topup = res["topup_2033"]
+    fac_before = res["facility"] + topup
+    out["reserve_2033"] = {
+        "share_with_topup": round(float((topup > 0).mean()), 4),
+        "mean": round(float(topup.mean()), 1),
+        "median": round(float(np.median(topup)), 1),
+        "p95": round(float(np.percentile(topup, 95)), 1),
+        "p99": round(float(np.percentile(topup, 99)), 1),
+        "max": round(float(topup.max()), 1),
+        "facility_before_topup_min": round(float(fac_before.min()), 1),
+        "topup_max": round(float(topup.max()), 1),
+        "funded_share": round(float(res["funded"].mean()), 4),
+    }
     # The model's 10th-90th percentile range held ~98% of real outcomes on history; the band that held 80%
     # comes from scripts/policy_study.py (run it first).
     policy = OUT / "policy_study.json"
@@ -126,7 +139,7 @@ def main(n: int = 20_000):
     # is certain even at 0% shows what that assumption is worth.
     zc = bootstrap(par_curve(CURVE_DATE))
     k0 = ladder.premium(zc, 0.0)
-    rr = engine.run(st, sc, dc.replace(cfg, kappa0=k0))
+    rr = engine.run(st, sc, dc.replace(cfg, kappa0=k0, topup_2033=False))
     stress["reserve_certain_at_0pct_reinvestment"] = {
         "ladder_premium": round(k0, 4), "ladder_premium_at_3pct": round(ladder.premium(zc, 0.03), 4),
         "median": round(float(np.median(rr["facility"])), 1),

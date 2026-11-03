@@ -3,6 +3,11 @@
 Liability-driven investment model for the 2026-27 Laura Gao case: fund ten fixed $50,000 payments
 (2033-2042) with certainty, then build the largest responsible facility contribution for 2033.
 
+Under the January 2033 top-up rule, the reserve is locked in January 2027-2028 and topped up in
+January 2033 so that all ten payments are certain even if cash earns nothing. Headline
+results across 20,000 Monte Carlo scenarios: median facility $195.6k, 5th percentile $144.1k,
+CVaR 5% $133.1k, real median $165.4k (Taiwan 2027 terms), and 100% funded share.
+
 > **AI use and citation.** This code, its reports and the documents in `docs/` were generated with
 > Claude (Anthropic), an AI assistant; the commit history shows it. Competition rules say AI-generated
 > work cannot be submitted as the team's own, and any AI material that is included must be cited. Use this
@@ -89,6 +94,7 @@ python scripts/vol_proxy_check.py        # does scaling a short history's volati
 python scripts/stock_rate_corr.py        # results under each historical stock-rate correlation regime
 python scripts/crash_comovement.py       # do rates fall when stocks crash?
 python scripts/corr_shrink_oos.py        # which correlation shrinkage forecasts best out of sample
+python scripts/tracking_error_oos.py     # the core's tracking error corrected out of sample
 python scripts/ladder_premium.py         # does the ladder's premium hold when rates move?
 python scripts/satellite_oos.py          # the satellite's selection bias, out of sample
 python scripts/satellite_risk_sensitivity.py   # the satellite verdict with that bias corrected

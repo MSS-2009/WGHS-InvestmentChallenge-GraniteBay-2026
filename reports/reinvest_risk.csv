@@ -1,0 +1,5 @@
+rule,miss_any_pct,mean_total_shortfall,p95_total_shortfall,p99_total_shortfall,p99_max_single_shortfall,extra_cash_lock_p95,extra_cash_lock_p99,extra_cash_lock_disc3_p95,extra_cash_lock_disc3_p99,avg_rate_p1_pct,avg_rate_p50_pct,avg_rate_p99_pct
+(a) flat 3%,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,,,
+(b) flat 0%,100.0,8256.53,8256.53,8256.53,2632.14,8256.53,8256.53,5311.03,5311.03,,,
+(c) simulated 1m rate floored at 0,20.36,318.95,2310.31,4368.3,2528.31,1904.99,3759.58,1699.36,3027.83,1.456,4.093,6.829
+(d) simulated minus 50bps floored at 0,33.58,640.08,3568.29,5540.87,2615.49,3064.05,4918.68,2557.6,3722.81,1.052,3.593,6.329
