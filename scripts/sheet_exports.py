@@ -14,13 +14,16 @@ REP = ROOT / "reports"
 OUT = REP / "sheets"
 
 
-def stocks():
+def stocks_pass1():
     p1 = pd.read_csv(REP / "universe_pass1_quant.csv").sort_values("quant_rank")
     p1 = p1.rename(columns={"ticker": "Ticker", "name": "Company", "sector": "Sector", "months": "Months of data",
                             "last_price": "Price ($)", "mom12_1": "12-1 month momentum", "sharpe3": "3-yr Sharpe ratio",
                             "vol3": "3-yr volatility", "maxdd5": "5-yr max drawdown", "beta3": "Beta (3-yr)"})
     p1[["Ticker", "Company", "Sector", "Months of data", "Price ($)", "12-1 month momentum", "3-yr Sharpe ratio",
         "3-yr volatility", "5-yr max drawdown", "Beta (3-yr)"]].to_csv(OUT / "stocks_pass1.csv", index=False)
+
+
+def stocks_pass2():
     p2 = pd.read_csv(REP / "universe_pass2_qual.csv")
     p2["excluded"] = p2["reject_reason"].fillna("").str.extract(r"excluded activity: ([^;]+)")[0].fillna("")
     out = pd.DataFrame({
@@ -56,8 +59,9 @@ def bonds():
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     bonds()
+    stocks_pass1()
     if (REP / "universe_pass2_qual.csv").exists():
-        stocks()
+        stocks_pass2()
     for f in sorted(OUT.glob("*.csv")):
         print(f.name, sum(1 for _ in f.open()) - 1, "rows")
 
