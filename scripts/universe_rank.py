@@ -13,9 +13,9 @@ Pass 1, quantitative: the satellite screen (src/lgm/growth/satellite.py) on the 
 Pass 2, qualitative: the 11 dimensions of config/qualitative.yaml (1-5), scored from data for every company in
 the universe (so each has a qualitative score and sector rank), and ranked in the final list only if it passed pass 1.
   - financial quality, growth and sentiment: the model's own rules (src/lgm/growth/qualitative.py);
-  - the five values dimensions: how often the company description uses words from Laura's values
-    parameters (V1-V25), per 100 words, as 3 + z within sector (the exemplar's Scouting Report method,
-    on company profiles instead of 10-K filings);
+  - the five values dimensions: how often the company's latest 10-K Business section uses words from Laura's
+    values parameters (V1-V25), per 10,000 words, as 3 + z within sector (the exemplar's Scouting Report
+    method; counts from scripts/tenk_values.py); the company description where no 10-K is on file;
   - management: ROE and operating-margin trend; moat: 4-year operating margin; risk flags: 3-year
     volatility and 5-year drawdown; each against sector peers, as 3 + z within sector;
   - every score is clipped to 1-5; a company with no financial statements scores 3 on financial quality; gates: an excluded activity (tobacco, gambling, controversial weapons,
@@ -72,6 +72,16 @@ def to_score(z: pd.Series) -> pd.Series:
     return (3 + z).clip(1, 5).round(1)
 
 
+def tenk_counts() -> pd.DataFrame:
+    """Values-word counts from each company's latest 10-K (scripts/tenk_values.py), by ticker."""
+    rows = []
+    for f in (ROOT / "data" / "raw" / "sec").glob("*.json"):
+        r = json.loads(f.read_text())
+        if r.get("words", 0) >= 1000:
+            rows.append({"ticker": r["ticker"], "filing_date": r["filing_date"], "words": r["words"], **r["hits"]})
+    return pd.DataFrame(rows).set_index("ticker") if rows else pd.DataFrame(columns=["filing_date", "words"])
+
+
 def fin_quality(r) -> float:
     """The model's financial-quality rule; a company with no financial statements at Nasdaq scores a neutral 3,
     as the model already does for missing growth and analyst data."""
@@ -125,6 +135,13 @@ def pass2(p1: pd.DataFrame) -> pd.DataFrame:
     for dim, pat in KEYWORDS.items():
         d[dim + "_hits"] = text.str.count(re.compile(pat, re.I))
         d[dim] = to_score(zs(d[dim + "_hits"] / words * 100, d["sector"]))
+    tenk = tenk_counts()
+    has = d.index.isin(tenk.index)
+    d["values_source"] = "Company description"
+    d.loc[has, "values_source"] = "10-K filed " + tenk.reindex(d.index[has])["filing_date"].astype(str)
+    for dim in KEYWORDS:                               # the 10-K, where one is on file, replaces the description
+        dens = tenk.reindex(d.index[has])[dim] / tenk.reindex(d.index[has])["words"] * 10_000
+        d.loc[has, dim] = to_score(zs(dens, d.loc[has, "sector"]))
     num = lambda c: pd.to_numeric(d[c], errors="coerce")
     d["management_capital_allocation"] = to_score(0.5 * zs(num("roe").clip(-50, 100), d["sector"])
                                                   + 0.5 * zs(num("op_margin") - num("op_margin_avg4"), d["sector"]))
@@ -173,7 +190,7 @@ def main():
              *q.VALUES, *q.JUDGED_STRENGTH, "financial_quality", "growth_innovation", "sentiment_momentum",
              "values_score", "strength_score", "qual_score", "qual_sector_rank", "final_score", "accepted", "pass_quant",
              "reject_reason", "analyst_rating", "rev_cagr_3y", "op_margin_avg4", "roe", "debt_to_equity",
-             *[k + "_hits" for k in KEYWORDS]]
+             "values_source", *[k + "_hits" for k in KEYWORDS]]
     p2[cols2].round(9).to_csv(OUT / "universe_pass2_qual.csv", index=False)
 
     hand = pd.read_csv(OUT / "satellite_qualitative.csv").set_index("ticker")

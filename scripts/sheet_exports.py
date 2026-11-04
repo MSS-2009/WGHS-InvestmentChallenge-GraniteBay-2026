@@ -38,7 +38,7 @@ def stocks_pass2():
         "Excluded activity": p2["excluded"], "Analyst rating": p2["analyst_rating"].fillna(""),
         "Revenue growth (3-yr a year)": p2["rev_cagr_3y"],
         "Operating margin (4-yr avg)": p2["op_margin_avg4"] / 100, "Return on equity": p2["roe"] / 100,
-        "Values keyword hits": p2[[c for c in p2.columns if c.endswith("_hits")]].sum(axis=1),
+        "Values source": p2["values_source"],
     })
     out.to_csv(OUT / "stocks_pass2.csv", index=False)
 
