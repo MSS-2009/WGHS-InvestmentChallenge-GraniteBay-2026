@@ -56,12 +56,27 @@ def bonds():
     out.to_csv(OUT / "bond_funds.csv", index=False)
 
 
+def checks():
+    """The scripts' own ranks, so the workbook's Checks tab can count rows where its formulas disagree."""
+    p1 = pd.read_csv(REP / "universe_pass1_quant.csv")
+    p2 = pd.read_csv(REP / "universe_pass2_qual.csv")[["ticker", "final_rank", "qual_score"]]
+    s = p1[["ticker", "quant_rank", "pass_quant"]].merge(p2, on="ticker", how="left")
+    s.columns = ["Ticker", "Python overall rank (pass 1)", "Python passes pass 1", "Python final rank", "Python qualitative score"]
+    s["Python passes pass 1"] = s["Python passes pass 1"].map({True: "TRUE", False: "FALSE"})
+    s.to_csv(OUT / "check_stocks.csv", index=False)
+    b = pd.read_csv(REP / "bond_funds_universe.csv")[["symbol", "final_rank", "pass_quant"]]
+    b.columns = ["Symbol", "Python final rank", "Python passes pass 1"]
+    b["Python passes pass 1"] = b["Python passes pass 1"].map({True: "TRUE", False: "FALSE"})
+    b.to_csv(OUT / "check_bonds.csv", index=False)
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     bonds()
     stocks_pass1()
     if (REP / "universe_pass2_qual.csv").exists():
         stocks_pass2()
+        checks()
     for f in sorted(OUT.glob("*.csv")):
         print(f.name, sum(1 for _ in f.open()) - 1, "rows")
 
