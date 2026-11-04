@@ -20,9 +20,9 @@
  },
  "hand_scored_overlap": 56,
  "spearman_automated_vs_hand": {
-  "values_score": -0.009,
+  "values_score": 0.163,
   "strength_score": 0.845,
-  "qual_score": 0.657
+  "qual_score": 0.707
  },
  "sectors": {
   "Industrials": 166,

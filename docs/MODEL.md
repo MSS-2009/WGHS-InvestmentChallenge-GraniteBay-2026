@@ -414,10 +414,11 @@ disagree: 0 of 924 stocks and 0 of 802 bond funds.
 - **Russell 1000 stocks** (924 US companies, iShares IWB): 880 have four years of prices; 582 pass the risk
   filter; 453 pass pass 1 (top 75% of their sector on 0.5 z(12-1 momentum) + 0.5 z(3-yr Sharpe)). All 918
   with Nasdaq data are scored on the qualitative model's 11 dimensions from data (values by keyword density in
-  the company description, the exemplar report's method; strength from financials, margins, volatility and
-  analyst ratings); 768 pass the gates; 416 pass both rounds. Against the 56 companies scored by hand, rank
-  correlations are 0.85 for strength, 0.66 for the full qualitative score and -0.01 for values: the keyword
-  values scores are weak evidence and are disclosed as such.
+  each company's latest 10-K Business section, the exemplar report's method, for 900 companies, and in the
+  company description for the other 18; strength from financials, margins, volatility and analyst ratings);
+  768 pass the gates; 416 pass both rounds. Against the 56 companies scored by hand, rank correlations are
+  0.85 for strength, 0.71 for the full qualitative score and 0.16 for values (from -0.01 with descriptions
+  alone): the values scores are weak evidence and are disclosed as such.
 - **Treasury notes and bonds outstanding** (352, Monthly Statement of the Public Debt, Sep 30, 2026): scored
   like the ladder scorecard. Listing every one in WInS would lower the ladder's cost by $933; for 2032-2036 no
   Treasury note beats the iBonds funds.
