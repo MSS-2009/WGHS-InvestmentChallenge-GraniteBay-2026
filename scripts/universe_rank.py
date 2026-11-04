@@ -97,12 +97,14 @@ def pass1() -> pd.DataFrame:
     px = prices(list(u["yahoo"]) + ["VTI"])
     met = metrics(px.drop(columns=["VTI"]), px["VTI"])
     d = u.set_index("yahoo").join(met, how="left")
+    metric_cols = ["vol3", "beta3", "maxdd5", "mom12_1", "ret3", "sharpe3", "last_price"]
+    d[metric_cols] = d[metric_cols].round(8)          # the exact values the workbook imports
     d["pass_data"] = (d["months"] >= 48) & (d["last_price"] >= 3)
     ok = d["pass_data"]
     vol_cut, dd_cut = d.loc[ok, "vol3"].quantile(0.80), d.loc[ok, "maxdd5"].quantile(0.20)
     d["pass_risk"] = ok & (d["vol3"] <= vol_cut) & (d["maxdd5"] >= dd_cut) & (d["beta3"] <= 1.5)
     e = d[ok]
-    d.loc[ok, "quant_index"] = 0.5 * zs(e["mom12_1"], e["sector"]) + 0.5 * zs(e["sharpe3"], e["sector"])
+    d.loc[ok, "quant_index"] = (0.5 * zs(e["mom12_1"], e["sector"]) + 0.5 * zs(e["sharpe3"], e["sector"])).round(9)
     d.loc[ok, "sector_size"] = e.groupby("sector")["sector"].transform("size")
     d.loc[ok, "quant_sector_rank"] = d.loc[ok].groupby("sector")["quant_index"].rank(ascending=False, method="min")
     d.loc[ok, "quant_sector_pct"] = d.loc[ok].groupby("sector")["quant_index"].rank(pct=True)
@@ -140,7 +142,7 @@ def pass2(p1: pd.DataFrame) -> pd.DataFrame:
     d["values_score"] = d[q.VALUES].mean(axis=1)
     d["strength_score"] = d[strength].mean(axis=1)
     w = CFG["weights"]
-    d["qual_score"] = w["values"] * d["values_score"] + w["strength"] * d["strength_score"]
+    d["qual_score"] = (w["values"] * d["values_score"] + w["strength"] * d["strength_score"]).round(9)
     reasons = []
     for t, x in d.iterrows():
         why = [f"excluded activity: {k}" for k, pat in EXCLUDED.items() if re.search(pat, text[t], re.I)]
@@ -154,7 +156,7 @@ def pass2(p1: pd.DataFrame) -> pd.DataFrame:
     d.loc[d["accepted"], "qual_sector_rank"] = d.loc[d["accepted"]].groupby("sector")["qual_score"].rank(ascending=False, method="min")
     a = d["accepted"] & d["pass_quant"].astype(bool)
     zf = lambda c: (d.loc[a, c] - d.loc[a, c].mean()) / d.loc[a, c].std()
-    d.loc[a, "final_score"] = 0.5 * zf("qual_score") + 0.5 * zf("quant_index")
+    d.loc[a, "final_score"] = (0.5 * zf("qual_score") + 0.5 * zf("quant_index")).round(9)   # ties rank alike
     d.loc[a, "final_rank"] = d.loc[a, "final_score"].rank(ascending=False, method="min")
     d.loc[a, "final_sector_rank"] = d.loc[a].groupby("sector")["final_score"].rank(ascending=False, method="min")
     return d.reset_index().sort_values(["final_rank", "qual_score"], ascending=[True, False])
@@ -165,14 +167,14 @@ def main():
     cols1 = ["quant_rank", "quant_sector_rank", "sector_size", "ticker", "name", "sector", "w", "months", "last_price",
              "mom12_1", "sharpe3", "ret3", "vol3", "maxdd5", "beta3", "quant_index", "quant_sector_pct",
              "pass_data", "pass_risk", "pass_quant"]
-    p1[cols1].round(4).to_csv(OUT / "universe_pass1_quant.csv", index=False)
+    p1[cols1].round(9).to_csv(OUT / "universe_pass1_quant.csv", index=False)
     p2 = pass2(p1)
     cols2 = ["final_rank", "final_sector_rank", "ticker", "name", "sector", "industry", "quant_index", "quant_sector_rank",
              *q.VALUES, *q.JUDGED_STRENGTH, "financial_quality", "growth_innovation", "sentiment_momentum",
              "values_score", "strength_score", "qual_score", "qual_sector_rank", "final_score", "accepted", "pass_quant",
              "reject_reason", "analyst_rating", "rev_cagr_3y", "op_margin_avg4", "roe", "debt_to_equity",
              *[k + "_hits" for k in KEYWORDS]]
-    p2[cols2].round(4).to_csv(OUT / "universe_pass2_qual.csv", index=False)
+    p2[cols2].round(9).to_csv(OUT / "universe_pass2_qual.csv", index=False)
 
     hand = pd.read_csv(OUT / "satellite_qualitative.csv").set_index("ticker")
     both = p2.set_index("ticker").join(hand[["values_score", "strength_score", "qual_score"]], rsuffix="_hand", how="inner")

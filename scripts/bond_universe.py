@@ -200,12 +200,14 @@ def zs(s, by):
 
 
 def rank_funds(d: pd.DataFrame) -> pd.DataFrame:
+    num = ["last_price", "income_12m", "vol3", "ret3", "sharpe3", "maxdd", "stock_beta", "stock_corr", "rate_duration"]
+    d[num] = d[num].round(8)                          # the exact values the workbook imports
     d["pass_data"] = (d["months"] >= 36) & (d["last_price"] >= 3) & d["vol3"].notna()
     ok = d["pass_data"]
     vcut, dcut = d.loc[ok, "vol3"].quantile(0.80), d.loc[ok, "maxdd"].quantile(0.20)
     d["pass_risk"] = ok & (d["maxdd"] >= dcut) & (d["stock_beta"] <= 0.5)
     e = d[ok]
-    d.loc[ok, "quant_index"] = 0.5 * zs(e["income_12m"].fillna(0), e["category"]) + 0.5 * zs(e["sharpe3"], e["category"])
+    d.loc[ok, "quant_index"] = (0.5 * zs(e["income_12m"].fillna(0), e["category"]) + 0.5 * zs(e["sharpe3"], e["category"])).round(9)
     d.loc[ok, "quant_cat_pct"] = d.loc[ok].groupby("category")["quant_index"].rank(pct=True)
     d["pass_quant"] = d["pass_risk"] & (d["quant_cat_pct"] > 0.25)
     years = (dt.date(2032, 12, 15) - dt.date.fromisoformat(str(CURVE_DATE))).days / 365.25
@@ -224,7 +226,7 @@ def rank_funds(d: pd.DataFrame) -> pd.DataFrame:
     d["accepted"] = d["credit_quality"] > 1
     a = d["accepted"] & d["pass_quant"] & d["fit_score"].notna()
     zf = lambda c: (d.loc[a, c] - d.loc[a, c].mean()) / d.loc[a, c].std()
-    d.loc[a, "final_score"] = 0.5 * zf("fit_score") + 0.5 * zf("quant_index")
+    d.loc[a, "final_score"] = (0.5 * zf("fit_score") + 0.5 * zf("quant_index")).round(9)   # ties rank alike
     d.loc[a, "final_rank"] = d.loc[a, "final_score"].rank(ascending=False, method="min")
     d.loc[a, "category_rank"] = d.loc[a].groupby("category")["final_score"].rank(ascending=False, method="min")
     d.attrs.update(vol_cut=float(vcut), dd_cut=float(dcut))
@@ -239,7 +241,7 @@ def main():
             "ret3", "vol3", "maxdd", "stock_beta", "stock_corr", "rate_duration", "pass_data", "pass_risk", "quant_index",
             "quant_cat_pct", "pass_quant", "credit_quality", "date_match", "diversification", "concentration",
             "fit_score", "accepted", "final_score"]
-    funds[cols].round(8).to_csv(OUT / "bond_funds_universe.csv", index=False)
+    funds[cols].round(9).to_csv(OUT / "bond_funds_universe.csv", index=False)
     held = funds.set_index("symbol").reindex(["IBTM", "IBTO", "IBTP", "IBTQ", "IBTR"])[["final_rank", "category_rank", "fit_score", "quant_index"]]
     summary = {"treasuries": tsum, "funds": {
         "universe": int(len(funds)), "pass_data": int(funds["pass_data"].sum()), "pass_risk": int(funds["pass_risk"].sum()),
