@@ -69,6 +69,10 @@ python scripts/run_all.py           # every script below and the studies the doc
 python scripts/validate_plans_v2.py
 python scripts/build_core.py
 python scripts/fund_scorecard.py   # every fund held, ranked on the quantitative, Black-Litterman and qualitative indexes
+python scripts/universe_rank.py    # Russell 1000 in two passes (downloads and caches Yahoo and Nasdaq data)
+python scripts/bond_universe.py    # every Treasury note and bond, and every bond ETF, in two passes
+python scripts/sheet_exports.py    # inputs for the Google Sheet, which recomputes and checks every rank
+python scripts/bl_charts.py        # Black-Litterman charts for the Final Report (reports/figures)
 python scripts/build_satellite.py
 python scripts/validate_model.py    # how good is the model: generator checks, convergence, replay, BL sensitivity
 python scripts/report_numbers.py    # headline numbers for the IPS and Final Report
