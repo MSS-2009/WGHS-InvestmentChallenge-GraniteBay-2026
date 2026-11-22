@@ -68,7 +68,7 @@ def sentiment(r, mom_pct: float) -> float:
     return float(round((a + m) / 2 * 2) / 2)
 
 
-def score(screen: pd.DataFrame, evidence: pd.DataFrame, judgments: pd.DataFrame, cfg: dict) -> pd.DataFrame:
+def score(screen: pd.DataFrame, evidence: pd.DataFrame, judgments: pd.DataFrame, cfg: dict, community: pd.DataFrame | None = None) -> pd.DataFrame:
     df = judgments.set_index("ticker").join(evidence, how="left").join(
         screen.set_index("ticker")[["sector", "rq_score", "mom12_1", "vol3", "beta3", "last_price"]], how="left")
     mom_pct = screen.set_index("ticker")["mom12_1"].rank(pct=True)
@@ -103,13 +103,20 @@ def score(screen: pd.DataFrame, evidence: pd.DataFrame, judgments: pd.DataFrame,
     z = lambda s: (s - s.mean()) / s.std()
     acc = df["accepted"]
     df.loc[acc, "combined"] = 0.5 * z(df.loc[acc, "qual_score"].astype(float)) + 0.5 * z(df.loc[acc, "rq_score"].astype(float))
+    if community is not None:
+        from .community import attach
+        df = attach(df, community)
     return df
 
 
-def select(df: pd.DataFrame, n: int, max_sector_share: float) -> pd.DataFrame:
+def select(df: pd.DataFrame, n: int, max_sector_share: float,
+           financial_equivalence_groups: dict[str, str] | None = None) -> pd.DataFrame:
     cap = int(np.floor(n * max_sector_share))
     picks, per = [], {}
-    for t, r in df[df["accepted"]].sort_values("combined", ascending=False).iterrows():
+    from .community import order_ties
+    ranked = df[df["accepted"]].sort_values("combined", ascending=False, kind="stable")
+    ranked = order_ties(ranked, financial_equivalence_groups)
+    for t, r in ranked.iterrows():
         if per.get(r["sector"], 0) < cap:
             picks.append(t)
             per[r["sector"]] = per.get(r["sector"], 0) + 1

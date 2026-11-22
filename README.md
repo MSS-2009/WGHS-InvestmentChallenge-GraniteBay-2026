@@ -106,3 +106,13 @@ python scripts/round6_waterfall.py       # what each October 22 change did to th
 `docs/loop/IMPROVEMENT_LOG.md` records each round of the October 2026 improvement loop.
 
 See `docs/VALIDATION.md` for the check of the former team's numbers.
+
+### Community Footprint extension
+
+The qualitative model includes an optional, evidence-based Community Footprint tie-breaker for financially equivalent companies. See [the methodology](docs/COMMUNITY_FOOTPRINT.md) for scoring anchors, source requirements and limitations. The evidence ledger starts blank; no real-company community scores have been assigned.
+
+Generate the community tables with:
+
+```bash
+PYTHONPATH=src python scripts/community_footprint.py --as-of 2026-11-21
+```
